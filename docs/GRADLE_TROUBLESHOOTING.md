@@ -41,6 +41,27 @@ Configure a proxy using Android Studio's HTTP Proxy settings and, if required by
 
 Do not delete the entire Gradle cache or change Kotlin/KSP versions at random as the first workaround. Send the relevant repository URL/status and first underlying error, with credentials redacted.
 
+## AppModel Kotlin compilation: unresolved `app` and File members
+
+If `:app:compileDebugKotlin` reports `AppModel.kt: Unresolved reference 'app'`
+followed by unresolved `isFile`, `toURI`, `parentFile`, `exists` or `path`, update
+the checkout. The original `demoDir` custom getter incorrectly referred to the
+non-property constructor parameter `app`. It is now an explicitly typed `File`
+initialized during construction, where that parameter is in scope. The other
+File-member diagnostics are cascading type-resolution errors from that getter;
+this does not require changing KSP, Room or dependency versions.
+
+From the repository root in PowerShell:
+
+```powershell
+git pull --ff-only origin arena/f7c293e1-reedance-android
+cd android
+.\gradlew.bat :app:assembleDebug
+```
+
+No cache deletion or `--refresh-dependencies` is necessary for this source fix.
+Local APK compilation has not been verified in the sandbox (no JDK/Android SDK).
+
 ## Verification boundary
 
 The direct-module mapping has been inspected statically. Local Gradle execution in the coding sandbox remains blocked by the missing JDK/Android SDK; successful sync/build must be confirmed in Android Studio or CI. An upstream release's existence alone does not prove accessibility from your machine or a given mirror.

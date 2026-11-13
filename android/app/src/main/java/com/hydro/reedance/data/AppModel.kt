@@ -41,7 +41,9 @@ class AppModel(app: Application): AndroidViewModel(app) {
     private var controller: MediaController? = null
     private val controllerFuture = MediaController.Builder(app, SessionToken(app, ComponentName(app, PlaybackService::class.java))).buildAsync()
     val speech = Speech(app)
-    private val demoDir get() = File(app.filesDir, "demo/midnight-avenue/1")
+    // A constructor parameter without val/var is available in initializers,
+    // but not in a property getter. Keep the resolved File as a typed value.
+    private val demoDir: File = File(app.filesDir, "demo/midnight-avenue/1")
     init {
         controllerFuture.addListener({
             runCatching {
