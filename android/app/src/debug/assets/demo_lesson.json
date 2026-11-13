@@ -1,0 +1,1193 @@
+{
+  "schemaVersion": 1,
+  "songId": "midnight-avenue",
+  "targetLanguage": "en",
+  "locale": "en-GB",
+  "title": "Midnight Avenue",
+  "artist": "Reedance Originals",
+  "level": "B1",
+  "media": {
+    "audio": {
+      "path": "audio.wav",
+      "mimeType": "audio/wav",
+      "durationMs": 64000,
+      "sha256": "ec65655b817c1c4bd00248947768f77431ffc478c9a31f6e619becad63575216"
+    }
+  },
+  "credits": {
+    "lyrics": "Original demo material",
+    "audio": "Generated instrumental demo",
+    "noticeFa": "متن و موسیقی این بخش برای نمایش رابط کاربری ساخته شده‌اند؛ صدای دمو بی‌کلام است.",
+    "noticeEn": "The words and music in this section are original UI-demo material; the demo audio is instrumental."
+  },
+  "lyrics": [
+    {
+      "id": "line-1",
+      "startMs": 0,
+      "text": "I take the long way home tonight.",
+      "translationFa": "امشب راه طولانیِ خانه را انتخاب می‌کنم.",
+      "translationEn": "I take the long way home tonight.",
+      "tokens": [
+        {
+          "surface": "I",
+          "translationFa": "من",
+          "translationEn": "I"
+        },
+        {
+          "surface": "take",
+          "translationFa": "انتخاب می‌کنم",
+          "translationEn": "take"
+        },
+        {
+          "surface": "the",
+          "translationFa": "حرف تعریف",
+          "translationEn": "the"
+        },
+        {
+          "surface": "long",
+          "translationFa": "طولانی",
+          "translationEn": "long",
+          "lexemeId": "en:long"
+        },
+        {
+          "surface": "way",
+          "translationFa": "راه",
+          "translationEn": "way",
+          "lexemeId": "en:way"
+        },
+        {
+          "surface": "home",
+          "translationFa": "خانه",
+          "translationEn": "home"
+        },
+        {
+          "surface": "tonight.",
+          "translationFa": "امشب",
+          "translationEn": "tonight.",
+          "lexemeId": "en:tonight"
+        }
+      ]
+    },
+    {
+      "id": "line-2",
+      "startMs": 8000,
+      "text": "The city lights are fading slowly.",
+      "translationFa": "چراغ‌های شهر آرام‌آرام کم‌نور می‌شوند.",
+      "translationEn": "The city lights are fading slowly.",
+      "tokens": [
+        {
+          "surface": "The",
+          "translationFa": "حرف تعریف",
+          "translationEn": "The"
+        },
+        {
+          "surface": "city",
+          "translationFa": "شهر",
+          "translationEn": "city",
+          "lexemeId": "en:city"
+        },
+        {
+          "surface": "lights",
+          "translationFa": "چراغ‌ها",
+          "translationEn": "lights"
+        },
+        {
+          "surface": "are",
+          "translationFa": "هستند",
+          "translationEn": "are"
+        },
+        {
+          "surface": "fading",
+          "translationFa": "محو می‌شوند",
+          "translationEn": "fading",
+          "lexemeId": "en:fading"
+        },
+        {
+          "surface": "slowly.",
+          "translationFa": "آرام‌آرام",
+          "translationEn": "slowly."
+        }
+      ]
+    },
+    {
+      "id": "line-3",
+      "startMs": 16000,
+      "text": "I keep a little hope alive.",
+      "translationFa": "ذره‌ای امید را زنده نگه می‌دارم.",
+      "translationEn": "I keep a little hope alive.",
+      "tokens": [
+        {
+          "surface": "I",
+          "translationFa": "من",
+          "translationEn": "I"
+        },
+        {
+          "surface": "keep",
+          "translationFa": "نگه می‌دارم",
+          "translationEn": "keep",
+          "lexemeId": "en:keep"
+        },
+        {
+          "surface": "a",
+          "translationFa": "یک",
+          "translationEn": "a"
+        },
+        {
+          "surface": "little",
+          "translationFa": "اندک",
+          "translationEn": "little"
+        },
+        {
+          "surface": "hope",
+          "translationFa": "امید",
+          "translationEn": "hope",
+          "lexemeId": "en:hope"
+        },
+        {
+          "surface": "alive.",
+          "translationFa": "زنده",
+          "translationEn": "alive.",
+          "lexemeId": "en:alive"
+        }
+      ]
+    },
+    {
+      "id": "line-4",
+      "startMs": 24000,
+      "text": "And let the quiet moments grow.",
+      "translationFa": "و می‌گذارم لحظه‌های آرام رشد کنند.",
+      "translationEn": "And let the quiet moments grow.",
+      "tokens": [
+        {
+          "surface": "And",
+          "translationFa": "و",
+          "translationEn": "And"
+        },
+        {
+          "surface": "let",
+          "translationFa": "می‌گذارم",
+          "translationEn": "let"
+        },
+        {
+          "surface": "the",
+          "translationFa": "حرف تعریف",
+          "translationEn": "the"
+        },
+        {
+          "surface": "quiet",
+          "translationFa": "آرام",
+          "translationEn": "quiet",
+          "lexemeId": "en:quiet"
+        },
+        {
+          "surface": "moments",
+          "translationFa": "لحظه‌ها",
+          "translationEn": "moments"
+        },
+        {
+          "surface": "grow.",
+          "translationFa": "رشد کنند",
+          "translationEn": "grow.",
+          "lexemeId": "en:grow"
+        }
+      ]
+    },
+    {
+      "id": "line-5",
+      "startMs": 32000,
+      "text": "When morning comes, I'll start again.",
+      "translationFa": "وقتی صبح برسد، دوباره شروع می‌کنم.",
+      "translationEn": "When morning comes, I'll start again.",
+      "tokens": [
+        {
+          "surface": "When",
+          "translationFa": "وقتی",
+          "translationEn": "When"
+        },
+        {
+          "surface": "morning",
+          "translationFa": "صبح",
+          "translationEn": "morning",
+          "lexemeId": "en:morning"
+        },
+        {
+          "surface": "comes,",
+          "translationFa": "می‌رسد",
+          "translationEn": "comes,"
+        },
+        {
+          "surface": "I'll",
+          "translationFa": "من خواهم",
+          "translationEn": "I'll"
+        },
+        {
+          "surface": "start",
+          "translationFa": "شروع کنم",
+          "translationEn": "start"
+        },
+        {
+          "surface": "again.",
+          "translationFa": "دوباره",
+          "translationEn": "again.",
+          "lexemeId": "en:again"
+        }
+      ]
+    },
+    {
+      "id": "line-6",
+      "startMs": 40000,
+      "text": "One step at a time, I find my way.",
+      "translationFa": "قدم‌به‌قدم راه خودم را پیدا می‌کنم.",
+      "translationEn": "One step at a time, I find my way.",
+      "tokens": [
+        {
+          "surface": "One",
+          "translationFa": "یک",
+          "translationEn": "One"
+        },
+        {
+          "surface": "step",
+          "translationFa": "قدم",
+          "translationEn": "step",
+          "lexemeId": "en:step"
+        },
+        {
+          "surface": "at",
+          "translationFa": "در",
+          "translationEn": "at"
+        },
+        {
+          "surface": "a",
+          "translationFa": "یک",
+          "translationEn": "a"
+        },
+        {
+          "surface": "time,",
+          "translationFa": "زمان",
+          "translationEn": "time,"
+        },
+        {
+          "surface": "I",
+          "translationFa": "من",
+          "translationEn": "I"
+        },
+        {
+          "surface": "find",
+          "translationFa": "پیدا می‌کنم",
+          "translationEn": "find"
+        },
+        {
+          "surface": "my",
+          "translationFa": "خودم",
+          "translationEn": "my"
+        },
+        {
+          "surface": "way.",
+          "translationFa": "راه",
+          "translationEn": "way.",
+          "lexemeId": "en:way"
+        }
+      ]
+    },
+    {
+      "id": "line-7",
+      "startMs": 48000,
+      "text": "The road is open, and so am I.",
+      "translationFa": "جاده باز است؛ من هم همین‌طور.",
+      "translationEn": "The road is open, and so am I.",
+      "tokens": [
+        {
+          "surface": "The",
+          "translationFa": "حرف تعریف",
+          "translationEn": "The"
+        },
+        {
+          "surface": "road",
+          "translationFa": "جاده",
+          "translationEn": "road",
+          "lexemeId": "en:road"
+        },
+        {
+          "surface": "is",
+          "translationFa": "است",
+          "translationEn": "is"
+        },
+        {
+          "surface": "open,",
+          "translationFa": "باز",
+          "translationEn": "open,"
+        },
+        {
+          "surface": "and",
+          "translationFa": "و",
+          "translationEn": "and"
+        },
+        {
+          "surface": "so",
+          "translationFa": "همین‌طور",
+          "translationEn": "so"
+        },
+        {
+          "surface": "am",
+          "translationFa": "هستم",
+          "translationEn": "am"
+        },
+        {
+          "surface": "I.",
+          "translationFa": "من",
+          "translationEn": "I."
+        }
+      ]
+    },
+    {
+      "id": "line-8",
+      "startMs": 56000,
+      "text": "I keep moving toward the light.",
+      "translationFa": "به حرکت به‌سوی نور ادامه می‌دهم.",
+      "translationEn": "I keep moving toward the light.",
+      "tokens": [
+        {
+          "surface": "I",
+          "translationFa": "من",
+          "translationEn": "I"
+        },
+        {
+          "surface": "keep",
+          "translationFa": "ادامه می‌دهم",
+          "translationEn": "keep",
+          "lexemeId": "en:keep"
+        },
+        {
+          "surface": "moving",
+          "translationFa": "حرکت کردن",
+          "translationEn": "moving"
+        },
+        {
+          "surface": "toward",
+          "translationFa": "به‌سوی",
+          "translationEn": "toward",
+          "lexemeId": "en:toward"
+        },
+        {
+          "surface": "the",
+          "translationFa": "حرف تعریف",
+          "translationEn": "the"
+        },
+        {
+          "surface": "light.",
+          "translationFa": "نور",
+          "translationEn": "light.",
+          "lexemeId": "en:light"
+        }
+      ]
+    }
+  ],
+  "vocabulary": [
+    {
+      "lexemeId": "en:hope",
+      "lemma": "hope",
+      "normalizedKey": "hope",
+      "translationFa": "امید",
+      "translationEn": "hope",
+      "ipa": "/hoʊp/",
+      "faReading": "هوپ",
+      "partFa": "اسم / فعل",
+      "partEn": "noun / verb",
+      "example": {
+        "text": "There is still hope for tomorrow.",
+        "translationFa": "هنوز برای فردا امید هست.",
+        "translationEn": "There is still hope for tomorrow."
+      }
+    },
+    {
+      "lexemeId": "en:fading",
+      "lemma": "fading",
+      "normalizedKey": "fading",
+      "translationFa": "کم‌نور شدن، محو شدن",
+      "translationEn": "fading",
+      "ipa": "/ˈfeɪdɪŋ/",
+      "faReading": "فِیدینگ",
+      "partFa": "فعل",
+      "partEn": "verb",
+      "example": {
+        "text": "The colors are fading in the sun.",
+        "translationFa": "رنگ‌ها زیر آفتاب کم‌رنگ می‌شوند.",
+        "translationEn": "The colors are fading in the sun."
+      }
+    },
+    {
+      "lexemeId": "en:quiet",
+      "lemma": "quiet",
+      "normalizedKey": "quiet",
+      "translationFa": "آرام، ساکت",
+      "translationEn": "quiet",
+      "ipa": "/ˈkwaɪət/",
+      "faReading": "کوایِت",
+      "partFa": "صفت",
+      "partEn": "adjective",
+      "example": {
+        "text": "I like quiet mornings.",
+        "translationFa": "صبح‌های آرام را دوست دارم.",
+        "translationEn": "I like quiet mornings."
+      }
+    },
+    {
+      "lexemeId": "en:grow",
+      "lemma": "grow",
+      "normalizedKey": "grow",
+      "translationFa": "رشد کردن",
+      "translationEn": "grow",
+      "ipa": "/ɡroʊ/",
+      "faReading": "گرو",
+      "partFa": "فعل",
+      "partEn": "verb",
+      "example": {
+        "text": "Small ideas can grow into big plans.",
+        "translationFa": "ایده‌های کوچک می‌توانند به برنامه‌های بزرگ تبدیل شوند.",
+        "translationEn": "Small ideas can grow into big plans."
+      }
+    },
+    {
+      "lexemeId": "en:morning",
+      "lemma": "morning",
+      "normalizedKey": "morning",
+      "translationFa": "صبح",
+      "translationEn": "morning",
+      "ipa": "/ˈmɔːrnɪŋ/",
+      "faReading": "مورنینگ",
+      "partFa": "اسم",
+      "partEn": "noun",
+      "example": {
+        "text": "We will meet in the morning.",
+        "translationFa": "صبح همدیگر را می‌بینیم.",
+        "translationEn": "We will meet in the morning."
+      }
+    },
+    {
+      "lexemeId": "en:step",
+      "lemma": "step",
+      "normalizedKey": "step",
+      "translationFa": "قدم، گام",
+      "translationEn": "step",
+      "ipa": "/step/",
+      "faReading": "اِستِپ",
+      "partFa": "اسم",
+      "partEn": "noun",
+      "example": {
+        "text": "Take one step at a time.",
+        "translationFa": "هر بار یک قدم بردار.",
+        "translationEn": "Take one step at a time."
+      }
+    },
+    {
+      "lexemeId": "en:toward",
+      "lemma": "toward",
+      "normalizedKey": "toward",
+      "translationFa": "به‌سوی",
+      "translationEn": "toward",
+      "ipa": "/təˈwɔːrd/",
+      "faReading": "تِ‌وُرد",
+      "partFa": "حرف اضافه",
+      "partEn": "preposition",
+      "example": {
+        "text": "She walked toward the door.",
+        "translationFa": "او به‌سوی در رفت.",
+        "translationEn": "She walked toward the door."
+      }
+    },
+    {
+      "lexemeId": "en:alive",
+      "lemma": "alive",
+      "normalizedKey": "alive",
+      "translationFa": "زنده",
+      "translationEn": "alive",
+      "ipa": "/əˈlaɪv/",
+      "faReading": "اَلایو",
+      "partFa": "صفت",
+      "partEn": "adjective",
+      "example": {
+        "text": "Keep your curiosity alive.",
+        "translationFa": "کنجکاوی‌ات را زنده نگه دار.",
+        "translationEn": "Keep your curiosity alive."
+      }
+    },
+    {
+      "lexemeId": "en:tonight",
+      "lemma": "tonight",
+      "normalizedKey": "tonight",
+      "translationFa": "امشب",
+      "translationEn": "tonight",
+      "ipa": "/təˈnaɪt/",
+      "faReading": "تِنایت",
+      "partFa": "قید",
+      "partEn": "adverb",
+      "example": {
+        "text": "I will call you tonight.",
+        "translationFa": "امشب به تو زنگ می‌زنم.",
+        "translationEn": "I will call you tonight."
+      }
+    },
+    {
+      "lexemeId": "en:long",
+      "lemma": "long",
+      "normalizedKey": "long",
+      "translationFa": "طولانی",
+      "translationEn": "long",
+      "ipa": "/lɔːŋ/",
+      "faReading": "لانگ",
+      "partFa": "صفت",
+      "partEn": "adjective",
+      "example": {
+        "text": "It has been a long day.",
+        "translationFa": "روز طولانی‌ای بوده است.",
+        "translationEn": "It has been a long day."
+      }
+    },
+    {
+      "lexemeId": "en:way",
+      "lemma": "way",
+      "normalizedKey": "way",
+      "translationFa": "راه، مسیر",
+      "translationEn": "way",
+      "ipa": "/weɪ/",
+      "faReading": "وِی",
+      "partFa": "اسم",
+      "partEn": "noun",
+      "example": {
+        "text": "This is the way home.",
+        "translationFa": "این راه خانه است.",
+        "translationEn": "This is the way home."
+      }
+    },
+    {
+      "lexemeId": "en:city",
+      "lemma": "city",
+      "normalizedKey": "city",
+      "translationFa": "شهر",
+      "translationEn": "city",
+      "ipa": "/ˈsɪti/",
+      "faReading": "سیتی",
+      "partFa": "اسم",
+      "partEn": "noun",
+      "example": {
+        "text": "The city is quiet at night.",
+        "translationFa": "شهر شب‌ها آرام است.",
+        "translationEn": "The city is quiet at night."
+      }
+    },
+    {
+      "lexemeId": "en:light",
+      "lemma": "light",
+      "normalizedKey": "light",
+      "translationFa": "نور",
+      "translationEn": "light",
+      "ipa": "/laɪt/",
+      "faReading": "لایت",
+      "partFa": "اسم",
+      "partEn": "noun",
+      "example": {
+        "text": "A little light filled the room.",
+        "translationFa": "کمی نور اتاق را پر کرد.",
+        "translationEn": "A little light filled the room."
+      }
+    },
+    {
+      "lexemeId": "en:keep",
+      "lemma": "keep",
+      "normalizedKey": "keep",
+      "translationFa": "نگه داشتن، ادامه دادن",
+      "translationEn": "keep",
+      "ipa": "/kiːp/",
+      "faReading": "کیپ",
+      "partFa": "فعل",
+      "partEn": "verb",
+      "example": {
+        "text": "Keep practicing every day.",
+        "translationFa": "هر روز به تمرین ادامه بده.",
+        "translationEn": "Keep practicing every day."
+      }
+    },
+    {
+      "lexemeId": "en:road",
+      "lemma": "road",
+      "normalizedKey": "road",
+      "translationFa": "جاده",
+      "translationEn": "road",
+      "ipa": "/roʊd/",
+      "faReading": "رُود",
+      "partFa": "اسم",
+      "partEn": "noun",
+      "example": {
+        "text": "The road is open now.",
+        "translationFa": "حالا جاده باز است.",
+        "translationEn": "The road is open now."
+      }
+    },
+    {
+      "lexemeId": "en:again",
+      "lemma": "again",
+      "normalizedKey": "again",
+      "translationFa": "دوباره",
+      "translationEn": "again",
+      "ipa": "/əˈɡen/",
+      "faReading": "اَگِن",
+      "partFa": "قید",
+      "partEn": "adverb",
+      "example": {
+        "text": "Let's try again tomorrow.",
+        "translationFa": "بیا فردا دوباره تلاش کنیم.",
+        "translationEn": "Let's try again tomorrow."
+      }
+    }
+  ],
+  "grammar": [
+    {
+      "tone": "mint",
+      "tables": [
+        {
+          "titleFa": "صرفِ be با فاعل‌های متفاوت",
+          "titleEn": "Choose be for each subject",
+          "introFa": "فعلِ ing ثابت می‌ماند؛ am / is / are با فاعل تغییر می‌کند.",
+          "introEn": "The -ing verb stays; am / is / are changes with the subject.",
+          "columns": [
+            {
+              "fa": "فاعل",
+              "en": "Subject"
+            },
+            {
+              "fa": "فعل کمکی",
+              "en": "Be"
+            },
+            {
+              "fa": "جملهٔ نمونه",
+              "en": "Example"
+            }
+          ],
+          "rows": [
+            [
+              "I",
+              "am",
+              "I am moving."
+            ],
+            [
+              "she / he / it",
+              "is",
+              "She is moving."
+            ],
+            [
+              "the city lights / they",
+              "are",
+              "The city lights are fading."
+            ]
+          ],
+          "footerFa": "با you هم از are استفاده می‌کنیم، حتی وقتی مخاطب یک نفر است.",
+          "footerEn": "Use are with you, even when you are speaking to one person."
+        }
+      ],
+      "check": {
+        "promptFa": "The city lights ___ fading. جای خالی را با am / is / are پر کن.",
+        "promptEn": "The city lights ___ fading. Which fits: am, is or are?",
+        "answerFa": "are؛ چون lights جمع است.",
+        "answerEn": "are — lights is plural."
+      },
+      "id": "present-continuous",
+      "tagFa": "زمان فعل",
+      "tagEn": "Verb tense",
+      "titleFa": "حال استمراری در یک تصویر زنده",
+      "titleEn": "Present continuous in motion",
+      "bodyFa": "ساختار am / is / are + فعل ing برای کاری است که همین حالا در جریان است. در «are fading» چراغ‌ها در حال کم‌نور شدن هستند.",
+      "bodyEn": "Use am / is / are + verb-ing for an action happening now. In “are fading,” the lights are dimming as we speak.",
+      "example": {
+        "text": "The city lights are fading slowly.",
+        "translationFa": "چراغ‌های شهر آرام‌آرام کم‌نور می‌شوند.",
+        "translationEn": "The city lights are fading slowly."
+      }
+    },
+    {
+      "tone": "apricot",
+      "takeawayFa": "برای «ادامه دادنِ یک کار» بعد از keep شکل ing فعل می‌آید: keep moving.",
+      "takeawayEn": "To say an action continues, follow keep with the -ing form: keep moving.",
+      "check": {
+        "promptFa": "I keep ___ toward the light. شکل درستِ move چیست؟",
+        "promptEn": "I keep ___ toward the light. Which form of move fits?",
+        "answerFa": "moving؛ بعد از keep در این معنی، فعل ing می‌آید.",
+        "answerEn": "moving — for this meaning, keep is followed by verb-ing."
+      },
+      "id": "keep-ing",
+      "tagFa": "ساختار کاربردی",
+      "tagEn": "Useful pattern",
+      "titleFa": "ادامه دادن با keep + ing",
+      "titleEn": "Keep + verb-ing",
+      "bodyFa": "بعد از keep می‌توان فعل ing آورد تا «ادامه دادنِ یک کار» را نشان دهیم. این ساختار در مکالمه خیلی رایج است.",
+      "bodyEn": "Put a verb in its -ing form after keep to express continuing an action. It's common in everyday conversation.",
+      "example": {
+        "text": "I keep moving toward the light.",
+        "translationFa": "به حرکت به‌سوی نور ادامه می‌دهم.",
+        "translationEn": "I keep moving toward the light."
+      }
+    },
+    {
+      "tone": "amber",
+      "tables": [
+        {
+          "titleFa": "یک فعل در سه زمان",
+          "titleEn": "One verb across three time frames",
+          "introFa": "تفاوت را در خودِ فعل start ببین؛ این جمله‌ها نمونهٔ آموزشی‌اند.",
+          "introEn": "Watch start change in these teaching examples.",
+          "columns": [
+            {
+              "fa": "زمان",
+              "en": "Time"
+            },
+            {
+              "fa": "ساختار",
+              "en": "Form"
+            },
+            {
+              "fa": "نمونه",
+              "en": "Example"
+            }
+          ],
+          "rows": [
+            [
+              {
+                "fa": "عادت / حال ساده",
+                "en": "Habit / simple present"
+              },
+              "I start",
+              "I start early every day."
+            ],
+            [
+              {
+                "fa": "همین حالا / استمراری",
+                "en": "Right now / continuous"
+              },
+              "I am starting",
+              "I am starting now."
+            ],
+            [
+              {
+                "fa": "آینده / تصمیم",
+                "en": "Future / decision"
+              },
+              "I'll start",
+              "I'll start again tomorrow."
+            ]
+          ]
+        }
+      ],
+      "takeawayFa": "پس از will شکل سادهٔ فعل می‌آید: I'll start؛ نه I'll starts.",
+      "takeawayEn": "After will, use the base verb: I'll start, not I'll starts.",
+      "id": "will-future",
+      "tagFa": "زمان فعل",
+      "tagEn": "Verb tense",
+      "titleFa": "آیندهٔ ساده با I'll",
+      "titleEn": "Simple future with I'll",
+      "bodyFa": "I'll شکل کوتاه I will است و برای تصمیم، قول یا کاری در آینده استفاده می‌شود. بعد از will، فعل به شکل ساده می‌آید.",
+      "bodyEn": "I'll is short for I will. Use it for a future decision or promise, followed by the base form of the verb.",
+      "example": {
+        "text": "I'll start again.",
+        "translationFa": "دوباره شروع می‌کنم.",
+        "translationEn": "I'll start again."
+      }
+    },
+    {
+      "tone": "rose",
+      "tables": [
+        {
+          "titleFa": "جمله را تکه‌تکه بخوان",
+          "titleEn": "Read the sentence in parts",
+          "columns": [
+            {
+              "fa": "بخش",
+              "en": "Part"
+            },
+            {
+              "fa": "نقش",
+              "en": "Role"
+            },
+            {
+              "fa": "معنی",
+              "en": "Meaning"
+            }
+          ],
+          "rows": [
+            [
+              "Let",
+              {
+                "fa": "فعل اصلی",
+                "en": "Main verb"
+              },
+              {
+                "fa": "بگذار",
+                "en": "allow"
+              }
+            ],
+            [
+              "the quiet moments",
+              {
+                "fa": "مفعول",
+                "en": "Object"
+              },
+              {
+                "fa": "لحظه‌های آرام",
+                "en": "the quiet moments"
+              }
+            ],
+            [
+              "grow",
+              {
+                "fa": "فعل ساده",
+                "en": "Base verb"
+              },
+              {
+                "fa": "رشد کنند",
+                "en": "grow"
+              }
+            ]
+          ]
+        }
+      ],
+      "check": {
+        "promptFa": "Let the moments ___. بعد از let چه شکلی از grow می‌آید؟",
+        "promptEn": "Let the moments ___. Which form of grow follows let?",
+        "answerFa": "grow؛ بعد از مفعولِ let، فعل ساده و بدون to می‌آید.",
+        "answerEn": "grow — after let + object, use the base verb without to."
+      },
+      "id": "let-pattern",
+      "tagFa": "ساختار جمله",
+      "tagEn": "Sentence pattern",
+      "titleFa": "ساختار let + مفعول + فعل",
+      "titleEn": "Let + object + verb",
+      "bodyFa": "با let به کسی یا چیزی اجازهٔ انجام کار می‌دهیم. فعل بعد از مفعول بدون to می‌آید: let the moments grow.",
+      "bodyEn": "Let allows someone or something to do an action. Use the base verb without to after the object.",
+      "example": {
+        "text": "Let the quiet moments grow.",
+        "translationFa": "بگذار لحظه‌های آرام رشد کنند.",
+        "translationEn": "Let the quiet moments grow."
+      }
+    },
+    {
+      "id": "when-clause",
+      "tone": "coral",
+      "tagFa": "بند زمان",
+      "tagEn": "Time clauses",
+      "titleFa": "وقتی آینده می‌رسد، comes حال است",
+      "titleEn": "A future meaning with a present verb",
+      "bodyFa": "در جملهٔ «When morning comes, I'll start again»، رویداد هر دو بخش مربوط به آینده است؛ اما بعد از when برای زمانِ آینده معمولاً حال ساده می‌آید، نه will.",
+      "bodyEn": "Both parts of “When morning comes, I'll start again” refer to the future. After when, a future time clause usually takes the simple present, not will.",
+      "example": {
+        "text": "When morning comes, I'll start again.",
+        "translationFa": "وقتی صبح برسد، دوباره شروع می‌کنم.",
+        "translationEn": "When morning comes, I'll start again."
+      },
+      "tables": [
+        {
+          "titleFa": "دو بخش، دو شکل فعل",
+          "titleEn": "Two clauses, two verb forms",
+          "columns": [
+            {
+              "fa": "بخش جمله",
+              "en": "Clause"
+            },
+            {
+              "fa": "شکل فعل",
+              "en": "Verb form"
+            },
+            {
+              "fa": "کارکرد",
+              "en": "What it does"
+            }
+          ],
+          "rows": [
+            [
+              "When morning comes",
+              {
+                "fa": "حال ساده: comes",
+                "en": "Simple present: comes"
+              },
+              {
+                "fa": "زمان وقوع را می‌گوید",
+                "en": "Says when"
+              }
+            ],
+            [
+              "I'll start again",
+              {
+                "fa": "آینده: will + start",
+                "en": "Future: will + start"
+              },
+              {
+                "fa": "کارِ بعدی را می‌گوید",
+                "en": "Says what follows"
+              }
+            ]
+          ]
+        }
+      ],
+      "takeawayFa": "برای همین معنا می‌گوییم When morning comes، نه When morning will come.",
+      "takeawayEn": "For this meaning, say When morning comes, not When morning will come.",
+      "check": {
+        "promptFa": "When the sun ___, we'll go. شکل درستِ rise چیست؟",
+        "promptEn": "When the sun ___, we'll go. Which form of rise fits?",
+        "answerFa": "rises؛ در بندِ زمان بعد از when، حال ساده می‌آید.",
+        "answerEn": "rises — use the simple present in the time clause after when."
+      }
+    }
+  ],
+  "idioms": [
+    {
+      "id": "one-step",
+      "text": "one step at a time",
+      "translationFa": "قدم‌به‌قدم، بدون عجله",
+      "translationEn": "Make progress gradually, one small action at a time."
+    },
+    {
+      "id": "find-my-way",
+      "text": "find my way",
+      "translationFa": "راهم را پیدا کنم",
+      "translationEn": "Discover the right direction or figure out how to move forward."
+    }
+  ],
+  "sentences": [
+    {
+      "id": "start-again",
+      "text": "I'll start again.",
+      "translationFa": "دوباره شروع می‌کنم.",
+      "translationEn": "I'll start again.",
+      "contextFa": "وقتی می‌خواهی از نو تلاش کنی.",
+      "contextEn": "When you're ready to try one more time."
+    },
+    {
+      "id": "keep-hope",
+      "text": "I keep a little hope alive.",
+      "translationFa": "ذره‌ای امید را زنده نگه می‌دارم.",
+      "translationEn": "I keep a little hope alive.",
+      "contextFa": "برای بیان امید در یک موقعیت سخت.",
+      "contextEn": "For expressing hope in a difficult moment."
+    },
+    {
+      "id": "one-step-sentence",
+      "text": "One step at a time.",
+      "translationFa": "هر بار یک قدم.",
+      "translationEn": "One step at a time.",
+      "contextFa": "وقتی می‌خواهی به خودت یا کسی دیگر آرامش بدهی.",
+      "contextEn": "A gentle reminder to take things slowly."
+    }
+  ],
+  "vocabularyTables": [
+    {
+      "titleFa": "واژه‌ها در شکل‌های دیگر",
+      "titleEn": "More forms of the words you hear",
+      "introFa": "فعل‌ها را کنار شکل گذشته و ing ببین؛ نمونه‌ها برای یادگیری فراتر از همین سطرها هستند.",
+      "introEn": "Compare base, past and -ing forms to use these words beyond the lyric.",
+      "footerFa": "به kept و grew دقت کن: شکل گذشتهٔ این دو فعل با افزودن ed ساخته نمی‌شود.",
+      "footerEn": "Notice kept and grew: these past forms don't simply add -ed.",
+      "columns": [
+        {
+          "fa": "فعل پایه",
+          "en": "Base verb"
+        },
+        {
+          "fa": "گذشته",
+          "en": "Past"
+        },
+        {
+          "fa": "شکل ing",
+          "en": "-ing form"
+        }
+      ],
+      "rows": [
+        [
+          "keep",
+          "kept",
+          "keeping"
+        ],
+        [
+          "grow",
+          "grew",
+          "growing"
+        ],
+        [
+          "fade",
+          "faded",
+          "fading"
+        ],
+        [
+          "move",
+          "moved",
+          "moving"
+        ]
+      ],
+      "rowHeader": true
+    }
+  ],
+  "questions": [
+    {
+      "id": "hope-meaning",
+      "type": "choice",
+      "skillFa": "معنی در متن",
+      "skillEn": "Meaning in context",
+      "promptFa": "واژهٔ «hope» در این سطر یعنی چه؟",
+      "promptEn": "What does “hope” mean in this line?",
+      "context": "I keep a little hope alive.",
+      "options": [
+        {
+          "id": "way",
+          "fa": "راه",
+          "en": "a path"
+        },
+        {
+          "id": "hope",
+          "fa": "امید",
+          "en": "a feeling of hope"
+        },
+        {
+          "id": "quiet",
+          "fa": "سکوت",
+          "en": "silence"
+        },
+        {
+          "id": "step",
+          "fa": "قدم",
+          "en": "a step"
+        }
+      ],
+      "correctId": "hope",
+      "speech": "I keep a little hope alive.",
+      "explanationFa": "hope یعنی «امید»؛ گوینده می‌گوید با وجود سختی، هنوز کمی امید را زنده نگه می‌دارد.",
+      "explanationEn": "Hope is the feeling that things can get better. The speaker is keeping a little of it alive.",
+      "relatedLexemeIds": [
+        "en:hope"
+      ]
+    },
+    {
+      "id": "three-connections",
+      "type": "match",
+      "skillFa": "مچ‌کردن",
+      "skillEn": "Match the meanings",
+      "promptFa": "هر واژهٔ آهنگ را به معنی درستش وصل کن.",
+      "promptEn": "Match each lyric word to its meaning.",
+      "pairs": [
+        {
+          "id": "fading",
+          "text": "fading",
+          "fa": "کم‌نور شدن",
+          "en": "growing dimmer",
+          "lexemeId": "en:fading"
+        },
+        {
+          "id": "quiet",
+          "text": "quiet",
+          "fa": "آرام، ساکت",
+          "en": "calm and still",
+          "lexemeId": "en:quiet"
+        },
+        {
+          "id": "toward",
+          "text": "toward",
+          "fa": "به‌سوی",
+          "en": "in the direction of",
+          "lexemeId": "en:toward"
+        }
+      ],
+      "meaningOrder": [
+        "toward",
+        "fading",
+        "quiet"
+      ],
+      "explanationFa": "fading به کم‌نور یا محوشدن، quiet به آرام‌بودن و toward به حرکت به‌سوی چیزی اشاره دارد.",
+      "explanationEn": "Fading describes a gradual change, quiet describes stillness, and toward points to a direction.",
+      "relatedLexemeIds": []
+    },
+    {
+      "id": "hope-order",
+      "type": "order",
+      "skillFa": "ساخت جمله",
+      "skillEn": "Build a line",
+      "promptFa": "این سطر را با تکه‌ها به ترتیب درست بساز.",
+      "promptEn": "Put these chunks in the order they appear in the line.",
+      "chunks": [
+        {
+          "id": "i-keep",
+          "text": "I keep"
+        },
+        {
+          "id": "little-hope",
+          "text": "a little hope"
+        },
+        {
+          "id": "alive",
+          "text": "alive."
+        }
+      ],
+      "speech": "I keep a little hope alive.",
+      "explanationFa": "ساختار جمله «I keep + a little hope + alive» است: من چیزی را در حالت زنده نگه می‌دارم.",
+      "explanationEn": "Keep + object + adjective describes maintaining a state: I keep a little hope alive.",
+      "relatedLexemeIds": [
+        "en:alive"
+      ],
+      "presentationOrder": [
+        "alive",
+        "i-keep",
+        "little-hope"
+      ]
+    },
+    {
+      "id": "step-blank",
+      "type": "typing",
+      "skillFa": "جای خالی و تایپ",
+      "skillEn": "Type the missing word",
+      "promptFa": "واژهٔ جاافتاده از سطر آهنگ را تایپ کن.",
+      "promptEn": "Type the missing word from the demo line.",
+      "context": "One ____ at a time, I find my way.",
+      "accepted": [
+        "step"
+      ],
+      "speech": "One step at a time, I find my way.",
+      "explanationFa": "one step at a time یعنی «هر بار یک قدم»؛ یک اصطلاح برای پیش‌رفتن بدون عجله.",
+      "explanationEn": "One step at a time means making progress gradually, one small action at a time.",
+      "relatedLexemeIds": [
+        "en:step"
+      ]
+    },
+    {
+      "id": "way-phrase",
+      "type": "choice",
+      "skillFa": "مفهوم عبارت",
+      "skillEn": "Phrase in context",
+      "promptFa": "عبارت «find my way» در این سطر چه معنایی دارد؟",
+      "promptEn": "What does “find my way” mean here?",
+      "context": "One step at a time, I find my way.",
+      "options": [
+        {
+          "id": "lost",
+          "fa": "برای همیشه گم شوم",
+          "en": "get lost for good"
+        },
+        {
+          "id": "route",
+          "fa": "راه یا مسیرم را پیدا کنم",
+          "en": "find my direction"
+        },
+        {
+          "id": "sing",
+          "fa": "با صدای بلند آواز بخوانم",
+          "en": "sing loudly"
+        },
+        {
+          "id": "wait",
+          "fa": "بدون حرکت منتظر بمانم",
+          "en": "wait without moving"
+        }
+      ],
+      "correctId": "route",
+      "speech": "One step at a time, I find my way.",
+      "explanationFa": "find my way اینجا فقط پیدا کردن جاده نیست؛ می‌تواند پیدا کردن مسیر و جهتِ پیش‌رفتن در زندگی باشد.",
+      "explanationEn": "Find my way can mean discovering a direction in life, not merely finding a physical road.",
+      "relatedLexemeIds": [
+        "en:way"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+Open this directory as the Android Studio project. See ../README.md for commands and ../docs/STATUS.md for verified status. Requires JDK 17 and Android SDK 35. No APK has been built in the Arena sandbox (no JDK/SDK installed).
