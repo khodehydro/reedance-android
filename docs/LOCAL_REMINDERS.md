@@ -31,19 +31,33 @@ The existing debug-only media availability / production download limitations rem
 
 ## Scheduling and notification content
 
-WorkManager 2.10.1 (already in the project) schedules one unique periodic worker:
-12-hour repeat, one-hour flex, initial delay 12 hours; KEEP prevents resets on each
-launch. No network constraint, remote push, server call or cloud account is used.
-WorkManager persists the schedule across normal process death/reboots. Android
-Doze, battery restrictions and force-stop can delay/prevent execution; this is not
-an exact 12-hour alarm and no battery-optimization exemption is requested.
+A unique chain of one-time WorkManager requests implements inactivity milestones:
+12h, 24h, 36h, 72h, 7 days, then weekly since the last visit. Each stage has its own
+supportive Persian/English invitation, enriched with due words or Starter progress.
+Only the latest elapsed stage can fire if Android delays execution; there is no burst
+of catch-up messages. The persisted last-notification timestamp prevents duplicate
+notifications within a stage. Returning resets the inactivity journey and replaces
+the pending request. Disabling cancels the chain and visible notification. The old
+periodic work name is explicitly canceled for migration.
+
+TEMPORARY DEBUG TEST MODE: BuildConfig.DEBUG uses a ten-second unit in place of
+12 hours, so stages are approximately 10s, 20s, 30s, 60s, 140s and then every 140s
+since the last visit. Release policy retains the real schedule (release publishing
+is still blocked by the existing gate). Remove this debug scale in a later revision.
+The onboarding/settings description intentionally has no timings or implementation
+jargon. Enable notifications, continue past setup and leave the app with Home;
+do not force-stop. The first debug reminder is eligible after ten seconds, not
+while the app remains foreground. WorkManager scheduling/Doze may delay it; a
+one-time request is used because periodic work cannot run every ten seconds.
+There is no exact alarm, foreground test service or battery-exemption request.
 
 DataStore holds opt-in, completed setup, last visit and last notification time.
-Activity start/stop update the visit timestamp. Worker requires at least 12 hours
-since BOTH the last visit and prior reminder. It skips users without a first visit,
-clock rollback, incomplete setup, blocked permission and foreground use. Opening
-the app dismisses its old reminder. Turning off cancels unique work and the visible
-notification; worker rechecks opt-in/permission just before posting.
+Activity start/stop update the visit and reschedule. Clock rollback, no first visit,
+incomplete setup, denied permissions and foreground state suppress delivery. The
+worker rechecks the visit timestamp immediately before posting so a stale lesson
+snapshot cannot notify after a return. A blocked permission/setup is checked again
+later without a tight real-time retry loop. WorkManager handles normal process death
+and reboot; force-stop/battery restrictions can prevent delivery.
 
 Local Room COUNT queries choose a message: due-review count first, then existing
 Starter progress, otherwise a gentle return-to-music prompt. Content uses app
@@ -55,8 +69,9 @@ failures retry; cancellation is rethrown. There is no fabricated streak statisti
 
 ## Validation and remaining device checks
 
-24 host source/asset checks passed; four pure JVM ReminderPolicy tests were added
-for interval boundaries, cooldown, no first visit and clock rollback. JVM/native
+24 host source/asset checks passed; five pure JVM ReminderPolicy tests cover
+milestone boundaries, the temporary debug scale, stage deduplication, reset/clock
+handling and stage-specific activity-aware messages. JVM/native
 build and instrumentation have NOT run: JDK/Android SDK are absent. Syntax parsing
 is not Kotlin type checking or an Android build.
 
@@ -64,7 +79,7 @@ Required device QA:
 - API 26/32 (no notification runtime prompt), API 33+ grant/deny/permanent denial,
   channel blocking, return from system settings and OS permission revocation.
 - Fresh install and upgrade onboarding; continue without opt-in; toggle on/off;
-  no reminders in foreground, after a recent visit or within cooldown; reboot,
+  no reminders in foreground, after a recent visit or twice within a stage; reboot,
   Doze and process death. Verify worker using Android Studio Background Task
   Inspector on a debug build rather than claiming exact-time delivery.
 - English/Persian messages, zero/due words and Starter activity; notification tap.

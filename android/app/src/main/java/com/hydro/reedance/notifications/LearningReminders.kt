@@ -15,6 +15,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.work.*
 import com.hydro.reedance.domain.ReminderPolicy
+import com.hydro.reedance.BuildConfig
 import com.hydro.reedance.MainActivity
 import com.hydro.reedance.R
 import com.hydro.reedance.data.LearningDatabase
@@ -33,14 +34,24 @@ object LearningReminders {
             NotificationManagerCompat.from(context).areNotificationsEnabled() &&
             (context.getSystemService(NotificationManager::class.java).getNotificationChannel(CHANNEL)?.importance != NotificationManager.IMPORTANCE_NONE)
 
-    fun schedule(context: Context, enabled: Boolean) {
+    // One-time work supports the temporary ten-second test; periodic work has
+    // a fifteen-minute minimum. Production milestones use the same persisted chain.
+    suspend fun schedule(context: Context, enabled: Boolean, append: Boolean = false) {
         val work = WorkManager.getInstance(context)
+        work.cancelUniqueWork("learning-reminders") // Retire the old periodic schedule.
+        val name = "learning-reminder-stages"
         if(enabled) {
-            val request = PeriodicWorkRequestBuilder<LearningReminderWorker>(12, TimeUnit.HOURS, 1, TimeUnit.HOURS)
-                .setInitialDelay(12, TimeUnit.HOURS).build()
-            work.enqueueUniquePeriodicWork("learning-reminders", ExistingPeriodicWorkPolicy.KEEP, request)
+            val settings = SettingsRepository(context).flow.first()
+            if(!settings.reminders || settings.lastVisit == 0L) return
+            val minimumDelay = if(!permitted(context) || !settings.permissionsSetup) ReminderPolicy.unitMillis(BuildConfig.DEBUG)
+                else if(BuildConfig.DEBUG) 10_000L else 60_000L
+            val delay = (ReminderPolicy.nextAt(settings.lastVisit, settings.lastReminder, BuildConfig.DEBUG) - System.currentTimeMillis())
+                .coerceAtLeast(minimumDelay)
+            val request = OneTimeWorkRequestBuilder<LearningReminderWorker>()
+                .setInitialDelay(delay, TimeUnit.MILLISECONDS).build()
+            work.enqueueUniqueWork(name, if(append) ExistingWorkPolicy.APPEND_OR_REPLACE else ExistingWorkPolicy.REPLACE, request)
         } else {
-            work.cancelUniqueWork("learning-reminders")
+            work.cancelUniqueWork(name)
             NotificationManagerCompat.from(context).cancel(NOTIFICATION)
         }
     }
@@ -52,22 +63,20 @@ class LearningReminderWorker(context: Context, parameters: WorkerParameters): Co
         val preferences = SettingsRepository(context)
         val settings = preferences.flow.first()
         val now = System.currentTimeMillis()
-        if(!settings.reminders || !settings.permissionsSetup || settings.language.isEmpty() ||
-            !ReminderPolicy.eligible(now, settings.lastVisit, settings.lastReminder) || !LearningReminders.permitted(context)) {
+        val result = if(!settings.reminders || !settings.permissionsSetup || settings.language.isEmpty() ||
+            !ReminderPolicy.eligible(now, settings.lastVisit, settings.lastReminder, BuildConfig.DEBUG) || !LearningReminders.permitted(context)) {
             Result.success()
         } else {
             val dao = LearningDatabase.get(context).learning()
             val due = dao.dueCount(now)
             val steps = dao.stepCount()
             val fa = settings.language == "fa"
-            val text = when {
-                due > 0 -> if(fa) "$due واژه منتظر مرور تو هستند؛ با یک مرور کوتاه برگرد." else "$due words are ready for review. Make a little time for them."
-                steps in 1..14 -> if(fa) "قدم‌های خوبی برداشتی؛ برای قدم بعدی استارتر برگرد." else "You've made a start. Come back for your next Starter step."
-                else -> if(fa) "چند ساعتیه بهمون سر نزدی؛ وقت یک آهنگ و چند کلمهٔ تازه نیست؟" else "It's been a while. How about a song and a few new words?"
-            }
+            val stage = ReminderPolicy.stage(now - settings.lastVisit, BuildConfig.DEBUG)
+            val text = ReminderPolicy.message(stage, due, steps, fa)
             // Recheck opt-in and foreground state immediately before posting.
             withContext(Dispatchers.Main) {
-                if(preferences.flow.first().reminders && LearningReminders.permitted(context) &&
+                val latest = preferences.flow.first()
+                if(latest.reminders && latest.lastVisit == settings.lastVisit && LearningReminders.permitted(context) &&
                     !ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
                     val manager = context.getSystemService(NotificationManager::class.java)
                     manager.createNotificationChannel(NotificationChannel(LearningReminders.CHANNEL,
@@ -77,7 +86,7 @@ class LearningReminderWorker(context: Context, parameters: WorkerParameters): Co
                     val notification = NotificationCompat.Builder(context, LearningReminders.CHANNEL)
                         .setSmallIcon(R.drawable.ic_learning_reminder).setContentTitle("Reedance")
                         .setContentText(text).setStyle(NotificationCompat.BigTextStyle().bigText(text))
-                        .setContentIntent(intent).setAutoCancel(true).setOnlyAlertOnce(true).build()
+                        .setContentIntent(intent).setAutoCancel(true).build()
                     try {
                         NotificationManagerCompat.from(context).notify(LearningReminders.NOTIFICATION, notification)
                         preferences.reminded(now)
@@ -86,5 +95,7 @@ class LearningReminderWorker(context: Context, parameters: WorkerParameters): Co
             }
             Result.success()
         }
+        LearningReminders.schedule(context, preferences.flow.first().reminders, append = true)
+        result
     } catch(cancelled: CancellationException) { throw cancelled } catch(_: Exception) { Result.retry() }
 }

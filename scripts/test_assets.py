@@ -294,10 +294,14 @@ class AssetTests(unittest.TestCase):
         for permission in ['WRITE_EXTERNAL_STORAGE', 'READ_EXTERNAL_STORAGE', 'MANAGE_EXTERNAL_STORAGE', 'SCHEDULE_EXACT_ALARM']:
             self.assertNotIn(permission, manifest)
         worker = (ASSETS / 'main/java/com/hydro/reedance/notifications/LearningReminders.kt').read_text()
-        for token in ['enqueueUniquePeriodicWork', 'ExistingPeriodicWorkPolicy.KEEP', 'cancelUniqueWork', 'ReminderPolicy.eligible', 'dueCount(now)', 'stepCount()', 'FLAG_IMMUTABLE', 'catch(_: SecurityException)']:
+        for token in ['enqueueUniqueWork', 'ExistingWorkPolicy.APPEND_OR_REPLACE', 'cancelUniqueWork', 'ReminderPolicy.eligible', 'dueCount(now)', 'stepCount()', 'FLAG_IMMUTABLE', 'catch(_: SecurityException)']:
             self.assertIn(token, worker)
         self.assertNotIn('http', worker)
         self.assertIn('ReminderControls(model)', (ui / 'Profile.kt').read_text())
+        self.assertIn('OneTimeWorkRequestBuilder<LearningReminderWorker>()', worker)
+        self.assertNotIn('PeriodicWorkRequestBuilder<', worker)
+        self.assertNotIn('12 hours', (ui / 'PermissionSetup.kt').read_text())
+        self.assertNotIn('۱۲ ساعت', (ui / 'PermissionSetup.kt').read_text())
         setup = (ui / 'PermissionSetup.kt').read_text()
         self.assertNotIn('Downloads and offline storage', setup)
         self.assertIn('Panel { ReminderControls(model) }', setup)

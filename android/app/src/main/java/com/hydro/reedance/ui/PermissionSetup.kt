@@ -39,7 +39,7 @@ import com.hydro.reedance.notifications.LearningReminders
                 }
             })
         }
-        Text(tr("اختیاری و کاملاً محلی؛ پس از حداقل ۱۲ ساعت دوری، بر اساس واژه‌های آمادهٔ مرور و قدم‌های استارتر. زمان ارسال به محدودیت باتری دستگاه بستگی دارد.", "Optional and entirely on-device. After at least 12 hours away, reminders use due words and Starter progress. Delivery time depends on Android battery limits."), style = MaterialTheme.typography.bodySmall)
+        Text(tr("با یادآوری‌های دوستانه و متناسب با مسیر یادگیریت، تمرین را ادامه بده و واژه‌های آمادهٔ مرور را فراموش نکن. این اعلان‌ها روی دستگاه ساخته می‌شوند و هر وقت بخواهی می‌توانی خاموششان کنی.", "Keep your learning rhythm with friendly reminders tailored to your progress and words ready for review. Created on your device, and yours to turn off anytime."), style = MaterialTheme.typography.bodySmall)
         if(!permitted) {
             Text(tr("اعلان‌ها در اندروید مجاز نیستند؛ بدون فعال‌کردن آن‌ها هم می‌توانی از برنامه استفاده کنی.", "Android notifications are blocked. You can still use the whole app without them."), style = MaterialTheme.typography.bodySmall)
             PressTextButton({ context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)) }) {

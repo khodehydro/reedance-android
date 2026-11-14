@@ -190,7 +190,7 @@ class AppModel(app: Application): AndroidViewModel(app) {
     }
     fun reminders(enabled: Boolean) { operation("ذخیره تنظیمات ناموفق / Settings save failed") { preferences.reminders(enabled) } }
     fun completePermissionSetup() { operation("ذخیره تنظیمات ناموفق / Settings save failed") { preferences.completeSetup() } }
-    fun recordVisit() { operation("ذخیره تنظیمات ناموفق / Settings save failed") { preferences.visited() } }
+    fun recordVisit() { operation("ذخیره تنظیمات ناموفق / Settings save failed") { preferences.visited(); com.hydro.reedance.notifications.LearningReminders.schedule(getApplication(), preferences.flow.first().reminders) } }
     fun targetLanguage(value: String) { operation("ذخیره تنظیمات ناموفق / Settings save failed") { preferences.targetLanguage(value) } }
     fun language(value: String) { operation("ذخیره تنظیمات ناموفق / Settings save failed") { preferences.language(value) } }
     fun theme(value: String) { operation("ذخیره تنظیمات ناموفق / Settings save failed") { preferences.theme(value) } }
