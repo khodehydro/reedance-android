@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
     val scope = rememberCoroutineScope()
     val reduced = LocalReducedMotion.current
     val fa = LocalFa.current
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(22.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 24.dp + LocalOverlayBottomInset.current), verticalArrangement = Arrangement.spacedBy(22.dp)) {
         Heading(tr("جعبهٔ لایتنر", "Words that stay"), tr("یادگیری، یک مرور کوتاه در هر روز.", "A little practice. A lasting memory."))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) { (1..5).forEach { stage -> Column {
             Text("$stage", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
@@ -45,11 +45,11 @@ import kotlinx.coroutines.launch
                         Action(tr("یادم بود", "Remembered"), enabled = !busy) {
                             if(!busy) { busy = true; scope.launch { model.review(card, true); if(!reduced) delay(220); busy = false } }
                         }
-                        OutlinedButton({ if(!busy) { busy = true; scope.launch { model.review(card, false); if(!reduced) delay(220); busy = false } } }, enabled = !busy) { Text(tr("دوباره مرور کنم", "Review again")) }
+                        PressOutlinedButton({ if(!busy) { busy = true; scope.launch { model.review(card, false); if(!reduced) delay(220); busy = false } } }, enabled = !busy) { Text(tr("دوباره مرور کنم", "Review again")) }
                     }
                 }
             }
-            OutlinedButton(quiz, Modifier.fillMaxWidth()) { Text(tr("مرور با سؤال", "Practice with questions")) }
+            PressOutlinedButton(quiz, Modifier.fillMaxWidth()) { Text(tr("مرور با سؤال", "Practice with questions")) }
         } else Panel {
             Text(if(reviews.isEmpty()) tr("در تب لغت‌های آهنگ، واژه‌ای را نشان کن تا به جعبه‌ات بیاید.", "Save a word in the song lesson to start your collection.") else if(lesson == null) tr("برای نمایش کارت‌ها، بستهٔ آهنگ را دوباره نصب کن. پیشرفتت حفظ شده است.", "Reinstall the song to view these cards. Your progress is preserved.") else tr("عالی بود! واژه‌ها در موعد بعدی برمی‌گردند.", "All caught up! Your words will return when they are due."))
         }
@@ -63,19 +63,19 @@ import kotlinx.coroutines.launch
     var reveal by remember(index) { mutableStateOf(false) }
     val fa = LocalFa.current
     val savedPhrases = bookmarks.filter { it.itemType in listOf("idioms", "sentences") }.mapNotNull { mark -> lesson?.a(mark.itemType)?.find { it.s("id") == mark.itemId } }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 24.dp + LocalOverlayBottomInset.current), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         Heading(tr("کتابخانهٔ تو", "Your little collection"), tr("چیزهایی که می‌خواهی همراهت بمانند.", "Keep the words and lines that speak to you."))
         if(savedPhrases.isNotEmpty()) {
             val current = savedPhrases[index.mod(savedPhrases.size)]
             Deck(index) { Panel(tone = MaterialTheme.colorScheme.secondaryContainer) {
                 Text(tr("عبارت نشان‌شده", "SAVED LINE"), style = MaterialTheme.typography.labelMedium)
                 Foreign(current.s("text"), large = true)
-                if(reveal) Text(current.tr("translation", fa)) else TextButton({ reveal = true }) { Text(tr("نمایش معنی", "Reveal meaning")) }
+                if(reveal) Text(current.tr("translation", fa)) else PressTextButton({ reveal = true }) { Text(tr("نمایش معنی", "Reveal meaning")) }
                 Text(current.tr("context", fa))
             } }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                OutlinedButton({ index-- }, enabled = index > 0) { Text(tr("قبلی", "Previous")) }
-                OutlinedButton({ index++ }) { Text(tr("بعدی", "Next")) }
+                PressOutlinedButton({ index-- }, enabled = index > 0) { Text(tr("قبلی", "Previous")) }
+                PressOutlinedButton({ index++ }) { Text(tr("بعدی", "Next")) }
             }
         }
         Panel {
@@ -85,7 +85,7 @@ import kotlinx.coroutines.launch
                 val item = lesson?.a(mark.itemType)?.find { it.s(if(mark.itemType == "vocabulary") "lexemeId" else "id") == mark.itemId }
                 Text(item?.let { it.s("lemma").ifEmpty { it.s("text").ifEmpty { it.tr("title", fa) } } } ?: mark.itemId)
                 if(item == null && mark.itemType != "song") Text(tr("در محتوای قبلی؛ پیشرفت حفظ شده", "From previous content; progress preserved"), style = MaterialTheme.typography.bodySmall)
-                TextButton({ model.toggleBookmark(mark.itemType, mark.itemId) }) { Text(tr("حذف نشان", "Remove bookmark")) }
+                PressTextButton({ model.toggleBookmark(mark.itemType, mark.itemId) }) { Text(tr("حذف نشان", "Remove bookmark")) }
             }
         }
         Panel {

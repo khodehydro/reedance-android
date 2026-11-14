@@ -31,7 +31,7 @@ python scripts/import_uicons.py /path/to/extracted/package
 
 `assets/uicons-provenance.json` records each CSS glyph, codepoint and Android drawable; `assets/Uicons-LICENSE.txt` is the original package license. Source outlines are converted, not traced/replaced with lookalike Material icons.
 
-Host validation: 13 asset/schema/source-guard tests pass; Kotlin/KTS syntax and XML checked. New flag-tab interaction instrumentation test is supplied but not executed here. The environment still has no JDK or Android SDK, so this update is **not claimed as compiled or profiled**.
+Host validation: 15 asset/schema/source-guard tests pass; Kotlin/KTS syntax and XML checked. New flag-tab interaction instrumentation test is supplied but not executed here. The environment still has no JDK or Android SDK, so this update is **not claimed as compiled or profiled**.
 
 On-device acceptance:
 
@@ -52,3 +52,13 @@ On-device acceptance:
 - Circular flag assets are derived from the reference public/flags SVG files, rasterized at 192px. Korean artwork is fitted onto the white circle to retain all four trigrams. Labels remain localized semantic descriptions, not emoji.
 
 Added host guards for filled variants, circular PNG dimensions, installed-only filtering, item animations and transparent/capsule navigation. A compact-navigation interaction instrumentation test is supplied but not run in the sandbox. APK compilation and on-device animations still require Android Studio.
+
+## Touch feedback, underlay and splash follow-up
+
+- A draw-only `IndicationNodeFactory` replaces foundation clickable/selectable ripple with a 3.5% press contraction (70ms) and rebound (140ms). Canceled presses restore scale (100ms); only press events participate, so hover/focus events cannot interrupt the rebound. No click actions are delayed, no pointer handlers intercept scrolling, no layout/hit target shrinks. Reduced-motion disables the transform.
+- Material buttons/text buttons/outline buttons/icon buttons/radio/switch/quiz chips now use shared-interaction-source wrappers. `LocalRippleConfiguration = null` disables their own ripple, while the custom draw indication supplies the same motion as lists, word taps and tabs. Theme providers are INSIDE MaterialTheme so it cannot replace the custom LocalIndication. Slider/input native value/focus behavior is unchanged.
+- Removed the circular selection backplate from bottom-nav icons; filled icon and colored text still indicate the selected route. No touch halo/state-layer is drawn.
+- The body no longer reserves the bottom menu's height as viewport padding. It fills behind the transparent bottom-bar layer. Measured Scaffold bottom padding is provided as `LocalOverlayBottomInset` and added ONLY to trailing scroll content (grid, starter, review/library, profile). Thus items pass behind the floating menu while the final item can scroll completely above it. A mini-player or animated menu size updates this trailing space automatically. Quiz/song have no overlay and retain normal system-inset padding. Horizontal cutout/system insets are still respected.
+- Splash background is exactly `#002AFC`. A dedicated transparent 512px icon canvas contains a 224px logo centered with 144px margins. Even the corners of that artwork fit within Android's documented circular 2/3 safe zone; no second Compose splash has been added. The ordinary app icon/logo resource is unchanged.
+
+Validation: 15 host checks plus Kotlin syntax/XML checks; supplied canceled-press/click instrumentation test has NOT been executed. PNG alpha bounds independently checked against the safe circle. Device acceptance must include rapid taps, hold/cancel/scroll gestures, reduced-motion, keyboard/TalkBack activation, last-row reachability with and without mini-player, and cold launch on API26/31/35+.

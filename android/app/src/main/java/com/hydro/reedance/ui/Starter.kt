@@ -19,7 +19,7 @@ import com.hydro.reedance.data.*
     val code = listOf("en", "es", "ko")[language]
     val course = courses.obj(code)
     val fa = LocalFa.current
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 20.dp + LocalOverlayBottomInset.current), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         Heading(tr("استارتر", "A small start"), course.tr("intro", fa))
         ChoiceRow(listOf("English", "Español", "한국어"), language) { language = it; step = 0 }
         val names = listOf(tr("حروف", "Alphabet"), tr("صداها", "Sounds"), tr("گرامر", "Grammar"), tr("واژه‌ها", "Words"), tr("اولین سطر", "First line"))
@@ -35,7 +35,7 @@ import com.hydro.reedance.data.*
                         Text(group.tr("name", fa), style = MaterialTheme.typography.titleLarge)
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             group.a("letters").forEach { letter ->
-                                OutlinedButton({ model.speak(letter.s("glyph"), course.s("locale")) }) { Column {
+                                PressOutlinedButton({ model.speak(letter.s("glyph"), course.s("locale")) }) { Column {
                                     Text(letter.s("glyph"), style = MaterialTheme.typography.titleLarge)
                                     Text(letter.s("name"), style = MaterialTheme.typography.bodySmall)
                                     if(fa) Text(letter.s("faHint"), style = MaterialTheme.typography.bodySmall)
@@ -49,7 +49,7 @@ import com.hydro.reedance.data.*
                 Foreign(sound.s("symbol"), large = true); Foreign(sound.s("example")); Foreign(sound.s("reading"))
                 if(fa) Text(sound.s("faReading"))
                 Text(sound.tr("tip", fa))
-                TextButton({ model.speak(sound.s("example"), course.s("locale")) }) { Text(tr("شنیدن تلفظ", "Hear pronunciation")) }
+                PressTextButton({ model.speak(sound.s("example"), course.s("locale")) }) { Text(tr("شنیدن تلفظ", "Hear pronunciation")) }
             } }
             2 -> course.a("grammar").forEach { note -> LearningNote(note, { model.speak(it, course.s("locale")) }) }
             3 -> {
@@ -62,7 +62,7 @@ import com.hydro.reedance.data.*
                     Text(word.tr("part", fa), style = MaterialTheme.typography.labelMedium)
                     Foreign(word.s("example"))
                     Text(word.tr("example", fa))
-                    TextButton({ model.speak(word.s("text").ifEmpty { word.s("word") }, course.s("locale")) }) { Text(tr("شنیدن", "Listen")) }
+                    PressTextButton({ model.speak(word.s("text").ifEmpty { word.s("word") }, course.s("locale")) }) { Text(tr("شنیدن", "Listen")) }
                 } }
                 course.a("vocabularyTables").forEach { Panel { LearningTable(it) } }
             }
@@ -71,13 +71,13 @@ import com.hydro.reedance.data.*
                 Foreign(practice.s("line"), large = true)
                 if(fa) Text(practice.s("faReading"))
                 Text(practice.tr("translation", fa))
-                TextButton({ model.speak(practice.s("line"), course.s("locale")) }) { Text(tr("شنیدن سطر", "Hear the line")) }
+                PressTextButton({ model.speak(practice.s("line"), course.s("locale")) }) { Text(tr("شنیدن سطر", "Hear the line")) }
                 practice.a("pieces").forEach { part -> Foreign(part.s("text")); Text(part.s(if(fa) "fa" else "en")); HorizontalDivider() }
                 Text(practice.tr("tip", fa))
             }
         }
         Action(if(progress.any { it.targetLanguage == code && it.stepId == step }) tr("انجام‌شده ✓ (لغو)", "Completed ✓ (undo)") else tr("این قدم را یاد گرفتم", "Mark this step complete"), Modifier.fillMaxWidth()) { model.step(code, step) }
-        if(step < 4) TextButton({ step++ }) { Text(tr("قدم بعدی", "Next step")) }
+        if(step < 4) PressTextButton({ step++ }) { Text(tr("قدم بعدی", "Next step")) }
         Text(tr("راهنمای فارسی تقریب تلفظ است. پخش صدا به صدای آفلاین نصب‌شدهٔ دستگاه بستگی دارد.", "Pronunciation hints are approximate. Audio requires an installed offline device voice."), style = MaterialTheme.typography.bodySmall)
     }
 }

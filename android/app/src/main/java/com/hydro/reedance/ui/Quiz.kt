@@ -46,7 +46,7 @@ private fun reviewQuestion(word: JsonObject, vocabulary: List<JsonObject>, index
     val lesson by model.lesson.collectAsStateWithLifecycle()
     val cards by model.reviews.collectAsStateWithLifecycle()
     val data = lesson
-    if(data == null) { Column(Modifier.padding(24.dp)) { Text(tr("ابتدا بستهٔ دمو را نصب کن.", "Install the demo lesson first.")); TextButton(done) { Text(tr("بازگشت", "Back")) } }; return }
+    if(data == null) { Column(Modifier.padding(24.dp)) { Text(tr("ابتدا بستهٔ دمو را نصب کن.", "Install the demo lesson first.")); PressTextButton(done) { Text(tr("بازگشت", "Back")) } }; return }
     val vocabulary = data.a("vocabulary")
     val dueCards = remember { cards.filter { it.dueAt <= System.currentTimeMillis() }.associateBy { it.lexemeId } }
     val questions = remember { if(review) vocabulary.filter { it.s("lexemeId") in dueCards }.mapIndexed { i,w -> reviewQuestion(w, vocabulary, i) } else data.a("questions") }
@@ -72,7 +72,7 @@ private fun reviewQuestion(word: JsonObject, vocabulary: List<JsonObject>, index
                 Text(q.tr("explanation", fa))
             } }
             Action(tr("بازگشت", "Back"), onClick = done)
-            if(!review) OutlinedButton(openReview) { Text(tr("مرور واژه‌ها در لایتنر", "Review words in Leitner")) }
+            if(!review) PressOutlinedButton(openReview) { Text(tr("مرور واژه‌ها در لایتنر", "Review words in Leitner")) }
         } else {
             val q = questions[index]
             Text(tr("سؤال ${index+1} از ${questions.size}", "Question ${index+1} of ${questions.size}"), color = MaterialTheme.colorScheme.primary)
@@ -84,7 +84,7 @@ private fun reviewQuestion(word: JsonObject, vocabulary: List<JsonObject>, index
                     if(q.s("context").isNotEmpty()) Foreign(q.s("context"))
                     when(q.s("type")) {
                         "choice" -> q.a("options").forEach { option ->
-                            OutlinedButton({ answer = listOf(option.s("id")) }, Modifier.fillMaxWidth(), enabled = checked == null && !busy,
+                            PressOutlinedButton({ answer = listOf(option.s("id")) }, Modifier.fillMaxWidth(), enabled = checked == null && !busy,
                                 colors = ButtonDefaults.outlinedButtonColors(containerColor = if(answer.singleOrNull() == option.s("id")) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface)) {
                                 Text((if(answer.singleOrNull() == option.s("id")) "● " else "○ ") + option.s(if(fa) "fa" else "en"))
                             }
@@ -93,8 +93,8 @@ private fun reviewQuestion(word: JsonObject, vocabulary: List<JsonObject>, index
                         "order" -> {
                             Foreign(answer.joinToString(" ") { id -> q.a("chunks").find { it.s("id") == id }?.s("text") ?: "" }, large = true)
                             val order = q.strings("presentationOrder").ifEmpty { q.a("chunks").map { it.s("id") }.reversed() }
-                            order.forEach { id -> OutlinedButton({ answer = answer + id }, enabled = checked == null && !busy && id !in answer) { Text(q.a("chunks").first { it.s("id") == id }.s("text")) } }
-                            TextButton({ answer = emptyList() }, enabled = checked == null && !busy) { Text(tr("از نو بچین", "Reset order")) }
+                            order.forEach { id -> PressOutlinedButton({ answer = answer + id }, enabled = checked == null && !busy && id !in answer) { Text(q.a("chunks").first { it.s("id") == id }.s("text")) } }
+                            PressTextButton({ answer = emptyList() }, enabled = checked == null && !busy) { Text(tr("از نو بچین", "Reset order")) }
                         }
                         "match" -> {
                             val pairs = q.a("pairs")
@@ -104,7 +104,7 @@ private fun reviewQuestion(word: JsonObject, vocabulary: List<JsonObject>, index
                                 order.forEach { id ->
                                     val meaning = pairs.first { it.s("id") == id }
                                     val selected = answer.getOrNull(i) == id
-                                    FilterChip(selected, {
+                                    PressFilterChip(selected, {
                                         val next = MutableList(pairs.size) { answer.getOrNull(it) ?: "" }
                                         next.indices.filter { it != i && next[it] == id }.forEach { next[it] = "" }
                                         next[i] = id; answer = next
@@ -114,7 +114,7 @@ private fun reviewQuestion(word: JsonObject, vocabulary: List<JsonObject>, index
                             }
                         }
                     }
-                    if(q.s("speech").isNotEmpty()) TextButton({ model.speak(q.s("speech"), data.s("locale")) }) { Text(tr("شنیدن جمله با صدای دستگاه", "Hear sentence with device voice")) }
+                    if(q.s("speech").isNotEmpty()) PressTextButton({ model.speak(q.s("speech"), data.s("locale")) }) { Text(tr("شنیدن جمله با صدای دستگاه", "Hear sentence with device voice")) }
                     if(checked == null) Action(tr("بررسی پاسخ", "Check answer"), enabled = complete(q, answer) && !busy) {
                         val result = grade(q, answer, data.s("locale"))
                         checked = result

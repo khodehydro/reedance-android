@@ -155,4 +155,33 @@ class AssetTests(unittest.TestCase):
         self.assertIn('window.isNavigationBarContrastEnforced = false', app)
         self.assertIn('android.graphics.Color.TRANSPARENT', app)
 
+    def test_global_press_feedback_without_ripple(self):
+        theme = (ASSETS / 'main/java/com/hydro/reedance/ui/Theme.kt').read_text()
+        self.assertIn('LocalIndication provides rememberPressFeedback()', theme)
+        self.assertIn('LocalRippleConfiguration provides null', theme)
+        feedback = (ASSETS / 'main/java/com/hydro/reedance/ui/PressFeedback.kt').read_text()
+        for token in ['IndicationNodeFactory','PressInteraction.Release','PressInteraction.Cancel','PressFeedback(!reduced)']:
+            self.assertIn(token, feedback)
+        import re
+        for path in (ASSETS / 'main/java/com/hydro/reedance/ui').glob('*.kt'):
+            if path.name != 'PressFeedback.kt':
+                self.assertIsNone(re.search(r'\b(?:Button|TextButton|OutlinedButton|IconButton|FilledIconButton|RadioButton|Switch|FilterChip)\(', path.read_text()), str(path))
+        nav = (ASSETS / 'main/java/com/hydro/reedance/ui/FloatingNavigation.kt').read_text()
+        self.assertNotIn('secondaryContainer', nav)
+
+    def test_overlay_navigation_and_splash_resources(self):
+        import xml.etree.ElementTree as ET
+        app = (ASSETS / 'main/java/com/hydro/reedance/ui/App.kt').read_text()
+        self.assertIn('LocalOverlayBottomInset provides if(independent) 0.dp else padding.calculateBottomPadding()', app)
+        self.assertNotIn('Box(Modifier.padding(padding)', app)
+        for name in ['Catalog.kt','Library.kt','Profile.kt','Starter.kt']:
+            self.assertIn('LocalOverlayBottomInset.current', (ASSETS / ('main/java/com/hydro/reedance/ui/' + name)).read_text())
+        styles = ET.parse(ASSETS / 'main/res/values/styles.xml')
+        items = {x.attrib['name']: x.text for x in styles.findall(".//style[@name='Theme.Reedance.Starting']/item")}
+        self.assertEqual('#002AFC', items['windowSplashScreenBackground'])
+        self.assertEqual('@drawable/reedance_splash_icon', items['windowSplashScreenAnimatedIcon'])
+        png = (ASSETS / 'main/res/drawable-nodpi/reedance_splash_icon.png').read_bytes()
+        self.assertEqual((512,512), struct.unpack('>II', png[16:24]))
+        self.assertEqual(6, png[25])
+
 if __name__ == '__main__': unittest.main(verbosity=2)

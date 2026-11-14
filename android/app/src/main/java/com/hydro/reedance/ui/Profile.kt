@@ -21,14 +21,14 @@ import com.hydro.reedance.data.*
     val context = LocalContext.current
     val uri = LocalUriHandler.current
     var confirmDelete by remember { mutableStateOf(false) }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 24.dp + LocalOverlayBottomInset.current), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         Heading(tr("فضای من", "My space"), tr("ریتم یادگیری خودت را پیدا کن.", "Make this little space your own."))
         Panel {
             AppIcon(UiIcons.User, null, Modifier.size(36.dp), tint = MaterialTheme.colorScheme.primary)
             Text(tr("سلام، همراه مهمان", "Hello, guest"), style = MaterialTheme.typography.titleLarge)
             Text(tr("حساب یا همگام‌سازی ابری فعال نیست. پیشرفت فقط روی این دستگاه ذخیره می‌شود.", "No account or cloud sync. Your progress stays on this device."))
             Text(tr("${reviews.size} واژه · ${steps.size} قدم استارتر · ${results.size} پاسخ ثبت‌شده", "${reviews.size} words · ${steps.size} starter steps · ${results.size} answers"))
-            TextButton(library) { Text(tr("کتابخانهٔ من", "My library")) }
+            PressTextButton(library) { Text(tr("کتابخانهٔ من", "My library")) }
         }
         Panel {
             Text(tr("تنظیمات برنامه", "Make yourself at home"), style = MaterialTheme.typography.titleLarge)
@@ -40,14 +40,14 @@ import com.hydro.reedance.data.*
             ChoiceRow(listOf(tr("کوچک", "Small"), tr("معمولی", "Default"), tr("بزرگ", "Large")), settings.textSize, model::textSize)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(tr("حرکت کمتر", "Reduce motion"), Modifier.weight(1f))
-                Switch(settings.reduceMotion, model::motion)
+                PressSwitch(settings.reduceMotion, model::motion)
             }
             Text(tr("تنظیم حرکت دستگاه نیز رعایت می‌شود.", "Your device animation setting is also respected."), style = MaterialTheme.typography.bodySmall)
         }
         Panel {
             Text(tr("فضای آفلاین", "Offline storage"), style = MaterialTheme.typography.titleLarge)
             Text(if(lesson == null) tr("بسته‌ای نصب نیست.", "No package installed.") else tr("دموی Midnight Avenue نصب شده است.", "Midnight Avenue demo is installed."))
-            if(lesson != null) OutlinedButton({ confirmDelete = true }) { Text(tr("پاک کردن فایل‌های آهنگ", "Remove song files")) }
+            if(lesson != null) PressOutlinedButton({ confirmDelete = true }) { Text(tr("پاک کردن فایل‌های آهنگ", "Remove song files")) }
             Text(tr("با حذف آهنگ، نشان‌ها و پیشرفت پاک نمی‌شوند.", "Removing a song keeps your bookmarks and progress."), style = MaterialTheme.typography.bodySmall)
         }
         Panel {
@@ -56,11 +56,11 @@ import com.hydro.reedance.data.*
         }
         Panel {
             Text(tr("به تجربه‌ات امتیاز بده", "How does it feel?"), style = MaterialTheme.typography.titleLarge)
-            Row { (1..5).forEach { rating -> IconButton({ model.rating(rating) }) {
+            Row { (1..5).forEach { rating -> PressIconButton({ model.rating(rating) }) {
                 AppIcon(UiIcons.Star, "$rating", tint = if(settings.rating >= rating) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)
             } } }
             Text(tr("این امتیاز فقط محلی است و به فروشگاه ارسال نمی‌شود.", "This rating is local only. It is not sent to a store."), style = MaterialTheme.typography.bodySmall)
-            OutlinedButton({
+            PressOutlinedButton({
                 context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, "Reedance — learn languages through music. https://github.com/khodehydro/reedance-android"), "Reedance"))
             }) { Text(tr("اشتراک‌گذاری برنامه", "Share Reedance")) }
         }
@@ -68,8 +68,8 @@ import com.hydro.reedance.data.*
             Text(tr("دربارهٔ ری‌دنس", "About Reedance"), style = MaterialTheme.typography.titleLarge)
             Text(tr("نسخهٔ بومی آزمایشی · Kotlin و Jetpack Compose\nمحتوای دمو مستقل و موسیقی بی‌کلام است.", "Native debug edition · Kotlin & Jetpack Compose\nOriginal demo material with instrumental music."))
             Text("developed with ❤️ by HYDRO team")
-            TextButton({ uri.openUri("https://github.com/khodehydro/reedance-android") }) { Text(tr("کد منبع", "Source code")) }
+            PressTextButton({ uri.openUri("https://github.com/khodehydro/reedance-android") }) { Text(tr("کد منبع", "Source code")) }
         }
     }
-    if(confirmDelete) AlertDialog(onDismissRequest = { confirmDelete = false }, title = { Text(tr("فایل‌های آهنگ حذف شوند؟", "Remove song files?")) }, text = { Text(tr("پیشرفت و نشان‌ها محفوظ می‌مانند.", "Your progress and bookmarks will be kept.")) }, confirmButton = { TextButton({ model.deleteDemo(); confirmDelete = false }) { Text(tr("حذف", "Remove")) } }, dismissButton = { TextButton({ confirmDelete = false }) { Text(tr("انصراف", "Cancel")) } })
+    if(confirmDelete) AlertDialog(onDismissRequest = { confirmDelete = false }, title = { Text(tr("فایل‌های آهنگ حذف شوند؟", "Remove song files?")) }, text = { Text(tr("پیشرفت و نشان‌ها محفوظ می‌مانند.", "Your progress and bookmarks will be kept.")) }, confirmButton = { PressTextButton({ model.deleteDemo(); confirmDelete = false }) { Text(tr("حذف", "Remove")) } }, dismissButton = { PressTextButton({ confirmDelete = false }) { Text(tr("انصراف", "Cancel")) } })
 }

@@ -69,7 +69,7 @@ import com.hydro.reedance.data.*
                 Text(tr("زبان برنامه را انتخاب کن", "Choose your app language"), style = MaterialTheme.typography.titleLarge)
                 listOf("en" to "English", "fa" to "فارسی").forEach { (code, label) ->
                     Row(Modifier.fillMaxWidth().clickable { language = code }.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(language == code, { language = code }); Text(label)
+                        PressRadioButton(language == code, { language = code }); Text(label)
                     }
                 }
                 Text(tr("زبان آموزش را بعداً جداگانه انتخاب می‌کنی.", "Your learning language is chosen separately."), style = MaterialTheme.typography.bodySmall)
@@ -115,28 +115,31 @@ import com.hydro.reedance.data.*
     Scaffold(containerColor = Color.Transparent, snackbarHost = { SnackbarHost(snackbar) }, topBar = {
         if(page != "song") Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             if(page == "quiz") {
-                IconButton({ page = if(reviewQuiz) "review" else "song" }) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
+                PressIconButton({ page = if(reviewQuiz) "review" else "song" }) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
                 Text(tr("آزمون", "Practice"), style = MaterialTheme.typography.titleLarge)
             } else {
                 Image(painterResource(R.drawable.reedance_logo), "Reedance", Modifier.size(40.dp))
                 Text("Reedance", Modifier.padding(start = 8.dp).weight(1f), style = MaterialTheme.typography.titleLarge.copy(fontFamily = BrandFont, fontWeight = FontWeight.ExtraBold))
-                TextButton({ model.language(if(LocalFaValue(model)) "en" else "fa") }) { Text(tr("EN", "فا")) }
-                IconButton({ navigate("profile") }) { AppIcon(UiIcons.User, tr("فضای من", "My space")) }
+                PressTextButton({ model.language(if(LocalFaValue(model)) "en" else "fa") }) { Text(tr("EN", "فا")) }
+                PressIconButton({ navigate("profile") }) { AppIcon(UiIcons.User, tr("فضای من", "My space")) }
             }
         }
     }, bottomBar = {
         if(!independent) Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             if(started) Surface(modifier = Modifier.padding(horizontal = 20.dp), shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    TextButton({ songId = "midnight-avenue"; navigate("song") }, Modifier.weight(1f)) { Text("Midnight Avenue") }
-                    IconButton(model::togglePlay) { AppIcon(if(playing) UiIcons.Pause else UiIcons.Play, tr("پخش یا مکث", "Play or pause")) }
+                    PressTextButton({ songId = "midnight-avenue"; navigate("song") }, Modifier.weight(1f)) { Text("Midnight Avenue") }
+                    PressIconButton(model::togglePlay) { AppIcon(if(playing) UiIcons.Pause else UiIcons.Play, tr("پخش یا مکث", "Play or pause")) }
                 }
             }
             FloatingNavigation(page, compactNavigation, ::navigate)
         }
     }) { padding ->
         // Immediate destination switch: never compose/layout two whole pages during a fade.
-        Box(Modifier.padding(padding).nestedScroll(scrollConnection)) {
+        // The bottom bar floats over the scroll viewport. Its measured height is
+        // trailing *content* space, not viewport padding, so rows pass underneath.
+        Box(Modifier.padding(start = padding.calculateStartPadding(LocalLayoutDirection.current), end = padding.calculateEndPadding(LocalLayoutDirection.current), top = padding.calculateTopPadding(), bottom = if(independent) padding.calculateBottomPadding() else 0.dp).nestedScroll(scrollConnection)) {
+         CompositionLocalProvider(LocalOverlayBottomInset provides if(independent) 0.dp else padding.calculateBottomPadding()) {
           pageStates.SaveableStateProvider(page) {
             when(page) {
                 "home", "explore" -> CatalogScreen(model, page == "home", { songId = it; navigate("song") }, { navigate("starter") })
@@ -148,6 +151,7 @@ import com.hydro.reedance.data.*
                 "profile" -> ProfileScreen(model) { navigate("library") }
             }
           }
+         }
         }
     }
 }

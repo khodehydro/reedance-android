@@ -70,4 +70,18 @@ class LayoutTest {
         compose.onNodeWithText("Explore").assertIsDisplayed()
     }
 
+    @Test fun pressFeedbackPreservesClickSemanticsAndCancel() {
+        compose.setContent {
+            var count by remember { mutableIntStateOf(0) }
+            CompositionLocalProvider(LocalFa provides false, LocalReducedMotion provides false) {
+                ReedanceTheme(Settings(language = "en")) {
+                    PressButton(onClick = { count++ }) { androidx.compose.material3.Text("Clicks: $count") }
+                }
+            }
+        }
+        compose.onNodeWithText("Clicks: 0").performTouchInput { down(center); cancel() }
+        compose.onNodeWithText("Clicks: 0").assertIsDisplayed().performClick()
+        compose.onNodeWithText("Clicks: 1").assertIsDisplayed()
+    }
+
 }

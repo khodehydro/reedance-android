@@ -61,7 +61,7 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
         }
     } }
     LazyVerticalGrid(columns = GridCells.Fixed(2), state = grid, modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(20.dp), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 20.dp + LocalOverlayBottomInset.current), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         if(home) {
             item(key = "hero", span = { GridItemSpan(maxLineSpan) }) {
                 Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(Brush.linearGradient(listOf(Blue, Deep))).padding(26.dp)) {
@@ -69,7 +69,7 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
                         Text(tr("یادگیری با ریتم تو", "YOUR RHYTHM. YOUR WORDS."), color = Color(0xFFCADFFF), style = MaterialTheme.typography.labelMedium)
                         Text(tr("هر آهنگ،\nیک قدم جلوتر.", "Every song.\nOne step further."), color = Color.White, style = MaterialTheme.typography.headlineLarge)
                         Text(tr("گوش بده، کشف کن و زبان را زندگی کن.", "Listen closer. Discover more. Make the words yours."), color = Color(0xFFE1ECFF))
-                        Button({ openSong("midnight-avenue") }, colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Blue)) { Text(tr("شروع یادگیری", "Start learning")); AppIcon(UiIcons.Play, null) }
+                        PressButton({ openSong("midnight-avenue") }, colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Blue)) { Text(tr("شروع یادگیری", "Start learning")); AppIcon(UiIcons.Play, null) }
                     }
                 }
             }
@@ -77,7 +77,7 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
                 Panel(tone = MaterialTheme.colorScheme.secondaryContainer) {
                     Text(tr("اولین قدمت را بردار", "A little start. A whole new language."), style = MaterialTheme.typography.titleLarge)
                     Text(tr("از حروف و صداها تا اولین سطر؛ انگلیسی، اسپانیایی و کره‌ای.", "Letters, sounds and your very first line. English, Spanish and Korean."))
-                    TextButton(starter) { Text(tr("ورود به استارتر", "Open Starter")) }
+                    PressTextButton(starter) { Text(tr("ورود به استارتر", "Open Starter")) }
                 }
             }
         }

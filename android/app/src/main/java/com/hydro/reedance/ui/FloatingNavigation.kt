@@ -38,7 +38,7 @@ private data class Destination(val id: String, val label: String, val outline: I
                         .selectable(active, role = Role.Tab, onClick = { onNavigate(destination.id) })
                         .semantics { contentDescription = destination.label }
                         .heightIn(min = 48.dp).padding(vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                        Box(Modifier.size(32.dp).background(if(active) MaterialTheme.colorScheme.secondaryContainer else androidx.compose.ui.graphics.Color.Transparent, CircleShape), contentAlignment = Alignment.Center) {
+                        Box(Modifier.size(32.dp), contentAlignment = Alignment.Center) {
                             AppIcon(if(active) destination.filled else destination.outline, null, Modifier.size(22.dp), tint)
                         }
                         AnimatedVisibility(!compact,

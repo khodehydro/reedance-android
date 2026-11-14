@@ -45,7 +45,7 @@ import com.hydro.reedance.data.*
     }
 }
 @Composable fun Action(text: String, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -> Unit) {
-    Button(onClick, modifier.heightIn(min = 48.dp), enabled = enabled, shape = RoundedCornerShape(14.dp)) { Text(text) }
+    PressButton(onClick, modifier.heightIn(min = 48.dp), enabled = enabled, shape = RoundedCornerShape(14.dp)) { Text(text) }
 }
 data class PillOption(val label: String, val icon: Int? = null, val description: String = label, val flag: Int? = null)
 @Composable fun ChoiceRow(items: List<String>, selected: Int, onSelect: (Int) -> Unit) =
@@ -141,13 +141,13 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
         if(text.isNotEmpty()) {
             Foreign(text)
             Text(if(ex?.isJsonObject == true) ex.asJsonObject.tr("translation", fa) else note.tr("translation", fa))
-            TextButton({ onSpeak(text) }) { Text(tr("شنیدن نمونه", "Hear example")) }
+            PressTextButton({ onSpeak(text) }) { Text(tr("شنیدن نمونه", "Hear example")) }
         }
         note.a("tables").forEach { LearningTable(it) }
         note.tr("takeaway", fa).takeIf { it.isNotEmpty() }?.let { Text(it, style = MaterialTheme.typography.titleSmall) }
         if(note.has("check")) {
             Text(note.obj("check").tr("prompt", fa))
-            TextButton({ answer = !answer }) { Text(tr("دیدن پاسخ", "Reveal answer")) }
+            PressTextButton({ answer = !answer }) { Text(tr("دیدن پاسخ", "Reveal answer")) }
             AnimatedVisibility(answer, enter = if(LocalReducedMotion.current) EnterTransition.None else fadeIn(tween(260)) + expandVertically()) { Text(note.obj("check").tr("answer", fa)) }
         }
         save?.invoke()
