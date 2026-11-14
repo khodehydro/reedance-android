@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hydro.reedance.data.*
@@ -24,7 +25,10 @@ import com.hydro.reedance.data.*
     val done = progress.count { it.targetLanguage == code }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 20.dp + LocalOverlayBottomInset.current), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         item(key = "controls") { Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        Heading(tr("استارتر", "A small start"), course.tr("intro", fa))
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(Modifier.weight(1f)) { Heading(tr("استارتر", "A small start"), course.tr("intro", fa)) }
+            StarterArtwork(Modifier.size(96.dp))
+        }
         ChoiceRow(listOf("English", "Español", "한국어"), language) { language = it; step = 0 }
         LinearProgressIndicator(progress = { done / 5f }, modifier = Modifier.fillMaxWidth())
         Text(tr("$done از ۵ قدم", "$done of 5 steps"))

@@ -6,5 +6,11 @@
   "ico_notif": {
     "source": "https://github.com/khodehydro/reedance/blob/main/ico_notif.png",
     "source_sha256": "c2d785fb6700f5a25b06f54833f88de0e95de05a52bb59b6791741cb0804d4c7"
+  },
+  "ico_starter": {
+    "source": "https://github.com/khodehydro/reedance/blob/main/ico_starter.png",
+    "source_sha256": "81da8745c5529188255282617646751325001e14bded0a341467a1f4caf15c60",
+    "drawable": "reedance_starter",
+    "transform": "Proportional downsample to at most 384px; preserve source alpha"
   }
 }

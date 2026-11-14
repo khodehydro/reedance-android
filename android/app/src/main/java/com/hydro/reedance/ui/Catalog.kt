@@ -93,7 +93,10 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
             }
             item(key = "starter", span = { GridItemSpan(maxLineSpan) }) {
                 Panel(tone = MaterialTheme.colorScheme.secondaryContainer) {
-                    Text(tr("اولین قدمت را بردار", "A little start. A whole new language."), style = MaterialTheme.typography.titleLarge)
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(tr("اولین قدمت را بردار", "A little start. A whole new language."), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+                        StarterArtwork(Modifier.size(104.dp))
+                    }
                     Text(tr("از حروف و صداها تا اولین سطر؛ انگلیسی، اسپانیایی و کره‌ای.", "Letters, sounds and your very first line. English, Spanish and Korean."))
                     PressTextButton(starter) { Text(tr("ورود به استارتر", "Open Starter")) }
                 }

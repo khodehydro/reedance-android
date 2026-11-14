@@ -390,6 +390,20 @@ class AssetTests(unittest.TestCase):
         self.assertLess(messages.index('PressButton({ openSong'), messages.index('LinearProgressIndicator('))
         self.assertIn('YOUR RHYTHM. YOUR WORDS.', messages)
 
+    def test_supplied_starter_artwork_in_home_and_course(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        self.assertIn('StarterArtwork(Modifier.size(104.dp))', (ui / 'Catalog.kt').read_text())
+        self.assertIn('StarterArtwork(Modifier.size(96.dp))', (ui / 'Starter.kt').read_text())
+        artwork = (ui / 'StarterArtwork.kt').read_text()
+        self.assertIn('R.drawable.reedance_starter', artwork)
+        self.assertIn('ContentScale.Fit', artwork)
+        self.assertNotIn('ContentScale.Crop', artwork)
+        png = (ASSETS / 'main/res/drawable-nodpi/reedance_starter.png').read_bytes()
+        self.assertEqual((384,384), struct.unpack('>II', png[16:24]))
+        self.assertEqual(6, png[25])
+        provenance = load(ASSETS / 'main/assets/brand-icons-provenance.json')
+        self.assertTrue(provenance['ico_starter']['source'].endswith('/ico_starter.png'))
+
     def test_headers_have_consistent_opaque_background(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'
         theme = (ui / 'Theme.kt').read_text()

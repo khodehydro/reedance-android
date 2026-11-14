@@ -18,3 +18,15 @@ Source URLs and SHA-256 hashes are recorded in
 No notification schedule, debug timing, message or permission behavior is changed.
 The subsequent reminder-timing revision removed the temporary test scale; all builds now use real inactivity milestones. Actual status-bar
 rendering and header appearance still need Android device validation.
+
+## Starter illustration
+
+`ico_starter.png` from the same reference repository is now used beside the Home
+Starter card title and the Starter course introduction. The 2048px transparent
+source is proportionally downsampled to a 384px bundled PNG; SHA-256/source URL are
+in the shared provenance file. ContentScale.Fit preserves the entire mascot,
+headphones and ears with no circular cropping. It is decorative beside existing
+localized headings, so accessibility does not announce a redundant image label.
+The subtitle and entry button remain intact; course controls and progress are
+unchanged. Validate both themes, RTL/LTR, narrow devices and large fonts on Android.
+31 host checks and 47 Kotlin/KTS syntax checks pass; native/visual tests are pending.
