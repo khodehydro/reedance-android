@@ -298,6 +298,9 @@ class AssetTests(unittest.TestCase):
             self.assertIn(token, worker)
         self.assertNotIn('http', worker)
         self.assertIn('ReminderControls(model)', (ui / 'Profile.kt').read_text())
+        setup = (ui / 'PermissionSetup.kt').read_text()
+        self.assertNotIn('Downloads and offline storage', setup)
+        self.assertIn('Panel { ReminderControls(model) }', setup)
 
     def test_headers_have_consistent_opaque_background(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'

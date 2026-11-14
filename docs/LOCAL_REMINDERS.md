@@ -16,8 +16,8 @@
 
 ## Optional permission setup
 
-After interface-language setup, a one-time persisted screen explains reminders
-and private offline storage. Users can continue without enabling notifications.
+After interface-language setup, a one-time persisted screen explains optional
+reminders only; there is no download/storage permission card. Users can continue without enabling notifications.
 Existing installations see this screen once too. Settings in My space expose the
 same opt-in toggle. Default is OFF. Android 13+ POST_NOTIFICATIONS is requested
 only on explicit enable; denial leaves reminders off. A system notification-settings

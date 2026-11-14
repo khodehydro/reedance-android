@@ -53,10 +53,6 @@ import com.hydro.reedance.notifications.LearningReminders
     Column(Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
         Heading(tr("آمادهٔ شروع؟", "Ready to begin?"), tr("فقط دسترسی‌های ضروری، با انتخاب خودت", "Only the access you choose"))
         Panel { ReminderControls(model) }
-        Panel {
-            Text(tr("دانلود و فضای آفلاین", "Downloads and offline storage"), style = MaterialTheme.typography.titleMedium)
-            Text(tr("دریافت محتوا از اینترنت و ذخیره در فضای خصوصی برنامه، به مجوز فایل، عکس یا دسترسی کامل حافظه نیاز ندارد. هیچ‌کدام درخواست نمی‌شوند.", "Internet downloads stored in private app storage do not need file, photo or all-files permissions. None will be requested."))
-        }
         Action(tr("ادامه به برنامه", "Continue to the app"), Modifier.fillMaxWidth()) { model.completePermissionSetup() }
         Text(tr("فعال‌کردن اعلان اجباری نیست. هر زمان از فضای من و تنظیمات می‌توانی نظرت را عوض کنی.", "Notifications are not required. Change your choice anytime in My space and settings."), style = MaterialTheme.typography.bodySmall)
     }
