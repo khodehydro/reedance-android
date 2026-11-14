@@ -16,12 +16,18 @@ val Paper = Color(0xFFF6F9FE)
 val LocalOverlayBottomInset = staticCompositionLocalOf { 0.dp }
 val LocalFa = staticCompositionLocalOf { true }
 val LocalReducedMotion = staticCompositionLocalOf { false }
+@Stable internal class BackgroundMotion {
+    var overlays by mutableIntStateOf(0)
+    val paused: Boolean get() = overlays > 0
+}
+internal val LocalBackgroundMotion = staticCompositionLocalOf { BackgroundMotion() }
 @Composable fun tr(fa: String, en: String) = if(LocalFa.current) fa else en
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable fun ReedanceTheme(settings: Settings, content: @Composable () -> Unit) {
     val dark = when(settings.theme) { "dark" -> true; "light" -> false; else -> isSystemInDarkTheme() }
     val colors = if(dark) darkColorScheme(primary = Color(0xFF9BC4FF), background = Color(0xFF101D30), surface = Color(0xFF192B44), onSurface = Color(0xFFE3EDFA), secondaryContainer = Color(0xFF274463))
         else lightColorScheme(primary = Blue, background = Paper, surface = Color.White, onSurface = Color(0xFF172945), secondaryContainer = Color(0xFFEDF4FF))
+    val backgroundMotion = remember { BackgroundMotion() }
     val font = FontFamily(Font(R.font.vazirmatn, FontWeight.Normal), Font(R.font.vazirmatn_bold, FontWeight.Bold))
     val base = Typography()
     MaterialTheme(colorScheme = colors, typography = Typography(
@@ -32,7 +38,7 @@ val LocalReducedMotion = staticCompositionLocalOf { false }
         headlineLarge = base.headlineLarge.copy(fontFamily = font, fontWeight = FontWeight.Bold), headlineMedium = base.headlineMedium.copy(fontFamily = font, fontWeight = FontWeight.Bold),
         labelLarge = base.labelLarge.copy(fontFamily = font), labelMedium = base.labelMedium.copy(fontFamily = font), labelSmall = base.labelSmall.copy(fontFamily = font)
     )) {
-        CompositionLocalProvider(LocalIndication provides rememberPressFeedback(), LocalRippleConfiguration provides null, content = content)
+        CompositionLocalProvider(LocalIndication provides rememberPressFeedback(), LocalRippleConfiguration provides null, LocalBackgroundMotion provides backgroundMotion, content = content)
     }
 }
 

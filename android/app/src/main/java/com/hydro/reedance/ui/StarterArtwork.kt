@@ -22,13 +22,14 @@ import kotlinx.coroutines.isActive
 /** Small draw-layer drift; padding keeps ears/headphones clear of parent clipping. */
 @Composable internal fun StarterArtwork(modifier: Modifier = Modifier) {
     val reduced = LocalReducedMotion.current
+    val paused = LocalBackgroundMotion.current.paused
     val fa = LocalFa.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val shift = remember { Animatable(0f) }
     var visible by remember { mutableStateOf(false) }
-    LaunchedEffect(visible, reduced, lifecycle) {
+    LaunchedEffect(visible, reduced, paused, lifecycle) {
         if(reduced) shift.snapTo(0f)
-        if(visible && !reduced) lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+        if(visible && !reduced && !paused) lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             while(isActive) {
                 shift.animateTo(-4f, tween(2400, easing = FastOutSlowInEasing))
                 shift.animateTo(4f, tween(2400, easing = FastOutSlowInEasing))

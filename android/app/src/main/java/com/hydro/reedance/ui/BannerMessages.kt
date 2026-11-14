@@ -37,11 +37,12 @@ private const val BANNER_MESSAGE_MILLIS = 6_000
 /** Isolated timer: filling the indicator does not recompose Home or its song grid. */
 @Composable internal fun BannerMessages(explore: () -> Unit, animate: Boolean, modifier: Modifier = Modifier) {
     val reduced = LocalReducedMotion.current
+    val paused = LocalBackgroundMotion.current.paused
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var index by rememberSaveable { mutableIntStateOf(0) }
     val progress = remember { Animatable(0f) }
-    LaunchedEffect(animate, reduced, lifecycle) {
-        if(animate && !reduced) lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+    LaunchedEffect(animate, reduced, paused, lifecycle) {
+        if(animate && !reduced && !paused) lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             while(isActive) {
                 val remaining = ((1f - progress.value) * BANNER_MESSAGE_MILLIS).toInt().coerceAtLeast(1)
                 progress.animateTo(1f, tween(remaining, easing = LinearEasing))

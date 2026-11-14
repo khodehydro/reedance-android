@@ -22,14 +22,15 @@ import kotlin.math.sin
 /** Fluid light ribbons over near-black pools, not moving circular color stops. */
 @Composable internal fun BannerGradient(animate: Boolean, modifier: Modifier = Modifier) {
     val reduced = LocalReducedMotion.current
+    val paused = LocalBackgroundMotion.current.paused
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var seconds by remember { mutableFloatStateOf(0f) }
     val fluid = remember {
         if(Build.VERSION.SDK_INT >= 33) runCatching { FluidShader() }.getOrNull() else null
     }
-    LaunchedEffect(animate, reduced, lifecycle) {
+    LaunchedEffect(animate, reduced, paused, lifecycle) {
         if(reduced) seconds = 0f
-        if(animate && !reduced) lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+        if(animate && !reduced && !paused) lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             var previous = 0L
             // Cap redraw requests around 30fps; time is consumed only in drawing.
             while(isActive) withFrameNanos { frame ->

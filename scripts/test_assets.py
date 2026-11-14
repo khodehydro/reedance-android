@@ -204,7 +204,7 @@ class AssetTests(unittest.TestCase):
     def test_centered_brand_and_persistent_song_language_picker(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'
         header = (ui / 'MainHeader.kt').read_text()
-        for token in ['ReedanceBottomSheet', 'Modifier.weight(1f)', 'slideInVertically', 'slideOutVertically', 'repeatOnLifecycle(Lifecycle.State.STARTED)', 'if(!reduced)', 'clearAndSetSemantics']:
+        for token in ['ReedanceBottomSheet', 'Modifier.weight(1f)', 'slideInVertically', 'slideOutVertically', 'repeatOnLifecycle(Lifecycle.State.STARTED)', 'if(!reduced && !paused)', 'clearAndSetSemantics']:
             self.assertIn(token, header)
         for code in ['en', 'es', 'ko']:
             self.assertIn('SongLanguage("' + code + '"', header)
@@ -471,6 +471,19 @@ class AssetTests(unittest.TestCase):
             source = (ui / name).read_text()
             self.assertIn('ReedanceBottomSheet(', source)
             self.assertNotIn('ModalBottomSheet(', source)
+
+    def test_sheets_animate_before_removal_and_pause_background_motion(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        sheet = (ui / 'ReedanceBottomSheet.kt').read_text()
+        for token in ['skipPartiallyExpanded = true', 'sheetState.hide()', 'if(!sheetState.isVisible)', 'afterHidden()', 'motion.overlays++', 'motion.overlays--', 'if(!closing)']:
+            self.assertIn(token, sheet)
+        self.assertLess(sheet.index('sheetState.hide()'), sheet.index('afterHidden()'))
+        self.assertIn('dismissSheet { onLanguage(language.code) }', (ui / 'MainHeader.kt').read_text())
+        self.assertIn('dismissSheet { language = code }', (ui / 'StarterDestination.kt').read_text())
+        for name in ['BannerGradient.kt', 'BannerMessages.kt', 'StarterArtwork.kt', 'MainHeader.kt']:
+            source = (ui / name).read_text()
+            self.assertIn('LocalBackgroundMotion.current.paused', source)
+            self.assertIn('!paused', source)
 
     def test_headers_have_consistent_opaque_background(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'

@@ -51,11 +51,12 @@ private val courseFlags = listOf("en" to R.drawable.flag_gb_circle, "es" to R.dr
         }
     }
     if(choosing) ReedanceBottomSheet(onDismissRequest = { choosing = false }) {
+        val dismissSheet = LocalSheetDismiss.current
         Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 24.dp).selectableGroup(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(tr("زبان آموزش استارتر", "Starter learning language"), style = MaterialTheme.typography.titleLarge)
             courseFlags.forEach { (code, flag) ->
                 Row(Modifier.fillMaxWidth().clip(CircleShape).selectable(code == selected.first, role = Role.RadioButton,
-                    onClick = { language = code; choosing = false }).padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    onClick = { dismissSheet { language = code } }).padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Image(painterResource(flag), null, Modifier.size(36.dp).clip(CircleShape))
                     Text(courseLanguage(code), Modifier.weight(1f))
                     PressRadioButton(code == selected.first, null)

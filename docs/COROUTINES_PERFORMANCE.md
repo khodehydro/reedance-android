@@ -109,3 +109,33 @@ observer and geometry do not rebuild list contents on every pointer movement.
 Native/device QA must verify focus/IME predictive Back, outside taps, keyboard Search,
 RTL/LTR, long text, switching Home/Explore repeatedly and filtering with warm/cold
 cover cache. Source tests do not replace frame capture or native compilation.
+
+## Bottom-sheet smoothness follow-up
+
+Code inspection found a definite abrupt-dismissal path: language selection set the
+sheet's owning Boolean false immediately, disposing the dialog without awaiting
+its hide animation. Both language pickers now use a shared dismissal action that
+awaits SheetState.hide(), applies the language change only once hidden, then removes
+the dialog. Repeated selection while closing is guarded. System/back/scrim and drag
+dismissal remain handled by Material3. Shared sheets explicitly skip the partial
+anchor so content goes directly to the expanded state.
+
+A reference-counted motion budget under ReedanceTheme pauses decorative background
+work while any shared bottom sheet is composed, from enter through hide/disposal:
+fluid shader time, banner copy/progress, Starter floating artwork and brand cycling.
+They retain their current visual state and resume after disposal; reduced-motion
+preferences are not changed. This prevents simultaneous decorative redraws during
+sheet motion, but is a code-level mitigation rather than measured proof of GPU jank.
+Sheet animation itself is not disabled or artificially accelerated, and content is
+not duplicated offscreen to precompose dialogs.
+
+36 host source guards and 51 Kotlin/KTS syntax checks passed. No native build or
+physical-device frame trace was available; source checks do not measure smoothness.
+Remaining investigation requires model/Android version, debug-vs-optimized build
+and a System Trace/FrameTimeline capture: compare first and repeated open, main
+language/Starter language/word sheets, select/back/scrim/drag, rapid taps, app
+backgrounding, RTL/LTR, large font and reduced motion. Capture Main, RenderThread,
+GPU deadlines and allocations; do not assume that faster animation duration or
+moving Compose rendering to Dispatchers.IO fixes missed frames. Debug APK/JIT
+behavior must not be presented as measured release performance. The production
+release gate remains unchanged.
