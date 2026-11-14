@@ -46,7 +46,7 @@ internal enum class FluidPalette { Ocean, Aurora, Midnight }
         }
     }
     Canvas(modifier) {
-        val t = seconds * if(palette == FluidPalette.Midnight) .35f else 1f
+        val t = seconds
         if(Build.VERSION.SDK_INT >= 33 && fluid != null) {
             fluid.shader.setFloatUniform("resolution", size.width.coerceAtLeast(1f), size.height.coerceAtLeast(1f))
             fluid.shader.setFloatUniform("time", t)
@@ -120,28 +120,35 @@ internal val AURORA_FLUID_SHADER = FLUID_SHADER
 
 /** Low-luminance blue/violet treatment for the compact playback surface. */
 internal val MIDNIGHT_FLUID_SHADER = FLUID_SHADER
+    // Normalize each axis separately: a 7:1 capsule needs broad flowing fields,
+    // not the tiny densely packed features of the tall Home banner.
+    .replace("(position - 0.5 * resolution) / min(resolution.x, resolution.y) * 2.4",
+        "float2((position.x / resolution.x - 0.5) * 3.8, (position.y / resolution.y - 0.5) * 1.6)")
+    .replace("float t = time * 0.075", "float t = time * 0.30")
     .replace("float3(0.002, 0.003, 0.014)", "float3(0.012, 0.018, 0.055)")
-    .replace("float3(0.015, 0.012, 0.65)", "float3(0.075, 0.025, 0.26)")
+    .replace("float3(0.015, 0.012, 0.65)", "float3(0.10, 0.04, 0.32)")
     .replace("float3(0.0, 0.14, 0.30)", "float3(0.035, 0.045, 0.14)")
-    .replace("float3(0.0, 0.56, 0.72)", "float3(0.16, 0.20, 0.42)")
+    .replace("float3(0.0, 0.56, 0.72)", "float3(0.20, 0.27, 0.52)")
 
 /** API 26–32 / shader-failure fallback: soft nested ribbons, no bitmap/CPU noise loop. */
 private fun DrawScope.drawFluidFallback(t: Float, aurora: Boolean = false, midnight: Boolean = false) {
     drawRect(if(midnight) Color(0xFF03050E) else if(aurora) Color(0xFF180923) else Color(0xFF01020A))
     drawRect(Brush.radialGradient(listOf(if(midnight) Color(0xFF191044) else if(aurora) Color(0xFF7427A8) else Color(0xFF1010A8), Color.Transparent),
         center = Offset(size.width * .08f, size.height * .55f), radius = size.maxDimension * .8f))
+    val drift = if(midnight) .55f else .14f
+    val counterDrift = if(midnight) .36f else .09f
     repeat(2) { ribbon ->
         val path = Path()
         for(step in 0..48) {
             val y = size.height * (step / 48f * 1.4f - .2f)
             val n = step / 48f
-            val x = size.width * (.5f + .26f * sin(n * 7.5f + t * .14f + ribbon * 2f) +
-                .15f * sin(n * 13f - t * .09f + ribbon))
+            val x = size.width * (.5f + .26f * sin(n * 7.5f + t * drift + ribbon * 2f) +
+                .15f * sin(n * 13f - t * counterDrift + ribbon))
             if(step == 0) path.moveTo(x, y) else path.lineTo(x, y)
         }
         for(layer in 10 downTo 1) {
             val outer = layer / 10f
-            val color = if(midnight) { if(layer > 5) Color(0xFF21144D) else Color(0xFF29336B) }
+            val color = if(midnight) { if(layer > 5) Color(0xFF2D1B66) else Color(0xFF3C4B91) }
                 else if(aurora) { if(layer > 5) Color(0xFFAB3AA8) else Color(0xFFFF897C) }
                 else if(layer > 5) Color(0xFF0719BB) else Color(0xFF0094C4)
             drawPath(path, color.copy(alpha = .075f + (1f - outer) * .065f),
