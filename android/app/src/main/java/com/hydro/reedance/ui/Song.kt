@@ -3,6 +3,7 @@ package com.hydro.reedance.ui
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -30,8 +31,8 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     val fa = LocalFa.current
     var mode by rememberSaveable { mutableIntStateOf(1) }
     var selectedWord by remember { mutableStateOf<JsonObject?>(null) }
-    val scroll = rememberScrollState()
-    val collapsed by remember { derivedStateOf { scroll.value > 300 } }
+    val scroll = rememberLazyListState()
+    val collapsed by remember { derivedStateOf { scroll.firstVisibleItemIndex > 0 || scroll.firstVisibleItemScrollOffset > 300 } }
     val available = songId == "midnight-avenue" && lesson != null
     LaunchedEffect(available) { if(available) model.preparePlayback() }
     val lines = remember(lesson) { lesson?.a("lyrics").orEmpty() }
@@ -57,9 +58,9 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                 }
             }
         }
-        Column(Modifier.weight(1f).verticalScroll(scroll).padding(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+        LazyColumn(state = scroll, modifier = Modifier.weight(1f), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
             if(!available) {
-                Panel {
+                item(key = "install") { Panel {
                     CoverImage(songId, song.s("title"), Modifier.fillMaxWidth().height(200.dp))
                     Heading(song.s("title"), song.s("artist"))
                     if(songId == "midnight-avenue" && BuildConfig.DEBUG) {
@@ -69,17 +70,18 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                         Action(tr("نصب و باز کردن دموی محلی", "Install and open local demo"), enabled = !busy, onClick = model::installDemo)
                     } else Text(tr("این عنوان فقط پیش‌نمایش است. صوت و مجوز انتشار برای آن ارائه نشده است.", "Catalog preview only. Licensed audio and a published package have not been supplied."))
                 }
+                }
             } else {
                 val data = lesson!!
-                PlayerPanel(model)
-                Text(data.obj("credits").tr("notice", fa), style = MaterialTheme.typography.bodySmall)
-                ChoiceRow(listOf(tr("لیریک", "Lyrics"), tr("نکته‌ها", "Notes"), tr("لغت‌ها", "Words"), tr("عبارت‌ها", "Phrases")), tab, setTab)
-                PressOutlinedButton(quiz, Modifier.fillMaxWidth()) { AppIcon(UiIcons.Quiz, null); Text(tr("آزمون آهنگ", "Song quiz")) }
+                item(key = "player", contentType = "player") { PlayerPanel(model) }
+                item(key = "credits") { Text(data.obj("credits").tr("notice", fa), style = MaterialTheme.typography.bodySmall) }
+                item(key = "tabs") { ChoiceRow(listOf(tr("لیریک", "Lyrics"), tr("نکته‌ها", "Notes"), tr("لغت‌ها", "Words"), tr("عبارت‌ها", "Phrases")), tab, setTab) }
+                item(key = "quiz") { PressOutlinedButton(quiz, Modifier.fillMaxWidth()) { AppIcon(UiIcons.Quiz, null); Text(tr("آزمون آهنگ", "Song quiz")) } }
                 when(tab) {
                     0 -> {
-                        ChoiceRow(listOf(tr("متن اصلی", "Original"), tr("ترجمهٔ خطی", "Line by line"), tr("کلمه‌به‌کلمه", "Word by word")), mode) { mode = it }
-                        Text(tr("روی زمان برای جابه‌جایی و روی واژه برای معنی بزن.", "Tap a timestamp to seek, or a word to explore it."), style = MaterialTheme.typography.bodySmall)
-                        lines.forEach { line ->
+                        item(key = "lyric-mode") { ChoiceRow(listOf(tr("متن اصلی", "Original"), tr("ترجمهٔ خطی", "Line by line"), tr("کلمه‌به‌کلمه", "Word by word")), mode) { mode = it } }
+                        item(key = "lyric-help") { Text(tr("روی زمان برای جابه‌جایی و روی واژه برای معنی بزن.", "Tap a timestamp to seek, or a word to explore it."), style = MaterialTheme.typography.bodySmall) }
+                        items(lines, key = { "lyric-${it.s("id")}" }, contentType = { "lyric" }) { line ->
                             val active = activeLineId == line.s("id")
                             Panel(tone = if(active) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface) {
                                 PressTextButton({ model.seek(line.n("startMs")) }) { Text(clock(line.n("startMs"))) }
@@ -98,12 +100,12 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                                 if(mode == 1) Text(line.tr("translation", fa))
                             }
                         }
-                        Action(tr("آماده‌ای؟ خودت را امتحان کن", "Ready? Test what you learned"), Modifier.fillMaxWidth(), onClick = quiz)
+                        item(key = "lyric-quiz") { Action(tr("آماده‌ای؟ خودت را امتحان کن", "Ready? Test what you learned"), Modifier.fillMaxWidth(), onClick = quiz) }
                     }
-                    1 -> data.a("grammar").forEach { note -> LearningNote(note, model::speak) { SaveAction(model, "grammar", note.s("id")) } }
+                    1 -> items(data.a("grammar"), key = { "grammar-${it.s("id")}" }, contentType = { "note" }) { note -> LearningNote(note, model::speak) { SaveAction(model, "grammar", note.s("id")) } }
                     2 -> {
-                        data.a("vocabularyTables").forEach { Panel { LearningTable(it) } }
-                        data.a("vocabulary").forEach { word -> Panel {
+                        items(data.a("vocabularyTables"), contentType = { "table" }) { Panel { LearningTable(it) } }
+                        items(data.a("vocabulary"), key = { "word-${it.s("lexemeId")}" }, contentType = { "word" }) { word -> Panel {
                             Foreign(word.s("lemma"), large = true)
                             Text(word.tr("translation", fa))
                             Foreign(word.s("ipa")); if(fa) Text(word.s("faReading"))
@@ -115,8 +117,8 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                         } }
                     }
                     3 -> listOf("idioms", "sentences").forEach { type ->
-                        Text(if(type == "idioms") tr("اصطلاحات", "Expressions") else tr("جمله‌های کاربردی", "Useful sentences"), style = MaterialTheme.typography.titleLarge)
-                        data.a(type).forEach { item -> Panel {
+                        item(key = "$type-heading") { Text(if(type == "idioms") tr("اصطلاحات", "Expressions") else tr("جمله‌های کاربردی", "Useful sentences"), style = MaterialTheme.typography.titleLarge) }
+                        items(data.a(type), key = { "$type-${it.s("id")}" }, contentType = { "phrase" }) { item -> Panel {
                             Foreign(item.s("text"), large = true); Text(item.tr("translation", fa)); Text(item.tr("context", fa))
                             if(item.has("example")) Foreign(item.obj("example").s("text"))
                             SaveAction(model, type, item.s("id"))

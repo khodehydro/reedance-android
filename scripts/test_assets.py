@@ -184,6 +184,22 @@ class AssetTests(unittest.TestCase):
         self.assertEqual((512,512), struct.unpack('>II', png[16:24]))
         self.assertEqual(6, png[25])
 
+    def test_long_learning_screens_are_lazy_and_nav_slot_is_stable(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        for name in ['Song.kt', 'Starter.kt']:
+            source = (ui / name).read_text()
+            self.assertIn('LazyColumn(', source)
+            self.assertNotIn('.verticalScroll(', source)
+            self.assertIn('contentType =', source)
+        song = (ui / 'Song.kt').read_text()
+        self.assertIn('rememberLazyListState()', song)
+        self.assertIn('scroll.firstVisibleItemIndex > 0', song)
+        self.assertIn('items(lines, key =', song)
+        nav = (ui / 'FloatingNavigation.kt').read_text()
+        self.assertIn('heightIn(min = slotHeight)', nav)
+        self.assertIn('labelSmall.lineHeight.toDp()', nav)
+        self.assertNotIn('if(compact)', nav[nav.index('val slotHeight'):nav.index('// Keep')])
+
     def test_headers_have_consistent_opaque_background(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'
         theme = (ui / 'Theme.kt').read_text()

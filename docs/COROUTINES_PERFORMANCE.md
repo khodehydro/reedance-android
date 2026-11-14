@@ -41,3 +41,29 @@ cd android
 Use CPU Profiler/System Trace to compare cold startup, first Home→Explore, first song opening, resumed/background audio and long scrolls. Observe Main thread slices, frame time/jank and database I/O, not just visual impressions. Test on a slower physical phone; debug JIT/instrumentation can be slower than an optimized shipping build. The release gate remains closed pending the production security/installer work.
 
 Acceptance scenarios: play/pause/seek/repeat/mute; open quiz while connection is pending; pause from media notification; background playback/checkpoint after onStop; reinstall/delete without losing progress; rapid bookmark/step taps; grading/due queues; canceled install; corrupt local lesson; offline/no-TTS-engine and engine initialization timeout. Profile cold vs warm TTS separately. Playback continuity on Android lifecycle/process death and cancellation races still require device/instrumented tests.
+
+## Scroll follow-up
+
+Source inspection found two additional UI-side jank risks that dispatchers do not fix:
+
+- Song used an eager vertically scrolling Column: every lyric/token FlowRow, word,
+  grammar and phrase card in the selected tab was composed and measured even off-screen.
+  It now uses LazyColumn with keyed lesson rows and content types. The collapse check
+  uses a derived lazy-list index/offset, not a per-pixel root composition read.
+- Starter similarly composed every card in a section up front. Its groups, sound,
+  grammar, word and table cards are now separate lazy items. Individual alphabet
+  groups/tables remain atomic items, not nested vertical scrolling containers.
+- The floating navigation previously shrank its Scaffold bottom slot during the
+  label animation. Because that slot also supplies each page's trailing content
+  padding, every animation frame invalidated list layout. An expanded-height slot,
+  computed from the current label line height/font scale, now stays stable while
+  the capsule still animates its own width/labels/height within it. The slot remains
+  transparent and content still scrolls underneath; final items remain reachable.
+
+19 host source/asset checks pass after this follow-up. These checks verify structure,
+not frame performance or native compilation. No on-device trace was available, so
+these are code-level fixes for identified risks, not proof that all jank is resolved.
+Compare the same Home/Explore fling with navigation expansion, then long Lyrics,
+Words and Starter scrolls on a physical phone using System Trace / FrameTimeline.
+Check compact/expanded navigation at all three app font sizes, system font scaling,
+RTL/LTR and reduced motion. Preserve filter reflow and press animations.
