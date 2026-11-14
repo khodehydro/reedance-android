@@ -17,13 +17,13 @@ class SettingsRepository(private val context: Context) {
     private val size = intPreferencesKey("text_size")
     private val motion = booleanPreferencesKey("reduce_motion")
     private val rating = intPreferencesKey("rating")
-    val flow = context.settingsStore.data.map { Settings(it[language] ?: "", it[theme] ?: "system", it[size] ?: 1, it[motion] ?: false, it[rating] ?: 0, it[targetLanguage]?.takeIf { code -> code in listOf("en", "es", "ko") } ?: "en", it[reminders] ?: false, it[setup] ?: false, it[visit] ?: 0L, it[sent] ?: 0L) }
+    val flow = context.settingsStore.data.map { Settings(it[language] ?: "", it[theme] ?: "system", it[size] ?: 1, it[motion] ?: false, it[rating] ?: 0, it[targetLanguage]?.takeIf { code -> code in listOf("en", "es", "ko", "tr") } ?: "en", it[reminders] ?: false, it[setup] ?: false, it[visit] ?: 0L, it[sent] ?: 0L) }
     suspend fun reminders(value: Boolean) { context.settingsStore.edit { it[reminders] = value } }
     suspend fun completeSetup() { context.settingsStore.edit { it[setup] = true } }
     suspend fun visited() { context.settingsStore.edit { it[visit] = System.currentTimeMillis() } }
     suspend fun reminded(now: Long) { context.settingsStore.edit { it[sent] = now } }
     suspend fun language(value: String) { require(value in listOf("en", "fa")); context.settingsStore.edit { it[language] = value } }
-    suspend fun targetLanguage(value: String) { require(value in listOf("en", "es", "ko")); context.settingsStore.edit { it[targetLanguage] = value } }
+    suspend fun targetLanguage(value: String) { require(value in listOf("en", "es", "ko", "tr")); context.settingsStore.edit { it[targetLanguage] = value } }
     suspend fun theme(value: String) { context.settingsStore.edit { it[theme] = value } }
     suspend fun size(value: Int) { context.settingsStore.edit { it[size] = value.coerceIn(0, 2) } }
     suspend fun motion(value: Boolean) { context.settingsStore.edit { it[motion] = value } }

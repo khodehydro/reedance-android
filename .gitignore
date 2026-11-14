@@ -10,3 +10,6 @@ local.properties
 
 .venv/
 __pycache__/
+
+# Provision locally; never commit distribution secrets
+android/app/src/main/assets/pack_distribution.json

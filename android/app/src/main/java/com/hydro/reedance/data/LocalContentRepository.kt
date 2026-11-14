@@ -23,7 +23,24 @@ class LocalContentRepository(context: Context, private val dao: LearningDao,
     private suspend fun parseObject(text: String) = withContext(cpu) { JsonParser.parseString(text).asJsonObject }
     suspend fun catalog(): List<JsonObject> {
         val text = assetText("catalog_preview.json")
-        return withContext(cpu) { JsonParser.parseString(text).asJsonArray.map { it.asJsonObject } }
+        val songs = withContext(cpu) { JsonParser.parseString(text).asJsonArray.map { it.asJsonObject } }
+        val distribution = try { parseObject(assetText("pack_distribution.json")) } catch(_: java.io.FileNotFoundException) { JsonObject() }
+        songs.forEach { song ->
+            val actualId = distribution.obj("catalogBindings").s(song.s("distributionRef"))
+            if(actualId.isNotEmpty()) song.addProperty("id", actualId)
+        }
+        return songs
+    }
+    suspend fun installedLesson(id: String): JsonObject? = withContext(io) {
+        val row = dao.installed(id) ?: return@withContext null
+        val file = File(row.activePath, "lesson.json")
+        if(!file.isFile || row.state !in listOf("VERIFIED", "DEMO")) return@withContext null
+        require(file.length() <= 4 * 1024 * 1024)
+        com.hydro.reedance.contract.PackVerifier.strictJson(file.inputStream().use { it.readBytes() }, 4 * 1024 * 1024)
+    }
+    suspend fun audioFile(id: String, lesson: JsonObject): File = withContext(io) {
+        val row = dao.installed(id) ?: error("Package not installed")
+        File(row.activePath, lesson.obj("media").obj("audio").s("path")).also { require(it.isFile) }
     }
     suspend fun starters(): JsonObject = StarterPreload.courses ?: StarterPreload.loadMutex.withLock {
         StarterPreload.courses ?: parseObject(assetText("starter.json")).also { StarterPreload.courses = it }

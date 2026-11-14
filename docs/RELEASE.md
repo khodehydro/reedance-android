@@ -14,3 +14,11 @@ Before enabling release:
 8. Replace this unconditional guard only with a tested fail-closed validation task enforcing real endpoints/hosts/keys, no test assets and all acceptance gates.
 
 No production URL/key was invented or requested in chat. No Supabase backend is necessary for the documented static-host/offline v1.
+
+## Installer implementation follow-up
+
+A real WorkManager/staging installer is now implemented; see
+[provisioning, implemented checks and remaining gates](interop/ANDROID_INSTALLER.md).
+This supersedes “fixture-only path” descriptions for source implementation, **not**
+release readiness. Real Gülüm II authentication/playback and native/device validation
+remain blocked/unverified; release guard stays closed.

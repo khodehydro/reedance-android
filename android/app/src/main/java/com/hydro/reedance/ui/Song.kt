@@ -37,8 +37,9 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     var selectedWord by remember { mutableStateOf<JsonObject?>(null) }
     val scroll = rememberLazyListState()
     val collapsed by remember { derivedStateOf { scroll.firstVisibleItemIndex > 0 || scroll.firstVisibleItemScrollOffset > 300 } }
-    val available = songId == "midnight-avenue" && lesson != null
-    LaunchedEffect(available) { if(available) model.preparePlayback() }
+    val available = lesson?.s("songId") == songId
+    LaunchedEffect(songId) { model.openInstalled(songId) }
+    LaunchedEffect(available, lesson) { if(available) model.preparePlayback() }
     val lines = remember(lesson) { lesson?.a("lyrics").orEmpty() }
     val wordsById = remember(lesson, access) { lesson?.a("vocabulary").orEmpty().take(access.limit("vocabulary")).associateBy { it.s("lexemeId") } }
     Column(Modifier.fillMaxSize()) {
@@ -65,13 +66,19 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
         LazyColumn(state = scroll, modifier = Modifier.weight(1f), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
             if(!available) {
                 item(key = "install") { Panel {
-                    CoverImage(songId, song.s("title"), Modifier.fillMaxWidth().height(200.dp))
+                    CoverImage(if(song.s("distributionRef") == "gulum-ii") "pending-gulum-ii" else songId, song.s("title"), Modifier.fillMaxWidth().height(200.dp))
                     Heading(song.s("title"), song.s("artist"))
                     if(songId == "midnight-avenue" && BuildConfig.DEBUG) {
                         Text(tr("صوت و تمام آموزش‌ها را یک‌بار در فضای خصوصی برنامه نصب کن؛ سپس آفلاین تمرین کن.", "Install the audio and lessons into private storage once, then practice offline."))
                         Text(tr("نسخهٔ آزمایشی: این دمو همراه APK است؛ دانلود شبکه یا بستهٔ امضاشده نیست.", "Debug demo: bundled with the APK, not a network download or a signed production pack."), style = MaterialTheme.typography.bodySmall)
                         if(busy) LinearProgressIndicator(Modifier.fillMaxWidth())
                         Action(tr("نصب و باز کردن دموی محلی", "Install and open local demo"), enabled = !busy, onClick = model::installDemo)
+                    } else if(song.s("distributionRef").isNotEmpty()) {
+                        val status by model.installProgress.collectAsStateWithLifecycle()
+                        if(busy) { LinearProgressIndicator(Modifier.fillMaxWidth()); Text(status) }
+                        Action(tr("دانلود و نصب بسته", "Download and install package"), enabled = !busy, onClick = { model.installPackage(songId) })
+                        if(busy) PressTextButton(model::cancelInstall) { Text(tr("لغو", "Cancel")) }
+                        Text(tr("برای نصب، manifest امضاشده و کلید توزیع ناشر باید تنظیم شده باشند.", "Installation requires the publisher's signed manifest and distribution key."))
                     } else Text(tr("این عنوان فقط پیش‌نمایش است. صوت و مجوز انتشار برای آن ارائه نشده است.", "Catalog preview only. Licensed audio and a published package have not been supplied."))
                 }
                 }

@@ -2,6 +2,7 @@ package com.hydro.reedance.data
 
 import android.app.Application
 import android.content.ComponentName
+import androidx.work.*
 import android.os.SystemClock
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -29,6 +30,7 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
     private val database = LearningDatabase.get(app)
     val dao = database.learning()
     private val content = LocalContentRepository(app, dao)
+    val installedIds = dao.installedIds().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     private val activity = ActivityRepository(app)
     val activityDays = activity.days.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
     private var activityJob: Job? = null
@@ -99,7 +101,10 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
                     steps.first { stepsLoaded }
                 } else coroutineScope {
                     // Independent reads run concurrently; I/O and JSON CPU work have separate dispatchers.
-                    val catalogTask = async { content.catalog() }
+                    val catalogTask = async {
+                        com.hydro.reedance.install.PackInstaller(app).recover()
+                        content.catalog()
+                    }
                     val startersTask = async { content.starters() }
                     val lessonTask = async { content.restoreDemo() }
                     val loadedSettings = preferences.flow.first()
@@ -144,7 +149,8 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
         // The future belongs to the ViewModel, not one request; onCleared releases even a late result.
     }
     private suspend fun prepareMedia(): MediaController? = mediaMutex.withLock {
-        if(lesson.value == null) return@withLock null
+        val data = lesson.value ?: return@withLock null
+        val audioUri = content.audioFile(data.s("songId"), data).toURI().toString()
         val player = controller ?: run {
             val app = getApplication<Application>()
             val future = controllerFuture ?: MediaController.Builder(app,
@@ -171,10 +177,11 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
                 })
             }
         }
-        if(player.mediaItemCount == 0) {
-            val saved = dao.playback("midnight-avenue")?.positionMs ?: 0L
-            player.setMediaItem(MediaItem.Builder().setUri(File(content.demoDir, "audio.wav").toURI().toString())
-                .setMediaMetadata(MediaMetadata.Builder().setTitle("Midnight Avenue").setArtist("Reedance Originals").build()).build(), saved)
+        if(player.currentMediaItem?.mediaId != data.s("songId") || player.currentMediaItem?.localConfiguration?.uri.toString() != audioUri) {
+            checkpoint(force = true)
+            val saved = dao.playback(data.s("songId"))?.positionMs ?: 0L
+            player.setMediaItem(MediaItem.Builder().setMediaId(data.s("songId")).setUri(audioUri)
+                .setMediaMetadata(MediaMetadata.Builder().setTitle(data.s("title")).setArtist(data.s("artist")).build()).build(), saved)
             player.prepare(); updateProgress()
         }
         player
@@ -193,9 +200,41 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
         val p = controller ?: return
         if(!started.value || p.mediaItemCount == 0) return
         val ms = p.currentPosition.coerceAtLeast(0)
-        if(checkpointPolicy.shouldSave(ms, SystemClock.elapsedRealtime(), force)) checkpoints.trySend(SongPlayback("midnight-avenue", ms))
+        if(checkpointPolicy.shouldSave(ms, SystemClock.elapsedRealtime(), force)) checkpoints.trySend(SongPlayback(p.currentMediaItem?.mediaId ?: return, ms))
     }
     fun onBackground() { updateProgress(); checkpoint(force = true) }
+    private var installRequest: java.util.UUID? = null
+    val installProgress = MutableStateFlow("")
+    fun cancelInstall() { installRequest?.let { WorkManager.getInstance(getApplication()).cancelWorkById(it) } }
+    fun openInstalled(id: String) = operation("بارگذاری بسته ناموفق / Package load failed") {
+        checkpoint(force = true)
+        lesson.value = content.installedLesson(id)
+    }
+    fun installPackage(id: String) {
+        if(busy.value) return
+        busy.value = true
+        val manager = WorkManager.getInstance(getApplication())
+        val request = OneTimeWorkRequestBuilder<com.hydro.reedance.install.PackInstallWorker>()
+            .setInputData(workDataOf("songId" to id))
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()).build()
+        installRequest = request.id
+        val enqueue = manager.enqueueUniqueWork("pack-install", ExistingWorkPolicy.KEEP, request)
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO) { enqueue.result.get() }
+                manager.getWorkInfosForUniqueWorkFlow("pack-install").first { infos ->
+                    val info = infos.firstOrNull { it.id == request.id } ?: infos.firstOrNull { !it.state.isFinished } ?: return@first false
+                    installRequest = info.id
+                    installProgress.value = "${info.progress.getString("phase") ?: info.state.name} · ${info.progress.getLong("bytes", 0) / 1024} KB"
+                    if(info.state.isFinished) {
+                        if(info.state == WorkInfo.State.SUCCEEDED) lesson.value = content.installedLesson(id)
+                        else if(info.state == WorkInfo.State.FAILED) message.value = info.outputData.getString("error") ?: "Installation failed"
+                        true
+                    } else false
+                }
+            } finally { busy.value = false; installProgress.value = "" }
+        }
+    }
     fun installDemo() {
         if(!BuildConfig.DEBUG || busy.value) return
         busy.value = true
@@ -232,9 +271,9 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
         mutationMutex.withLock { withContext(Dispatchers.IO) { database.withTransaction { block() } } }
     }
     fun toggleBookmark(type: String, id: String) { mutation {
-        val old = dao.bookmark("midnight-avenue", type, id)
+        val old = dao.bookmark(lesson.value?.s("songId") ?: return@mutation, type, id)
         if(old != null) dao.deleteBookmark(old) else {
-            dao.saveBookmark(Bookmark("midnight-avenue", type, id))
+            dao.saveBookmark(Bookmark(lesson.value?.s("songId") ?: return@mutation, type, id))
             if(type == "vocabulary" && dao.review(id) == null) dao.saveReview(ReviewCard(id))
         }
     } }
@@ -256,7 +295,7 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
     suspend fun dueReviewCards() = dao.dueReviews(System.currentTimeMillis())
     fun record(q: JsonObject, answer: List<String>, grade: Grade) { learningMutation {
         val encoded = withContext(Dispatchers.Default) { Gson().toJson(answer) }
-        dao.saveResult(QuizResult("midnight-avenue", q.s("id"), 1, encoded, grade.correct))
+        dao.saveResult(QuizResult(lesson.value?.s("songId") ?: return@learningMutation false, q.s("id"), dao.installed(lesson.value!!.s("songId"))?.activeVersionCode ?: 1, encoded, grade.correct))
         grade.missed.forEach { id -> val old = dao.review(id); dao.saveReview(ReviewCard(id, 1, System.currentTimeMillis(), old?.savedAt ?: System.currentTimeMillis())) }
         true
     } }

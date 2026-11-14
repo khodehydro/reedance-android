@@ -42,6 +42,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 fun cover(id: String) = when(id) {
+    "pending-gulum-ii" -> R.drawable.gulum_ii
     "despacito" -> R.drawable.despacito; "spring-day" -> R.drawable.spring_day; "flowers" -> R.drawable.flowers
     "someone-like-you" -> R.drawable.someone_like_you; "blinding-lights" -> R.drawable.blinding_lights; else -> R.drawable.midnight_avenue
 }
@@ -76,7 +77,7 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
     var access by rememberSaveable { mutableIntStateOf(0) }
     val grid = rememberLazyGridState()
     val lesson by model.lesson.collectAsStateWithLifecycle()
-    val installedIds = remember(lesson) { listOfNotNull(lesson?.s("songId")?.takeIf { it.isNotBlank() }).toSet() }
+    val installedIds by model.installedIds.collectAsStateWithLifecycle()
     val searchFocus = LocalSearchFocus.current
     DisposableEffect(searchFocus) { onDispose { searchFocus?.focused = false } }
     val reduced = LocalReducedMotion.current
@@ -150,10 +151,10 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
 @Composable private fun SongTile(song: JsonObject, modifier: Modifier, onClick: () -> Unit) {
     Column(modifier.clickable(onClick = onClick), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Box {
-            CoverImage(song.s("id"), song.s("title"), Modifier.fillMaxWidth().aspectRatio(1f))
+            CoverImage(if(song.s("distributionRef") == "gulum-ii") "pending-gulum-ii" else song.s("id"), song.s("title"), Modifier.fillMaxWidth().aspectRatio(1f))
         }
         SongTitle(song.s("title"), premium = song.s("access") == "paid")
         Text(song.s("artist"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text("${when(song.s("language")) { "es" -> "🇪🇸"; "ko" -> "🇰🇷"; else -> "🇬🇧" }}  ${song.s("level")}  ·  ${song.s("duration")}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+        Text("${when(song.s("language")) { "tr" -> "🇹🇷"; "es" -> "🇪🇸"; "ko" -> "🇰🇷"; else -> "🇬🇧" }}  ${song.s("level")}  ·  ${song.s("duration")}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
     }
 }

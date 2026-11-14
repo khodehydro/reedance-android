@@ -26,7 +26,7 @@ private val courseFlags = listOf("en" to R.drawable.flag_gb_circle, "es" to R.dr
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable internal fun StarterDestination(model: AppModel, back: () -> Unit) {
-    var language by rememberSaveable { mutableStateOf(model.settings.value.targetLanguage) }
+    var language by rememberSaveable { mutableStateOf(model.settings.value.targetLanguage.takeIf { it in listOf("en", "es", "ko") } ?: "en") }
     var choosing by rememberSaveable { mutableStateOf(false) }
     val selected = courseFlags.firstOrNull { it.first == language } ?: courseFlags.first()
     Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = {

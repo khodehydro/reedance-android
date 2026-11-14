@@ -32,11 +32,13 @@ private data class SongLanguage(val code: String, val flag: Int)
 private val songLanguages = listOf(
     SongLanguage("en", R.drawable.flag_gb_circle),
     SongLanguage("es", R.drawable.flag_es_circle),
-    SongLanguage("ko", R.drawable.flag_kr_circle)
+    SongLanguage("ko", R.drawable.flag_kr_circle),
+    SongLanguage("tr", R.drawable.flag_tr_circle)
 )
 
 @Composable private fun languageName(code: String): String = when(code) {
     "es" -> tr("اسپانیایی", "Spanish")
+    "tr" -> tr("ترکی", "Turkish")
     "ko" -> tr("کره‌ای", "Korean")
     else -> tr("انگلیسی", "English")
 }
