@@ -370,9 +370,11 @@ class AssetTests(unittest.TestCase):
         self.assertEqual('search', provenance['icons']['Search']['glyph'])
         self.assertEqual('Regular Rounded', provenance['icons']['Search']['style'])
         gradient = (ui / 'BannerGradient.kt').read_text()
-        for token in ['Canvas(modifier)', 'withFrameNanos', 'repeatOnLifecycle(Lifecycle.State.STARTED)', 'animate && !reduced', 'sin(t *', 'Brush.radialGradient']:
+        for token in ['Canvas(modifier)', 'withFrameNanos', 'repeatOnLifecycle(Lifecycle.State.STARTED)', 'animate && !reduced', 'RuntimeShader(FLUID_SHADER)', 'Brush.radialGradient']:
             self.assertIn(token, gradient)
         self.assertLess(gradient.index('Canvas(modifier)'), gradient.index('val t = seconds'))
+        for token in ['fbm(p + warp * 2.6', 'float ribbon = exp(', 'float grain =', 'Build.VERSION.SDK_INT >= 33', 'else drawFluidFallback(t)', '32_000_000L']:
+            self.assertIn(token, gradient)
         pager = (ui / 'HomePager.kt').read_text()
         self.assertIn('BannerGradient(animate, Modifier.matchParentSize())', pager)
         self.assertIn('animate = visible && pager.currentPage == 0', pager)
