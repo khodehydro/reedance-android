@@ -95,7 +95,7 @@ private val songLanguages = listOf(
                 (slideInVertically(tween(450)) { it } + fadeIn(tween(450))) togetherWith
                     (slideOutVertically(tween(450)) { -it } + fadeOut(tween(450))) using SizeTransform(clip = true)
             }, label = "header-brand") { logo ->
-            if(logo) Image(painterResource(R.drawable.reedance_logo), null, Modifier.size(40.dp))
+            if(logo) Image(painterResource(R.drawable.reedance_header), null, Modifier.size(40.dp))
             else Text("Reedance", maxLines = 1, overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.titleLarge.copy(fontFamily = BrandFont, fontWeight = FontWeight.ExtraBold))
         }

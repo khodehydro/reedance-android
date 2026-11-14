@@ -306,6 +306,19 @@ class AssetTests(unittest.TestCase):
         self.assertNotIn('Downloads and offline storage', setup)
         self.assertIn('Panel { ReminderControls(model) }', setup)
 
+    def test_supplied_header_and_notification_icons(self):
+        header = (ASSETS / 'main/java/com/hydro/reedance/ui/MainHeader.kt').read_text()
+        self.assertIn('R.drawable.reedance_header', header)
+        self.assertNotIn('R.drawable.reedance_logo', header)
+        for name in ['reedance_header', 'ic_learning_reminder']:
+            png = (ASSETS / ('main/res/drawable-nodpi/' + name + '.png')).read_bytes()
+            self.assertEqual(b'\x89PNG\r\n\x1a\n', png[:8])
+            self.assertEqual(6, png[25])
+        self.assertFalse((ASSETS / 'main/res/drawable/ic_learning_reminder.xml').exists())
+        provenance = load(ASSETS / 'main/assets/brand-icons-provenance.json')
+        self.assertTrue(provenance['ico_header']['source'].endswith('/ico_header.png'))
+        self.assertTrue(provenance['ico_notif']['source'].endswith('/ico_notif.png'))
+
     def test_headers_have_consistent_opaque_background(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'
         theme = (ui / 'Theme.kt').read_text()

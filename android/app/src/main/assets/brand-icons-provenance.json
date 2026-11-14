@@ -1,0 +1,10 @@
+{
+  "ico_header": {
+    "source": "https://github.com/khodehydro/reedance/blob/main/ico_header.png",
+    "source_sha256": "4dddffd633e232fec342611019ece1cc8bb91461edcda1c14949b649de8db06b"
+  },
+  "ico_notif": {
+    "source": "https://github.com/khodehydro/reedance/blob/main/ico_notif.png",
+    "source_sha256": "c2d785fb6700f5a25b06f54833f88de0e95de05a52bb59b6791741cb0804d4c7"
+  }
+}
