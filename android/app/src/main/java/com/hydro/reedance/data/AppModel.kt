@@ -210,13 +210,31 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
         checkpoint(force = true)
         lesson.value = content.installedLesson(id)
     }
-    fun installPackage(id: String) {
+    val savingPackPassword = MutableStateFlow(false)
+    fun savePackPassword(password: String) {
+        if(savingPackPassword.value || busy.value) return
+        savingPackPassword.value = true
+        viewModelScope.launch {
+        try {
+            withContext(Dispatchers.IO) { com.hydro.reedance.install.PackKeyStore(getApplication()).save(password) }
+            message.value = "رمز فایل ذخیره شد / File password saved"
+        } catch(cancelled: CancellationException) { throw cancelled } catch(error: Exception) { message.value = error.message ?: "Could not store file password" }
+        finally { savingPackPassword.value = false }
+        }
+    }
+    fun forgetPackPassword() = operation("حذف رمز ناموفق / Could not forget password") {
+        withContext(Dispatchers.IO) { com.hydro.reedance.install.PackKeyStore(getApplication()).clear() }
+        message.value = "رمز فایل حذف شد / File password forgotten"
+    }
+    fun importLocalPackage(uri: android.net.Uri) = enqueuePackWork(workDataOf("localUri" to uri.toString()))
+    fun installPackage(id: String) = enqueuePackWork(workDataOf("songId" to id))
+    private fun enqueuePackWork(input: Data) {
         if(busy.value) return
         busy.value = true
         val manager = WorkManager.getInstance(getApplication())
         val request = OneTimeWorkRequestBuilder<com.hydro.reedance.install.PackInstallWorker>()
-            .setInputData(workDataOf("songId" to id))
-            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()).build()
+            .setInputData(input)
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(if(input.getString("localUri") == null) NetworkType.CONNECTED else NetworkType.NOT_REQUIRED).build()).build()
         installRequest = request.id
         val enqueue = manager.enqueueUniqueWork("pack-install", ExistingWorkPolicy.KEEP, request)
         viewModelScope.launch {
@@ -227,12 +245,16 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
                     installRequest = info.id
                     installProgress.value = "${info.progress.getString("phase") ?: info.state.name} · ${info.progress.getLong("bytes", 0) / 1024} KB"
                     if(info.state.isFinished) {
-                        if(info.state == WorkInfo.State.SUCCEEDED) lesson.value = content.installedLesson(id)
+                        if(info.state == WorkInfo.State.SUCCEEDED) {
+                            lesson.value = content.installedLesson(info.outputData.getString("songId") ?: input.getString("songId") ?: "")
+                            catalog.value = content.catalog()
+                            message.value = "بسته نصب شد؛ در فهرست آهنگ‌ها باز کنید / Package installed; open it in the song list"
+                        }
                         else if(info.state == WorkInfo.State.FAILED) message.value = info.outputData.getString("error") ?: "Installation failed"
                         true
                     } else false
                 }
-            } finally { busy.value = false; installProgress.value = "" }
+            } catch(cancelled: CancellationException) { throw cancelled } catch(error: Exception) { message.value = error.message ?: "Installation failed" } finally { busy.value = false; installProgress.value = "" }
         }
     }
     fun installDemo() {

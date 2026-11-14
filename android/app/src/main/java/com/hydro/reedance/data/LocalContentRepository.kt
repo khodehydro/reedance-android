@@ -29,12 +29,28 @@ class LocalContentRepository(context: Context, private val dao: LearningDao,
             val actualId = distribution.obj("catalogBindings").s(song.s("distributionRef"))
             if(actualId.isNotEmpty()) song.addProperty("id", actualId)
         }
-        return songs
+        val replacedPreviewIds = mutableSetOf<String>()
+        val installed = dao.installedPackages().filter { it.state in listOf("VERIFIED", "LOCAL_PASSWORD") }.mapNotNull { row ->
+            installedLesson(row.songId)?.let { data ->
+                // Metadata match is only for merging a display placeholder; identity always comes from lesson.json.
+                val preview = songs.firstOrNull { it.s("id") == row.songId } ?: songs.firstOrNull {
+                    it.s("title") == data.s("title") && it.s("artist") == data.s("artist") && it.s("language") == data.s("targetLanguage")
+                }
+                preview?.let { replacedPreviewIds += it.s("id") }
+                (preview?.deepCopy() ?: JsonObject()).apply {
+                    addProperty("id", row.songId); addProperty("title", data.s("title")); addProperty("artist", data.s("artist"))
+                    addProperty("language", data.s("targetLanguage")); addProperty("level", data.s("level"))
+                    if(!has("access")) addProperty("access", "free")
+                    addProperty("localImport", row.state == "LOCAL_PASSWORD")
+                }
+            }
+        }
+        return installed + songs.filter { it.s("id") !in replacedPreviewIds }
     }
     suspend fun installedLesson(id: String): JsonObject? = withContext(io) {
         val row = dao.installed(id) ?: return@withContext null
         val file = File(row.activePath, "lesson.json")
-        if(!file.isFile || row.state !in listOf("VERIFIED", "DEMO")) return@withContext null
+        if(!file.isFile || row.state !in listOf("VERIFIED", "LOCAL_PASSWORD", "DEMO")) return@withContext null
         require(file.length() <= 4 * 1024 * 1024)
         com.hydro.reedance.contract.PackVerifier.strictJson(file.inputStream().use { it.readBytes() }, 4 * 1024 * 1024)
     }

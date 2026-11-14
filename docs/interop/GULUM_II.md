@@ -3,6 +3,11 @@
 Song supplied by owner: **Gülüm II — Ayaz Erdoğan**.
 This is an inspection report, NOT a successful Android installation/extraction.
 
+> Historical **legacy-key** export. Desktop now derives `enc-main` from a file
+> password (reviewed commit `0d1f612`). Re-export this song with the new Studio;
+> this file's `enc-studio-e896d1` key cannot be recovered from its hash or a new
+> password. See [current Android password/import workflow](ANDROID_INSTALLER.md).
+
 ## Sources inspected
 
 - Desktop branch: `khodehydro/reedance-desktop`, `arena/132cfe2a-reedance-desktop`;

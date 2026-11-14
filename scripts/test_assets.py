@@ -28,6 +28,40 @@ class AssetTests(unittest.TestCase):
         self.assertIn('android.system.Os.fsync(fd)', source)
         self.assertIn('finally { android.system.Os.close(fd) }', source)
 
+    def test_desktop_password_vectors_and_authenticated_container(self):
+        import unicodedata
+        data = load(ASSETS / 'test/resources/password-v1.json')
+        whitespace = ''.join(chr(c) for c in [9,10,11,12,13,32,160,5760,*range(8192,8203),8232,8233,8239,8287,12288,65279])
+        keys = []
+        for vector in data['vectors']:
+            normalized = unicodedata.normalize('NFKC', vector['password']).strip(whitespace)
+            key = hashlib.pbkdf2_hmac('sha256', normalized.encode(), b'reedance-pack-v1', 200000, 32)
+            self.assertEqual(key.hex(), vector['key'])
+            keys.append(key)
+        pack = bytes.fromhex(data['packHex'])
+        self.assertEqual(hashlib.sha256(pack).hexdigest(), data['packSha256'])
+        length = pack[8]; header = pack[:29 + length]
+        self.assertEqual(pack[9:9+length], b'enc-main')
+        self.assertEqual(AESGCM(keys[0]).decrypt(header[9+length:21+length], pack[len(header):], header).hex(), data['plaintextHex'])
+        from cryptography.exceptions import InvalidTag
+        with self.assertRaises(InvalidTag):
+            AESGCM(keys[1]).decrypt(header[9+length:21+length], pack[len(header):], header)
+
+    def test_password_storage_and_local_import_remain_distinct_from_signed_downloads(self):
+        install = (ASSETS / 'main/java/com/hydro/reedance/install/PackInstaller.kt').read_text()
+        self.assertNotIn('config.obj("aesKeys")', install)
+        self.assertIn('PackVerifier.manifest(', install)
+        self.assertIn('if(!local) dao.saveSeen(', install)
+        self.assertIn('Local imports cannot replace a signed publisher installation', install)
+        self.assertIn('validateAndActivate(stage, zip, payload, null, null, null, progress)', install)
+        storage = (ASSETS / 'main/java/com/hydro/reedance/install/PackKeyStore.kt').read_text()
+        self.assertIn('AndroidKeyStore', storage)
+        self.assertIn('cipher.doFinal(key)', storage)
+        self.assertNotIn('putString("password"', storage)
+        ui = (ASSETS / 'main/java/com/hydro/reedance/ui/PackControls.kt').read_text()
+        self.assertNotIn('rememberSaveable', ui.split('@Composable fun PackControls')[1])
+        self.assertIn('PasswordVisualTransformation()', ui)
+
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ASSETS / 'debug/assets/demo_lesson.json'))
 

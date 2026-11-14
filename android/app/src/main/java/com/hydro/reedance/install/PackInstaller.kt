@@ -35,7 +35,7 @@ class PackInstaller(private val context: Context) {
         .connectTimeout(20, TimeUnit.SECONDS).readTimeout(20, TimeUnit.SECONDS).callTimeout(8, TimeUnit.MINUTES).build()
     private fun config(): JsonObject = try {
         context.assets.open("pack_distribution.json").use { PackVerifier.strictJson(it.readBytes(), 65536) }
-    } catch(_: java.io.FileNotFoundException) { error("پیکربندی ناشر و کلید توزیع موجود نیست / Publisher configuration and distribution keys are missing") }
+    } catch(_: java.io.FileNotFoundException) { error("تنظیمات آدرس انتشار و کلید عمومی ناشر موجود نیست / Publisher manifest/host/public-key configuration is missing") }
     private suspend fun download(url: String, file: File, limit: Long, hosts: Set<String>, progress: suspend (Long) -> Unit) {
         var current = url.toHttpUrl()
         require(current.isHttps && current.username.isEmpty() && current.password.isEmpty() && current.fragment == null && current.query == null)
@@ -74,14 +74,15 @@ class PackInstaller(private val context: Context) {
         }
         return hash.digest().joinToString("") { "%02x".format(it.toInt() and 255) }
     }
-    private suspend fun decrypt(pack: File, zip: File, payload: JsonObject, keys: JsonObject) {
+    private suspend fun decrypt(pack: File, zip: File, payload: JsonObject) {
         RandomAccessFile(pack, "r").use { input ->
             require(ByteArray(8).also { input.readFully(it) }.contentEquals("RDPACK1\u0000".toByteArray()))
             val length = input.readUnsignedByte(); require(length in 1..32)
             val header = ByteArray(29 + length); input.seek(0); input.readFully(header)
             val keyId = header.copyOfRange(9, 9 + length).toString(Charsets.US_ASCII)
+            require(keyId == "enc-main") { "این بسته از معماری قدیمی است؛ با استودیوی جدید دوباره خروجی بگیرید / Re-export legacy pack with the new Studio" }
             require(keyId == payload.obj("package").s("encryptionKeyId"))
-            val key = PackVerifier.base64(keys.s(keyId)); require(key.size == 32)
+            val key = PackKeyStore(context).load(); require(key.size == 32)
             val plain = ByteBuffer.wrap(header, 21 + length, 8).long
             require(plain in 1..268435456L && pack.length() == header.size + plain + 16)
             val cipher = GCMBlockCipher.newInstance(AESEngine.newInstance())
@@ -95,7 +96,9 @@ class PackInstaller(private val context: Context) {
                         val written = cipher.processBytes(buffer, 0, n, result, 0)
                         total += written; require(total <= plain); out.write(result, 0, written)
                     }
-                    val written = cipher.doFinal(result, 0) // No ZIP extraction before tag verification.
+                    val written = try { cipher.doFinal(result, 0) } catch(_: org.bouncycastle.crypto.InvalidCipherTextException) {
+                        error("رمز فایل نادرست است یا بسته آسیب دیده / Wrong file password or damaged package")
+                    } // No ZIP extraction before tag verification.
                     out.write(result, 0, written); require(total + written == plain)
                 }
             } finally { key.fill(0) }
@@ -143,7 +146,8 @@ class PackInstaller(private val context: Context) {
             val spec = payload.obj("package")
             // Persist highest authenticated observation even if the subsequent transfer fails.
             dao.saveSeen(SeenManifest(song, payload.n("contentVersionCode").toInt(), spec.s("sha256")))
-            require(config.obj("aesKeys").has(spec.s("encryptionKeyId"))) { "کلید توزیع موجود نیست / Distribution key missing" }
+            require(spec.s("encryptionKeyId") == "enc-main") { "Re-export legacy pack with the new Studio" }
+            PackKeyStore(context).load().fill(0)
             val url = source.s("manifestUrl").toHttpUrl().resolve(spec.s("fileName")) ?: error("Invalid package URL")
             val pack = File(stage, "download.part")
             require(root.usableSpace > spec.n("sizeBytes") * 3 + 32L * 1024 * 1024) { "فضای خالی کافی نیست / Insufficient storage" }
@@ -151,17 +155,68 @@ class PackInstaller(private val context: Context) {
             download(url.toString(), pack, spec.n("sizeBytes"), hosts) { progress("download", it) }
             require(pack.length() == spec.n("sizeBytes") && hash(pack) == spec.s("sha256")) { "Package hash/length mismatch" }
             progress("decrypt", pack.length())
-            val zip = File(stage, "authenticated.zip"); decrypt(pack, zip, payload, config.obj("aesKeys"))
+            val zip = File(stage, "authenticated.zip"); decrypt(pack, zip, payload)
+            validateAndActivate(stage, zip, payload, song, language, manifest, progress)
+        } finally { withContext(NonCancellable) { stage.deleteRecursively() } }
+    } }
+    /** Explicit user-selected local import, NOT publisher-signature verification. */
+    suspend fun importLocal(uri: android.net.Uri, progress: suspend (String, Long) -> Unit): JsonObject = lock.withLock { withContext(Dispatchers.IO) {
+        require(uri.scheme == "content")
+        recoverLocked()
+        PackKeyStore(context).load().fill(0)
+        val name = context.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+            require(cursor.moveToFirst()); cursor.getString(0)
+        } ?: error("Missing package filename")
+        val match = Regex("^v([0-9]{6,10})-([a-f0-9]{64})\\.rdpack$").matchEntire(name)
+            ?: error("Keep the exported vNNNNNN-sha256.rdpack filename")
+        val version = match.groupValues[1].toLong(); require(version in 1..Int.MAX_VALUE.toLong())
+        require(match.groupValues[1] == version.toString().padStart(6, '0'))
+        val expectedHash = match.groupValues[2]
+        val parent = File(root, ".staging").apply { mkdirs() }
+        val stage = File(parent, java.util.UUID.randomUUID().toString()).apply { check(mkdirs()) }
+        try {
+            val pack = File(stage, "local.part")
+            context.contentResolver.openInputStream(uri)!!.use { input -> pack.outputStream().use { output ->
+                val buffer = ByteArray(65536); var count = 0L
+                while(true) {
+                    currentCoroutineContext().ensureActive()
+                    val n = input.read(buffer); if(n < 0) break
+                    count += n; require(count <= 268435456L) { "Package too large" }
+                    require(root.usableSpace > count * 2 + 32L * 1024 * 1024) { "Insufficient storage" }
+                    output.write(buffer, 0, n)
+                    if(count % 262144L == 0L) progress("copy", count)
+                }
+            } }
+            require(hash(pack) == expectedHash) { "Package hash does not match filename" }
+            val payload = JsonObject().apply {
+                addProperty("contentVersionCode", version)
+                add("package", JsonObject().apply { addProperty("sha256", expectedHash); addProperty("encryptionKeyId", "enc-main") })
+            }
+            progress("decrypt", pack.length())
+            val zip = File(stage, "authenticated.zip"); decrypt(pack, zip, payload)
+            validateAndActivate(stage, zip, payload, null, null, null, progress)
+        } finally { withContext(NonCancellable) { stage.deleteRecursively() } }
+    } }
+    private suspend fun validateAndActivate(stage: File, zip: File, payload: JsonObject,
+        expectedSong: String?, expectedLanguage: String?, manifest: File?, progress: suspend (String, Long) -> Unit): JsonObject {
             val output = File(stage, "content"); StrictPackZip.extract(zip, output)
             progress("validate", 0)
             require(File(output, "lesson.json").length() <= 4 * 1024 * 1024)
             val lesson = PackVerifier.strictJson(File(output, "lesson.json").readBytes(), 4 * 1024 * 1024)
-            require(File(output, "lesson.json").length() <= 4 * 1024 * 1024)
             val schema = context.assets.open("lesson.schema.json").use { PackVerifier.strictJson(it.readBytes(), 131072) }
             LessonValidation(schema).apply { validate(lesson); semantics(lesson) }
-            require(lesson.s("songId") == song && lesson.s("targetLanguage") == language)
+            val song = lesson.s("songId"); val language = lesson.s("targetLanguage")
+            require(expectedSong == null || song == expectedSong)
+            require(expectedLanguage == null || language == expectedLanguage)
+            val spec = payload.obj("package")
+            val local = manifest == null
+            if(local) {
+                require(dao.seen(song) == null) { "Local imports cannot replace a signed publisher installation" }
+                val old = dao.installed(song)
+                require(old == null || payload.n("contentVersionCode") > old.activeVersionCode) { "Local version must increase" }
+            }
             val mappings = lesson.a("vocabulary").associate { it.s("lexemeId") to it.s("normalizedKey") }
-            dao.installedPackages().filter { it.state == "VERIFIED" }.forEach { previous ->
+            dao.installedPackages().filter { it.state in listOf("VERIFIED", "LOCAL_PASSWORD") }.forEach { previous ->
                 val oldFile = File(previous.activePath, "lesson.json")
                 require(oldFile.length() <= 4 * 1024 * 1024 && oldFile.isFile)
                 val old = PackVerifier.strictJson(oldFile.readBytes(), 4 * 1024 * 1024)
@@ -212,14 +267,13 @@ class PackInstaller(private val context: Context) {
                 syncDirectory(parent)
                 try {
                     database.withTransaction {
-                        dao.saveInstalled(InstalledPackage(song, version, PackVerifier.sha256(PackVerifier.base64(PackVerifier.strictJson(manifest.readBytes(), 32768).s("payload"))), target.path, "VERIFIED", System.currentTimeMillis()))
-                        dao.saveSeen(SeenManifest(song, version, spec.s("sha256")))
+                        dao.saveInstalled(InstalledPackage(song, version, if(manifest == null) "LOCAL-PASSWORD:${spec.s("sha256")}" else PackVerifier.sha256(PackVerifier.base64(PackVerifier.strictJson(manifest.readBytes(), 32768).s("payload"))), target.path, if(local) "LOCAL_PASSWORD" else "VERIFIED", System.currentTimeMillis()))
+                        if(!local) dao.saveSeen(SeenManifest(song, version, spec.s("sha256")))
                     }
                 } catch(e: Exception) { target.deleteRecursively(); throw e }
                 File(target, ".activation-pending").delete(); syncDirectory(target)
             }
             progress("installed", 0)
-            lesson
-        } finally { withContext(NonCancellable) { stage.deleteRecursively() } }
-    } }
+            return lesson
+    }
 }

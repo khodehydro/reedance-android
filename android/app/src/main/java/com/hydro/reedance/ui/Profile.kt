@@ -45,10 +45,11 @@ import com.hydro.reedance.data.*
             }
             Text(tr("تنظیم حرکت دستگاه نیز رعایت می‌شود.", "Your device animation setting is also respected."), style = MaterialTheme.typography.bodySmall)
         }
+        Panel { PackControls(model) }
         Panel {
             Text(tr("فضای آفلاین", "Offline storage"), style = MaterialTheme.typography.titleLarge)
-            Text(if(lesson == null) tr("بسته‌ای نصب نیست.", "No package installed.") else tr("دموی Midnight Avenue نصب شده است.", "Midnight Avenue demo is installed."))
-            if(lesson != null) PressOutlinedButton({ confirmDelete = true }) { Text(tr("پاک کردن فایل‌های آهنگ", "Remove song files")) }
+            Text(if(lesson == null) tr("بسته‌ای نصب نیست.", "No package installed.") else lesson!!.s("title"))
+            if(lesson?.s("songId") == "midnight-avenue") PressOutlinedButton({ confirmDelete = true }) { Text(tr("پاک کردن فایل‌های آهنگ", "Remove song files")) }
             Text(tr("با حذف آهنگ، نشان‌ها و پیشرفت پاک نمی‌شوند.", "Removing a song keeps your bookmarks and progress."), style = MaterialTheme.typography.bodySmall)
         }
         Panel {
