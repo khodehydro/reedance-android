@@ -1,6 +1,6 @@
 [
   {
-    "id": "pending-gulum-ii",
+    "id": "gulum-2",
     "title": "Gülüm II",
     "artist": "Ayaz Erdoğan",
     "language": "tr",
@@ -8,7 +8,8 @@
     "level": "",
     "access": "free",
     "demo": false,
-    "distributionRef": "gulum-ii"
+    "distributionRef": "gulum-ii",
+    "bundledPack": true
   },
   {
     "id": "midnight-avenue",

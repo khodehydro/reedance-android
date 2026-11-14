@@ -76,7 +76,10 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                     } else if(song.s("distributionRef").isNotEmpty()) {
                         val status by model.installProgress.collectAsStateWithLifecycle()
                         if(busy) { LinearProgressIndicator(Modifier.fillMaxWidth()); Text(status) }
-                        Action(tr("دانلود و نصب بسته", "Download and install package"), enabled = !busy, onClick = { model.installPackage(songId) })
+                        val bundled = song.get("bundledPack")?.asBoolean == true
+                        Action(if(bundled) tr("نصب بستهٔ همراه برنامه", "Install bundled package") else tr("دانلود و نصب بسته", "Download and install package"), enabled = !busy,
+                            onClick = { if(bundled) model.installBundledPackage(songId) else model.installPackage(songId) })
+                        if(bundled) Text(tr("این فایل همراه برنامه است؛ رمز فایل را در پروفایل وارد کن. تأیید امضای مستقل ناشر انجام نشده است.", "Bundled file: enter its file password in Profile. Independent publisher signature has not been verified."))
                         if(busy) PressTextButton(model::cancelInstall) { Text(tr("لغو", "Cancel")) }
                         Text(tr("رمز فایل را در پروفایل وارد کن. نصب فایل محلی هم از پروفایل انجام می‌شود؛ دانلود شبکه به manifest امضاشده نیاز دارد.", "Set the file password or import a local pack in Profile. Network downloads require a signed manifest."))
                     } else Text(tr("این عنوان فقط پیش‌نمایش است. صوت و مجوز انتشار برای آن ارائه نشده است.", "Catalog preview only. Licensed audio and a published package have not been supplied."))

@@ -167,6 +167,22 @@ class PackInstaller(private val context: Context) {
         val name = context.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
             require(cursor.moveToFirst()); cursor.getString(0)
         } ?: error("Missing package filename")
+        importPackFile(name, { context.contentResolver.openInputStream(uri) ?: error("Cannot open selected file") }, null, null, progress)
+    } }
+    /** Bundled bytes are pinned by the installed APK, not by a verified publisher signature. */
+    suspend fun installBundled(song: String, progress: suspend (String, Long) -> Unit): JsonObject = lock.withLock { withContext(Dispatchers.IO) {
+        require(song.matches(Regex("[a-z0-9]+(?:-[a-z0-9]+)*")))
+        recoverLocked()
+        PackKeyStore(context).load().fill(0)
+        val index = context.assets.open("bundled_packs.json").use { PackVerifier.strictJson(it.readBytes(), 65536) }
+        val entry = index.obj(song)
+        val name = entry.s("fileName")
+        require(name.isNotEmpty()) { "No bundled package for this song" }
+        val language = entry.s("language"); require(language in listOf("en", "es", "ko", "tr"))
+        importPackFile(name, { context.assets.open("packs/$song/$name") }, song, language, progress)
+    } }
+    private suspend fun importPackFile(name: String, source: () -> java.io.InputStream,
+        expectedSong: String?, expectedLanguage: String?, progress: suspend (String, Long) -> Unit): JsonObject {
         val match = Regex("^v([0-9]{6,10})-([a-f0-9]{64})\\.rdpack$").matchEntire(name)
             ?: error("Keep the exported vNNNNNN-sha256.rdpack filename")
         val version = match.groupValues[1].toLong(); require(version in 1..Int.MAX_VALUE.toLong())
@@ -176,7 +192,7 @@ class PackInstaller(private val context: Context) {
         val stage = File(parent, java.util.UUID.randomUUID().toString()).apply { check(mkdirs()) }
         try {
             val pack = File(stage, "local.part")
-            context.contentResolver.openInputStream(uri)!!.use { input -> pack.outputStream().use { output ->
+            source().use { input -> pack.outputStream().use { output ->
                 val buffer = ByteArray(65536); var count = 0L
                 while(true) {
                     currentCoroutineContext().ensureActive()
@@ -194,9 +210,9 @@ class PackInstaller(private val context: Context) {
             }
             progress("decrypt", pack.length())
             val zip = File(stage, "authenticated.zip"); decrypt(pack, zip, payload)
-            validateAndActivate(stage, zip, payload, null, null, null, progress)
+            return validateAndActivate(stage, zip, payload, expectedSong, expectedLanguage, null, progress)
         } finally { withContext(NonCancellable) { stage.deleteRecursively() } }
-    } }
+    }
     private suspend fun validateAndActivate(stage: File, zip: File, payload: JsonObject,
         expectedSong: String?, expectedLanguage: String?, manifest: File?, progress: suspend (String, Long) -> Unit): JsonObject {
             val output = File(stage, "content"); StrictPackZip.extract(zip, output)

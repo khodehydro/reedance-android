@@ -117,3 +117,40 @@ signed installed songs appear in Downloaded and share normal playback/learning.
 - Network hosting and public-key provisioning remain publisher responsibilities.
   Production release audit and device verification are still required; the
   release Gradle guard remains closed.
+
+## Bundled Gülüm II export fetched from reedance-doc
+
+At the owner's request the exact export files from
+`khodehydro/reedance-doc`, branch `arena/a26a127d-reedance-doc`, pinned commit
+`7e689c2da83e5d819d6070e34710bd6d371404e2`, directory
+`tr/ayaz-erdogan/gulum-2/gulum-2`, are now placed under
+`android/app/src/main/assets/packs/gulum-2/`:
+
+- `latest.json`
+- `manifests/v000002-70d627f9e15aa358ddfc7c125c5d37e8e0b8e1488f7c5f45c50bc153143dfe56.json`
+- `v000002-70d627f9e15aa358ddfc7c125c5d37e8e0b8e1488f7c5f45c50bc153143dfe56.rdpack`
+
+The encrypted package is intentionally bundled as the requested content asset
+(7,583,229 bytes), not a build artifact or an unencrypted lesson. SHA-256:
+`70d627f9e15aa358ddfc7c125c5d37e8e0b8e1488f7c5f45c50bc153143dfe56`.
+Header: `enc-main`, 37 bytes; declared ZIP:7,583,176 bytes; tag:16 bytes.
+Manifest and archived manifest are byte-identical. Manifest metadata identifies
+`songId=gulum-2`, `targetLanguage=tr`, version2; the lesson identity must STILL
+match after GCM authentication and schema validation. No password was fetched,
+requested in chat, or bundled. Manifest releasedAt is preserved verbatim; it is
+not used as trusted device time/freshness evidence.
+
+The song card now offers **Install bundled package**, an offline WorkManager
+path that copies the APK asset to staging and invokes the same password/GCM,
+ZIP, semantic, media and activation pipeline as local import. Enter the Studio
+file password in Profile first. No publisher config or document picker is needed
+for this bundled card. `bundled_packs.json` pins the source filename and identity
+in the APK; expected song and language are enforced before activation.
+
+The source repository contained no independent signer public key. The included
+manifest's signature (`sig-studio-58bd40`) has NOT been verified. Bundled installs
+are explicitly labelled in UI and use `LOCAL_PASSWORD`, not publisher `VERIFIED`;
+network signature requirements remain unchanged. Download/header/hash checks
+passed, but actual decryption, extraction and Android playback remain untested
+without the operator's password and a native/device environment. Host suite now
+has40 passing checks, including the bundled file/manifest/index consistency test.

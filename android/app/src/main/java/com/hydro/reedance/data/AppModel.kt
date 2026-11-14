@@ -227,6 +227,7 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
         message.value = "رمز فایل حذف شد / File password forgotten"
     }
     fun importLocalPackage(uri: android.net.Uri) = enqueuePackWork(workDataOf("localUri" to uri.toString()))
+    fun installBundledPackage(id: String) = enqueuePackWork(workDataOf("bundledSong" to id))
     fun installPackage(id: String) = enqueuePackWork(workDataOf("songId" to id))
     private fun enqueuePackWork(input: Data) {
         if(busy.value) return
@@ -234,7 +235,7 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
         val manager = WorkManager.getInstance(getApplication())
         val request = OneTimeWorkRequestBuilder<com.hydro.reedance.install.PackInstallWorker>()
             .setInputData(input)
-            .setConstraints(Constraints.Builder().setRequiredNetworkType(if(input.getString("localUri") == null) NetworkType.CONNECTED else NetworkType.NOT_REQUIRED).build()).build()
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(if(input.getString("localUri") == null && input.getString("bundledSong") == null) NetworkType.CONNECTED else NetworkType.NOT_REQUIRED).build()).build()
         installRequest = request.id
         val enqueue = manager.enqueueUniqueWork("pack-install", ExistingWorkPolicy.KEEP, request)
         viewModelScope.launch {

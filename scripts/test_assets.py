@@ -53,7 +53,7 @@ class AssetTests(unittest.TestCase):
         self.assertIn('PackVerifier.manifest(', install)
         self.assertIn('if(!local) dao.saveSeen(', install)
         self.assertIn('Local imports cannot replace a signed publisher installation', install)
-        self.assertIn('validateAndActivate(stage, zip, payload, null, null, null, progress)', install)
+        self.assertIn('validateAndActivate(stage, zip, payload, expectedSong, expectedLanguage, null, progress)', install)
         storage = (ASSETS / 'main/java/com/hydro/reedance/install/PackKeyStore.kt').read_text()
         self.assertIn('AndroidKeyStore', storage)
         self.assertIn('cipher.doFinal(key)', storage)
@@ -61,6 +61,34 @@ class AssetTests(unittest.TestCase):
         ui = (ASSETS / 'main/java/com/hydro/reedance/ui/PackControls.kt').read_text()
         self.assertNotIn('rememberSaveable', ui.split('@Composable fun PackControls')[1])
         self.assertIn('PasswordVisualTransformation()', ui)
+
+    def test_bundled_gulum_export_matches_pinned_index_and_manifest(self):
+        index = load(ASSETS / 'main/assets/bundled_packs.json')['gulum-2']
+        root = ASSETS / 'main/assets/packs/gulum-2'
+        envelope = load(root / 'latest.json')
+        payload = json.loads(b64(envelope['payload']))
+        spec = payload['package']
+        self.assertEqual((payload['songId'], payload['targetLanguage'], payload['contentVersionCode']), ('gulum-2', 'tr', 2))
+        self.assertEqual(spec['encryptionKeyId'], 'enc-main')
+        self.assertEqual(index['fileName'], spec['fileName'])
+        pack = (root / spec['fileName']).read_bytes()
+        self.assertEqual(len(pack), spec['sizeBytes'])
+        self.assertEqual(len(pack), index['sizeBytes'])
+        self.assertEqual(hashlib.sha256(pack).hexdigest(), spec['sha256'])
+        self.assertEqual(index['sha256'], spec['sha256'])
+        self.assertEqual(pack[:8], b'RDPACK1\0')
+        key_len = pack[8]
+        self.assertEqual(pack[9:9+key_len], b'enc-main')
+        plain_len = struct.unpack('>Q', pack[21+key_len:29+key_len])[0]
+        self.assertEqual(len(pack), 29 + key_len + plain_len + 16)
+        self.assertEqual((root / 'latest.json').read_bytes(), (root / 'manifests' / spec['fileName'].replace('.rdpack', '.json')).read_bytes())
+        self.assertEqual(len(b64(envelope['signature'])), 64)  # Shape only, not signature verification.
+        song = next(s for s in load(ASSETS / 'main/assets/catalog_preview.json') if s['id'] == 'gulum-2')
+        self.assertTrue(song['bundledPack'])
+        self.assertEqual(song['language'], 'tr')
+        installer = (ASSETS / 'main/java/com/hydro/reedance/install/PackInstaller.kt').read_text()
+        self.assertIn('context.assets.open("packs/$song/$name")', installer)
+        self.assertIn('song, language, progress)', installer)
 
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ASSETS / 'debug/assets/demo_lesson.json'))
