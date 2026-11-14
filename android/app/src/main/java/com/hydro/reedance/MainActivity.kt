@@ -21,6 +21,14 @@ class MainActivity: ComponentActivity() {
         splash.setKeepOnScreenCondition { !model.ready.value }
         setContent { ReedanceApp(model) }
     }
+    override fun onResume() {
+        super.onResume()
+        if(::appModel.isInitialized) appModel.foregroundActivity(true)
+    }
+    override fun onPause() {
+        if(::appModel.isInitialized) appModel.foregroundActivity(false)
+        super.onPause()
+    }
     override fun onStart() {
         super.onStart()
         if(::appModel.isInitialized) {

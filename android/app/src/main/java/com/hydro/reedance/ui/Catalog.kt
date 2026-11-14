@@ -89,14 +89,7 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 20.dp + LocalOverlayBottomInset.current), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         if(home) {
             item(key = "hero", span = { GridItemSpan(maxLineSpan) }) {
-                Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(Brush.linearGradient(listOf(Blue, Deep))).padding(26.dp)) {
-                    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        Text(tr("یادگیری با ریتم تو", "YOUR RHYTHM. YOUR WORDS."), color = Color(0xFFCADFFF), style = MaterialTheme.typography.labelMedium)
-                        Text(tr("هر آهنگ،\nیک قدم جلوتر.", "Every song.\nOne step further."), color = Color.White, style = MaterialTheme.typography.headlineLarge)
-                        Text(tr("گوش بده، کشف کن و زبان را زندگی کن.", "Listen closer. Discover more. Make the words yours."), color = Color(0xFFE1ECFF))
-                        PressButton({ openSong("midnight-avenue") }, colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Blue)) { Text(tr("شروع یادگیری", "Start learning")); AppIcon(UiIcons.Play, null) }
-                    }
-                }
+                HomePager(model, openSong)
             }
             item(key = "starter", span = { GridItemSpan(maxLineSpan) }) {
                 Panel(tone = MaterialTheme.colorScheme.secondaryContainer) {

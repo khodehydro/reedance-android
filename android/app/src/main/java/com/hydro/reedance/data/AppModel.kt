@@ -28,6 +28,25 @@ class AppModel(app: Application): AndroidViewModel(app) {
     private val database = LearningDatabase.get(app)
     val dao = database.learning()
     private val content = LocalContentRepository(app, dao)
+    private val activity = ActivityRepository(app)
+    val activityDays = activity.days.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+    private var activityJob: Job? = null
+    fun foregroundActivity(active: Boolean) {
+        val previous = activityJob
+        previous?.cancel()
+        if(active) activityJob = viewModelScope.launch {
+            previous?.join()
+            var stamp = SystemClock.elapsedRealtime()
+            var wall = System.currentTimeMillis()
+            suspend fun flush() {
+                val end = SystemClock.elapsedRealtime()
+                activity.add(wall, end - stamp)
+                stamp = end
+                wall = System.currentTimeMillis()
+            }
+            try { while(true) { delay(5_000); flush() } } catch(cancelled: CancellationException) { throw cancelled } catch(_: Exception) { message.value = "ذخیره فعالیت ناموفق / Activity save failed" } finally { withContext(NonCancellable) { try { flush() } catch(_: Exception) { message.value = "ذخیره فعالیت ناموفق / Activity save failed" } } }
+        }
+    }
     val preferences = SettingsRepository(app)
     val settings = preferences.flow.stateIn(viewModelScope, SharingStarted.Eagerly, Settings())
     val ready = MutableStateFlow(false)
@@ -207,20 +226,27 @@ class AppModel(app: Application): AndroidViewModel(app) {
             if(type == "vocabulary" && dao.review(id) == null) dao.saveReview(ReviewCard(id))
         }
     } }
-    fun step(lang: String, step: Int) { mutation {
-        if(dao.hasStep(lang, step)) dao.deleteStep(lang, step) else dao.saveStep(StarterProgress(lang, step))
+    private fun learningMutation(block: suspend () -> Boolean) = operation("ذخیره پیشرفت ناموفق / Progress save failed") {
+        val completed = mutationMutex.withLock { withContext(Dispatchers.IO) { database.withTransaction { block() } } }
+        if(completed) activity.complete()
+    }
+    fun step(lang: String, step: Int) { learningMutation {
+        if(dao.hasStep(lang, step)) { dao.deleteStep(lang, step); false }
+        else { dao.saveStep(StarterProgress(lang, step)); true }
     } }
-    fun review(card: ReviewCard, remembered: Boolean) { mutation {
-        val current = dao.review(card.lexemeId) ?: return@mutation
-        if(current.stage != card.stage || current.dueAt != card.dueAt) return@mutation
+    fun review(card: ReviewCard, remembered: Boolean) { learningMutation {
+        val current = dao.review(card.lexemeId) ?: return@learningMutation false
+        if(current.stage != card.stage || current.dueAt != card.dueAt) return@learningMutation false
         val next = schedule(current.stage, remembered, System.currentTimeMillis())
         dao.saveReview(current.copy(stage = next.stage, dueAt = next.dueAt))
+        true
     } }
     suspend fun dueReviewCards() = dao.dueReviews(System.currentTimeMillis())
-    fun record(q: JsonObject, answer: List<String>, grade: Grade) { mutation {
+    fun record(q: JsonObject, answer: List<String>, grade: Grade) { learningMutation {
         val encoded = withContext(Dispatchers.Default) { Gson().toJson(answer) }
         dao.saveResult(QuizResult("midnight-avenue", q.s("id"), 1, encoded, grade.correct))
         grade.missed.forEach { id -> val old = dao.review(id); dao.saveReview(ReviewCard(id, 1, System.currentTimeMillis(), old?.savedAt ?: System.currentTimeMillis())) }
+        true
     } }
     fun deleteDemo() {
         if(busy.value) return

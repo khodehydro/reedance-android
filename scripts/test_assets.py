@@ -227,7 +227,8 @@ class AssetTests(unittest.TestCase):
         self.assertIn('item(key = "hero"', home)
         self.assertIn('item(key = "starter"', home)
         self.assertLess(home.index('item(key = "hero"'), home.index('item(key = "starter"'))
-        self.assertIn('openSong("midnight-avenue")', home)
+        self.assertIn('HomePager(model, openSong)', home)
+        self.assertIn('openSong("midnight-avenue")', (ASSETS / 'main/java/com/hydro/reedance/ui/HomePager.kt').read_text())
         self.assertIn('PressTextButton(starter)', home)
         self.assertNotIn('PillTabs', home)
         self.assertIn('if(!home) item(key = "filters"', source)
@@ -343,6 +344,23 @@ class AssetTests(unittest.TestCase):
         self.assertIn('addRoundRect(RoundRect(', source)
         self.assertIn('value = coverCache.get(resource) ?: withContext', source)
         self.assertNotIn('if(value == null)', source)
+
+    def test_home_pager_and_real_persian_activity_ledger(self):
+        source = ASSETS / 'main/java/com/hydro/reedance'
+        pager = (source / 'ui/HomePager.kt').read_text()
+        for token in ['HorizontalPager(', 'pageCount = { 2 }', 'fa_IR@calendar=persian', 'getActualMaximum(Calendar.DAY_OF_MONTH)', 'TimeZone.getTimeZone(zone.id)', 'day > month.today', 'ACTIVE_DAY_MILLIS']:
+            self.assertIn(token, pager)
+        activity = (source / 'data/ActivityRepository.kt').read_text()
+        self.assertIn('ACTIVE_DAY_MILLIS = 120_000L', activity)
+        self.assertIn('date.plusDays(1).atStartOfDay(zone)', activity)
+        self.assertIn('preferencesDataStore("daily_activity")', activity)
+        model = (source / 'data/AppModel.kt').read_text()
+        self.assertIn('SystemClock.elapsedRealtime()', model)
+        self.assertIn('if(completed) activity.complete()', model)
+        self.assertIn('previous?.join()', model)
+        main = (source / 'MainActivity.kt').read_text()
+        self.assertIn('appModel.foregroundActivity(true)', main)
+        self.assertIn('appModel.foregroundActivity(false)', main)
 
     def test_headers_have_consistent_opaque_background(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'
