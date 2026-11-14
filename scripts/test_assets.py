@@ -306,6 +306,18 @@ class AssetTests(unittest.TestCase):
         self.assertIn('else model.playFromLine(', song)
         self.assertIn('if(playing) UiIcons.PauseFilled else UiIcons.PlayFilled', (ui / 'LyricLine.kt').read_text())
 
+    def test_single_lyric_view_tracks_media_clock_and_preserves_list_mode(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        song = (ui / 'Song.kt').read_text()
+        self.assertIn('singleLyric by rememberSaveable(songId)', song)
+        self.assertIn('LyricLayoutToggle(singleLyric)', song)
+        self.assertIn('val visibleLines = lines.take(access.limit("lyrics"))', song)
+        self.assertIn('item(key = "single-lyric"', song)
+        self.assertIn('timedLyricLine(visibleLines, if(activePlayback?.songId == songId) playbackPosition else 0L)', song)
+        helper = (ui / 'LyricLayout.kt').read_text()
+        self.assertIn('lines.lastOrNull { it.n("startMs") <= positionMs } ?: lines.firstOrNull()', helper)
+        self.assertNotIn('delay(', helper)
+
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))
 

@@ -47,6 +47,8 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     val openQuiz = { if(access.preview) subscriptionInfo = true else quiz() }
     val fa = LocalFa.current
     var mode by rememberSaveable { mutableIntStateOf(1) }
+    var singleLyric by rememberSaveable(songId) { mutableStateOf(false) }
+    val playbackPosition by model.position.collectAsStateWithLifecycle()
     var selectedWord by remember { mutableStateOf<JsonObject?>(null) }
     val scroll = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -125,13 +127,19 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                 item(key = "quiz") { PressOutlinedButton(openQuiz, Modifier.fillMaxWidth()) { AppIcon(UiIcons.Quiz, null); Text(tr("آزمون آهنگ", "Song quiz")) } }
                 when(tab) {
                     0 -> {
-                        item(key = "lyric-mode") { PillTabs(listOf(
+                        item(key = "lyric-mode") {
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Box(Modifier.weight(1f)) { PillTabs(listOf(
                             PillOption(tr("متن اصلی", "Original"), UiIcons.Original, filledIcon = UiIcons.OriginalFilled),
                             PillOption(tr("ترجمهٔ خطی", "Line by line"), UiIcons.Lines, filledIcon = UiIcons.LinesFilled),
                             PillOption(tr("کلمه‌به‌کلمه", "Word by word"), UiIcons.WordMode, filledIcon = UiIcons.WordModeFilled)
                         ), mode) { mode = it } }
+                            LyricLayoutToggle(singleLyric) { singleLyric = !singleLyric }
+                            }
+                        }
                         item(key = "lyric-help") { Text(tr("برای پخش از هر خط، روی آیکون پخش کنار آن بزن؛ برای معنی روی واژه بزن.", "Tap the play icon beside a line to play from there, or a word to explore it."), style = MaterialTheme.typography.bodySmall) }
-                        items(lines.take(access.limit("lyrics")), key = { "lyric-${it.s("id")}" }, contentType = { "lyric" }) { line ->
+                        val visibleLines = lines.take(access.limit("lyrics"))
+                        val renderLine: @Composable (JsonObject) -> Unit = { line ->
                             val active = activeLineId == line.s("id")
                             LyricLine(line, mode, active, playing = playing && active && activePlayback?.songId == songId,
                                 onPlay = {
@@ -143,6 +151,17 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                                     addProperty("lemma", token.s("surface")); addProperty("translationFa", token.s("translationFa")); addProperty("translationEn", token.s("translationEn"))
                                 }
                             })
+                        }
+                        if(singleLyric) {
+                            item(key = "single-lyric", contentType = "single-lyric") {
+                                val line = timedLyricLine(visibleLines, if(activePlayback?.songId == songId) playbackPosition else 0L)
+                                Box(Modifier.fillMaxWidth().heightIn(min = 148.dp)) {
+                                    if(line != null) renderLine(line)
+                                    else Panel { Text(tr("متن لیریک در دسترس نیست.", "No lyrics available.")) }
+                                }
+                            }
+                        } else {
+                            items(lines.take(access.limit("lyrics")), key = { "lyric-${it.s("id")}" }, contentType = { "lyric" }) { line -> renderLine(line) }
                         }
                         if(lines.size > access.limit("lyrics")) item(key = "lyrics-preview") { PremiumPreview() }
                         item(key = "lyric-quiz") { Action(tr("آماده‌ای؟ خودت را امتحان کن", "Ready? Test what you learned"), Modifier.fillMaxWidth(), onClick = openQuiz) }
