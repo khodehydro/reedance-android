@@ -6,112 +6,158 @@
     "Back": {
       "glyph": "arrow-left",
       "codepoint": "0xf197",
-      "drawable": "uicon_back"
+      "drawable": "uicon_back",
+      "style": "Regular Rounded"
     },
     "Home": {
       "glyph": "home",
       "codepoint": "0xf7b8",
-      "drawable": "uicon_home"
+      "drawable": "uicon_home",
+      "style": "Regular Rounded"
     },
     "Explore": {
       "glyph": "compass-alt",
       "codepoint": "0xf4bd",
-      "drawable": "uicon_explore"
+      "drawable": "uicon_explore",
+      "style": "Regular Rounded"
     },
     "Review": {
       "glyph": "layers",
       "codepoint": "0xf87c",
-      "drawable": "uicon_review"
+      "drawable": "uicon_review",
+      "style": "Regular Rounded"
     },
     "Library": {
       "glyph": "books",
       "codepoint": "0xf28d",
-      "drawable": "uicon_library"
+      "drawable": "uicon_library",
+      "style": "Regular Rounded"
     },
     "User": {
       "glyph": "user",
       "codepoint": "0xfea0",
-      "drawable": "uicon_user"
+      "drawable": "uicon_user",
+      "style": "Regular Rounded"
     },
     "Play": {
       "glyph": "play",
       "codepoint": "0xfa9e",
-      "drawable": "uicon_play"
+      "drawable": "uicon_play",
+      "style": "Regular Rounded"
     },
     "Pause": {
       "glyph": "pause",
       "codepoint": "0xfa0c",
-      "drawable": "uicon_pause"
+      "drawable": "uicon_pause",
+      "style": "Regular Rounded"
     },
     "Lock": {
       "glyph": "lock",
       "codepoint": "0xf8d5",
-      "drawable": "uicon_lock"
+      "drawable": "uicon_lock",
+      "style": "Regular Rounded"
     },
     "LockOpen": {
       "glyph": "lock-open-alt",
       "codepoint": "0xf8d4",
-      "drawable": "uicon_lock_open"
+      "drawable": "uicon_lock_open",
+      "style": "Regular Rounded"
     },
     "Bookmark": {
       "glyph": "bookmark",
       "codepoint": "0xf28b",
-      "drawable": "uicon_bookmark"
+      "drawable": "uicon_bookmark",
+      "style": "Regular Rounded"
     },
     "Quiz": {
       "glyph": "clipboard-check",
       "codepoint": "0xf438",
-      "drawable": "uicon_quiz"
+      "drawable": "uicon_quiz",
+      "style": "Regular Rounded"
     },
     "Repeat": {
       "glyph": "arrows-repeat",
       "codepoint": "0xf1c4",
-      "drawable": "uicon_repeat"
+      "drawable": "uicon_repeat",
+      "style": "Regular Rounded"
     },
     "Replay10": {
       "glyph": "replay-10",
       "codepoint": "0xfb41",
-      "drawable": "uicon_replay10"
+      "drawable": "uicon_replay10",
+      "style": "Regular Rounded"
     },
     "Forward10": {
       "glyph": "time-forward-ten",
       "codepoint": "0xfda6",
-      "drawable": "uicon_forward10"
+      "drawable": "uicon_forward10",
+      "style": "Regular Rounded"
     },
     "Volume": {
       "glyph": "volume",
       "codepoint": "0xfed0",
-      "drawable": "uicon_volume"
+      "drawable": "uicon_volume",
+      "style": "Regular Rounded"
     },
     "Mute": {
       "glyph": "volume-mute",
       "codepoint": "0xfecd",
-      "drawable": "uicon_mute"
+      "drawable": "uicon_mute",
+      "style": "Regular Rounded"
     },
     "Star": {
       "glyph": "star",
       "codepoint": "0xfce9",
-      "drawable": "uicon_star"
+      "drawable": "uicon_star",
+      "style": "Regular Rounded"
     },
     "Crown": {
       "glyph": "crown",
       "codepoint": "0xf4f9",
-      "drawable": "uicon_crown"
+      "drawable": "uicon_crown",
+      "style": "Regular Rounded"
     },
     "Check": {
       "glyph": "check",
       "codepoint": "0xf3c8",
-      "drawable": "uicon_check"
+      "drawable": "uicon_check",
+      "style": "Regular Rounded"
     },
     "All": {
       "glyph": "apps",
       "codepoint": "0xf16c",
-      "drawable": "uicon_all"
+      "drawable": "uicon_all",
+      "style": "Regular Rounded"
     },
     "Globe": {
       "glyph": "language",
       "codepoint": "0xf868",
-      "drawable": "uicon_globe"
+      "drawable": "uicon_globe",
+      "style": "Regular Rounded"
+    },
+    "HomeFilled": {
+      "glyph": "home",
+      "codepoint": "0xf7ad",
+      "drawable": "uicon_home_filled",
+      "style": "Solid Rounded"
+    },
+    "ExploreFilled": {
+      "glyph": "compass-alt",
+      "codepoint": "0xf4b5",
+      "drawable": "uicon_explore_filled",
+      "style": "Solid Rounded"
+    },
+    "ReviewFilled": {
+      "glyph": "layers",
+      "codepoint": "0xf86f",
+      "drawable": "uicon_review_filled",
+      "style": "Solid Rounded"
+    },
+    "LibraryFilled": {
+      "glyph": "books",
+      "codepoint": "0xf28b",
+      "drawable": "uicon_library_filled",
+      "style": "Solid Rounded"
     }
   }
 }

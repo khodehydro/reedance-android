@@ -48,4 +48,26 @@ class LayoutTest {
         compose.onNodeWithContentDescription("All languages").assertIsNotSelected()
     }
 
+    @Test fun compactNavigationHidesLabelsButKeepsAccessibleSelectedTabs() {
+        compose.setContent {
+            var compact by remember { mutableStateOf(false) }
+            var page by remember { mutableStateOf("home") }
+            CompositionLocalProvider(LocalFa provides false, LocalReducedMotion provides true) {
+                ReedanceTheme(Settings(language = "en")) {
+                    androidx.compose.foundation.layout.Column {
+                        androidx.compose.material3.Button(onClick = { compact = !compact }) { androidx.compose.material3.Text("Toggle size") }
+                        FloatingNavigation(page, compact) { page = it }
+                    }
+                }
+            }
+        }
+        compose.onNodeWithContentDescription("Home").assertIsSelected()
+        compose.onNodeWithContentDescription("Explore").performClick().assertIsSelected()
+        compose.onNodeWithText("Toggle size").performClick()
+        compose.onNodeWithText("Explore").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Explore").assertIsSelected()
+        compose.onNodeWithText("Toggle size").performClick()
+        compose.onNodeWithText("Explore").assertIsDisplayed()
+    }
+
 }

@@ -17,9 +17,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.animation.core.tween
 import com.hydro.reedance.R
 import com.hydro.reedance.data.*
 import com.google.gson.JsonObject
@@ -52,10 +52,12 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
     var language by rememberSaveable { mutableIntStateOf(0) }
     var access by rememberSaveable { mutableIntStateOf(0) }
     val grid = rememberLazyGridState()
-    val uri = LocalUriHandler.current
-    val filtered = remember(catalog, language, access) { catalog.filter { s ->
+    val lesson by model.lesson.collectAsStateWithLifecycle()
+    val installedIds = remember(lesson) { listOfNotNull(lesson?.s("songId")?.takeIf { it.isNotBlank() }).toSet() }
+    val reduced = LocalReducedMotion.current
+    val filtered = remember(catalog, language, access, installedIds) { catalog.filter { s ->
         (language == 0 || s.s("language") == listOf("", "en", "es", "ko")[language]) && when(access) {
-            1 -> s.s("access") == "free"; 2 -> s.s("access") == "paid"; 3 -> s.s("id") == "midnight-avenue"; else -> true
+            1 -> s.s("access") == "free"; 2 -> s.s("access") == "paid"; 3 -> s.s("id") in installedIds; else -> true
         }
     } }
     LazyVerticalGrid(columns = GridCells.Fixed(2), state = grid, modifier = Modifier.fillMaxSize(),
@@ -86,18 +88,22 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 PillTabs(listOf(
                     PillOption(tr("همه", "All"), UiIcons.Globe, tr("همهٔ زبان‌ها", "All languages")),
-                    PillOption("🇬🇧", description = tr("انگلیسی", "English")),
-                    PillOption("🇪🇸", description = tr("اسپانیایی", "Spanish")),
-                    PillOption("🇰🇷", description = tr("کره‌ای", "Korean"))
+                    PillOption("", description = tr("انگلیسی", "English"), flag = R.drawable.flag_gb_circle),
+                    PillOption("", description = tr("اسپانیایی", "Spanish"), flag = R.drawable.flag_es_circle),
+                    PillOption("", description = tr("کره‌ای", "Korean"), flag = R.drawable.flag_kr_circle)
                 ), language) { language = it }
                 PillTabs(listOf(
                     PillOption(tr("همه", "All"), UiIcons.All), PillOption(tr("رایگان", "Free"), UiIcons.LockOpen),
-                    PillOption(tr("پولی", "Premium"), UiIcons.Crown), PillOption(tr("قابل تجربه", "Playable"), UiIcons.Play)
+                    PillOption(tr("پولی", "Premium"), UiIcons.Crown), PillOption(tr("دانلودشده‌ها", "Downloaded"), UiIcons.Check)
                 ), access) { access = it }
             }
         }
         items(filtered, key = { it.s("id") }, contentType = { "song" }) { song ->
-            SongTile(song, Modifier.fillMaxWidth()) { openSong(song.s("id")) }
+            SongTile(song, Modifier.fillMaxWidth().animateItem(
+                fadeInSpec = tween(if(reduced) 0 else 180),
+                placementSpec = tween(if(reduced) 0 else 220),
+                fadeOutSpec = tween(if(reduced) 0 else 140)
+            )) { openSong(song.s("id")) }
         }
         if(filtered.isEmpty()) item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
             Panel { Text(tr("آهنگی پیدا نشد؛ فیلترها را تغییر بده.", "No songs found. Try another filter.")) }
@@ -108,8 +114,6 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
         item(key = "credits", span = { GridItemSpan(maxLineSpan) }) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("developed with ❤️ by HYDRO team", style = MaterialTheme.typography.labelSmall)
-                // Required free-tier attribution, not a license block in About.
-                TextButton({ uri.openUri("https://www.flaticon.com/uicons") }) { Text("Uicons by Flaticon", style = MaterialTheme.typography.labelSmall) }
             }
         }
     }

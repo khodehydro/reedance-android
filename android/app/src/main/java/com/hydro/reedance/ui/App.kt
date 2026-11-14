@@ -5,6 +5,10 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.input.nestedscroll.*
+import androidx.compose.ui.geometry.Offset
+import kotlin.math.abs
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -34,6 +38,9 @@ import com.hydro.reedance.data.*
             val lightBars = MaterialTheme.colorScheme.background.luminance() > .5f
             SideEffect {
                 (context as? android.app.Activity)?.window?.let { window ->
+                    @Suppress("DEPRECATION")
+                    window.navigationBarColor = android.graphics.Color.TRANSPARENT
+                    if(android.os.Build.VERSION.SDK_INT >= 29) window.isNavigationBarContrastEnforced = false
                     WindowCompat.getInsetsController(window, window.decorView).apply {
                         isAppearanceLightStatusBars = lightBars
                         isAppearanceLightNavigationBars = lightBars
@@ -82,6 +89,25 @@ import com.hydro.reedance.data.*
     val started by model.started.collectAsStateWithLifecycle()
     val playing by model.playing.collectAsStateWithLifecycle()
     val pageStates = rememberSaveableStateHolder()
+    var compactNavigation by remember(page) { mutableStateOf(false) }
+    val threshold = with(LocalDensity.current) { 36.dp.toPx() }
+    val scrollConnection = remember(page, threshold) {
+        object : NestedScrollConnection {
+            private var direction = 0
+            private var distance = 0f
+            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                if(source != NestedScrollSource.UserInput) return Offset.Zero
+                val dy = consumed.y
+                if(dy != 0f) {
+                    val next = if(dy < 0) -1 else 1
+                    if(next != direction) { direction = next; distance = 0f }
+                    distance += abs(dy)
+                    if(distance >= threshold) { compactNavigation = next < 0; distance = 0f }
+                } else if(available.y > 0) compactNavigation = false
+                return Offset.Zero // Observe scrolling; never steal it from the page.
+            }
+        }
+    }
     LaunchedEffect(message) { if(message.isNotEmpty()) { snackbar.showSnackbar(message); model.message.value = "" } }
     fun navigate(to: String) { if(to == "quiz") model.pause(); page = to }
     val independent = page in listOf("song", "quiz")
@@ -99,28 +125,18 @@ import com.hydro.reedance.data.*
             }
         }
     }, bottomBar = {
-        if(!independent) Column(Modifier.navigationBarsPadding().padding(horizontal = 20.dp, vertical = 10.dp)) {
-            if(started) Surface(shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
+        if(!independent) Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            if(started) Surface(modifier = Modifier.padding(horizontal = 20.dp), shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                     TextButton({ songId = "midnight-avenue"; navigate("song") }, Modifier.weight(1f)) { Text("Midnight Avenue") }
                     IconButton(model::togglePlay) { AppIcon(if(playing) UiIcons.Pause else UiIcons.Play, tr("پخش یا مکث", "Play or pause")) }
                 }
             }
-            Surface(shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 12.dp) {
-                Row(Modifier.fillMaxWidth().padding(4.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
-                    val nav = listOf(Triple("home", tr("خانه", "Home"), UiIcons.Home), Triple("explore", tr("کشف", "Explore"), UiIcons.Explore), Triple("review", tr("لایتنر", "Review"), UiIcons.Review), Triple("library", tr("کتابخانه", "Library"), UiIcons.Library))
-                    nav.forEach { (id, title, icon) ->
-                        Column(Modifier.weight(1f).clickable { navigate(id) }.padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                            AppIcon(icon, title, tint = if(page == id) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(title, style = MaterialTheme.typography.labelSmall, maxLines = 1)
-                        }
-                    }
-                }
-            }
+            FloatingNavigation(page, compactNavigation, ::navigate)
         }
     }) { padding ->
         // Immediate destination switch: never compose/layout two whole pages during a fade.
-        Box(Modifier.padding(padding)) {
+        Box(Modifier.padding(padding).nestedScroll(scrollConnection)) {
           pageStates.SaveableStateProvider(page) {
             when(page) {
                 "home", "explore" -> CatalogScreen(model, page == "home", { songId = it; navigate("song") }, { navigate("starter") })

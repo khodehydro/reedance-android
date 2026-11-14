@@ -9,6 +9,10 @@ import com.hydro.reedance.R
 
 // Exact Regular Rounded outlines from the web reference, drawn as native vectors.
 object UiIcons {
+    val HomeFilled = R.drawable.uicon_home_filled
+    val ExploreFilled = R.drawable.uicon_explore_filled
+    val ReviewFilled = R.drawable.uicon_review_filled
+    val LibraryFilled = R.drawable.uicon_library_filled
     val Back = R.drawable.uicon_back
     val Home = R.drawable.uicon_home
     val Explore = R.drawable.uicon_explore

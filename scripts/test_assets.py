@@ -121,4 +121,38 @@ class AssetTests(unittest.TestCase):
         self.assertEqual(1, activity.count('= installSplashScreen()'))
         self.assertIn('setKeepOnScreenCondition', activity)
 
+    def test_navigation_filled_variants_are_distinct_and_valid(self):
+        data = load(ASSETS / 'main/assets/uicons-provenance.json')['icons']
+        for name in ['Home', 'Explore', 'Review', 'Library']:
+            self.assertEqual('Solid Rounded', data[name+'Filled']['style'])
+            normal = ASSETS / ('main/res/drawable/' + data[name]['drawable'] + '.xml')
+            filled = ASSETS / ('main/res/drawable/' + data[name+'Filled']['drawable'] + '.xml')
+            self.assertNotEqual(normal.read_bytes(), filled.read_bytes())
+
+    def test_circle_flags_and_downloaded_filter(self):
+        for code in ['gb','es','kr']:
+            png = (ASSETS / ('main/res/drawable-nodpi/flag_' + code + '_circle.png')).read_bytes()
+            self.assertEqual(b'\x89PNG\r\n\x1a\n', png[:8])
+            self.assertEqual((192,192), struct.unpack('>II', png[16:24]))
+            self.assertEqual(6, png[25])  # RGBA: transparent outside circular edge
+        source = (ASSETS / 'main/java/com/hydro/reedance/ui/Catalog.kt').read_text()
+        self.assertIn('3 -> s.s("id") in installedIds', source)
+        self.assertIn('remember(catalog, language, access, installedIds)', source)
+        self.assertIn('.animateItem(', source)
+        self.assertNotIn('"Playable"', source)
+        for path in (ASSETS / 'main/java/com/hydro/reedance/ui').glob('*.kt'):
+            self.assertNotIn('Uicons by Flaticon', path.read_text())
+
+    def test_navigation_is_capsule_transparent_and_observes_scroll(self):
+        nav = (ASSETS / 'main/java/com/hydro/reedance/ui/FloatingNavigation.kt').read_text()
+        self.assertIn('shape = CircleShape', nav)
+        self.assertIn('shadowElevation = 2.dp', nav)
+        self.assertIn('AnimatedVisibility(!compact', nav)
+        self.assertIn('if(active) destination.filled else destination.outline', nav)
+        self.assertIn('52.dp else 20.dp', nav)
+        app = (ASSETS / 'main/java/com/hydro/reedance/ui/App.kt').read_text()
+        self.assertIn('.nestedScroll(scrollConnection)', app)
+        self.assertIn('window.isNavigationBarContrastEnforced = false', app)
+        self.assertIn('android.graphics.Color.TRANSPARENT', app)
+
 if __name__ == '__main__': unittest.main(verbosity=2)

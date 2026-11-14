@@ -5,6 +5,9 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -44,7 +47,7 @@ import com.hydro.reedance.data.*
 @Composable fun Action(text: String, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -> Unit) {
     Button(onClick, modifier.heightIn(min = 48.dp), enabled = enabled, shape = RoundedCornerShape(14.dp)) { Text(text) }
 }
-data class PillOption(val label: String, val icon: Int? = null, val description: String = label)
+data class PillOption(val label: String, val icon: Int? = null, val description: String = label, val flag: Int? = null)
 @Composable fun ChoiceRow(items: List<String>, selected: Int, onSelect: (Int) -> Unit) =
     PillTabs(items.map { PillOption(it) }, selected, onSelect)
 
@@ -57,13 +60,15 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
             val background by animateColorAsState(if(active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface, tween(duration), label = "pill-color")
             val foreground by animateColorAsState(if(active) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant, tween(duration), label = "pill-ink")
             val scale by animateFloatAsState(if(active) 1f else .97f, tween(duration), label = "pill-scale")
-            Surface(shape = RoundedCornerShape(50), color = background, contentColor = foreground,
+            Surface(shape = if(option.flag != null) CircleShape else RoundedCornerShape(50), color = background, contentColor = foreground,
                 shadowElevation = if(active) 3.dp else 0.dp,
                 border = BorderStroke(1.dp, if(active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f)),
                 modifier = Modifier.graphicsLayer { scaleX = scale; scaleY = scale }
                     .selectable(active, role = Role.Tab, onClick = { if(!active) onSelect(index) })
                     .semantics { contentDescription = option.description }) {
-                Row(Modifier.heightIn(min = 48.dp).padding(horizontal = 16.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
+                if(option.flag != null) {
+                    Image(painterResource(option.flag), null, Modifier.size(48.dp).padding(if(active) 3.dp else 1.dp).clip(CircleShape), contentScale = ContentScale.Crop)
+                } else Row(Modifier.heightIn(min = 48.dp).padding(horizontal = 16.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
                     option.icon?.let { AppIcon(it, null, Modifier.size(17.dp)) }
                     Text(option.label, style = MaterialTheme.typography.labelLarge, fontWeight = if(active) FontWeight.Bold else FontWeight.Normal)
                 }

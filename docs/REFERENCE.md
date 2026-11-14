@@ -15,7 +15,7 @@ Reviewed sources: README, all seven architecture documents, schema/fixture files
 - `midnight-avenue.json` + `enrichDemoLesson` + `demoQuiz` → debug-only lesson JSON using unchanged v1 schema. The converter removes web-only keys and supplies stable line/lexeme references, examples, audio metadata and credits. It is a developer demo migration, NOT a substitute for human approval/Windows publishing.
 - Original 64-second generated instrumental WAV is debug-only. Demo text is not sung lyrics. No famous-song audio was introduced.
 - Vazirmatn from `rastikerdar/vazirmatn`, Manrope from `google/fonts`, both with bundled OFL notices. Korean uses Android fallback where these fonts have no glyphs; device QA remains required.
-- Android icons now use the same official Uicons Regular Rounded 3.3.1 outlines as the web. `scripts/import_uicons.py` converts those outlines to native vector drawables; provenance and the original license are bundled. Required linked attribution is at the catalog footer, not in the About license paragraph.
+- Android icons now use the same official Uicons Regular Rounded 3.3.1 outlines as the web. `scripts/import_uicons.py` converts those outlines to native vector drawables; provenance and the original license are bundled. The owner requested removal of UI attribution; original license and provenance remain bundled. Publisher licensing requirements must be reviewed before public release.
 
 ## Motion translation
 
@@ -28,3 +28,5 @@ Shared UI model is an Android ViewModel; Room stores user state, DataStore prefe
 Current demo is intentionally labelled as a local install, not “download complete”. A local file hash is not a publisher signature. The release build is blocked rather than pretending that missing endpoints/keys, updater and security gates are ready.
 
 Current typography uses bundled Vazirmatn Regular/Bold across app text, and a static Manrope ExtraBold instance for the Reedance wordmark. Only the system splash remains; it is held until local initialization finishes.
+
+Navigation active states additionally use official Solid Rounded outlines from the same 3.3.1 package. Circular country flag PNGs are derived from the reference SVGs; no emoji rendering dependency is used in language-filter buttons.
