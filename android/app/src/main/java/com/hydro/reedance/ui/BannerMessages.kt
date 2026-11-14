@@ -35,7 +35,7 @@ private val bannerCopies = listOf(
 private const val BANNER_MESSAGE_MILLIS = 6_000
 
 /** Isolated timer: filling the indicator does not recompose Home or its song grid. */
-@Composable internal fun BannerMessages(openSong: (String) -> Unit, animate: Boolean, modifier: Modifier = Modifier) {
+@Composable internal fun BannerMessages(explore: () -> Unit, animate: Boolean, modifier: Modifier = Modifier) {
     val reduced = LocalReducedMotion.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var index by rememberSaveable { mutableIntStateOf(0) }
@@ -68,8 +68,8 @@ private const val BANNER_MESSAGE_MILLIS = 6_000
                 }
             }
         }
-        PressButton({ openSong("midnight-avenue") }, colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Blue)) {
-            Text(tr("شروع یادگیری", "Start learning")); AppIcon(UiIcons.Play, null)
+        PressButton(explore, colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Blue)) {
+            Text(tr("شروع یادگیری", "Start learning"))
         }
         LinearProgressIndicator(progress = { progress.value }, modifier = Modifier.fillMaxWidth().height(4.dp).clip(CircleShape),
             color = Color.White, trackColor = Color.White.copy(alpha = .22f))

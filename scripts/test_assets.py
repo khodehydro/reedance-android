@@ -227,9 +227,9 @@ class AssetTests(unittest.TestCase):
         self.assertIn('item(key = "hero"', home)
         self.assertIn('item(key = "starter"', home)
         self.assertLess(home.index('item(key = "hero"'), home.index('item(key = "starter"'))
-        self.assertIn('HomePager(model, openSong)', home)
-        self.assertIn('openSong("midnight-avenue")', (ASSETS / 'main/java/com/hydro/reedance/ui/BannerMessages.kt').read_text())
-        self.assertIn('PressTextButton(starter)', home)
+        self.assertIn('HomePager(model, explore)', home)
+        self.assertIn('PressButton(explore,', (ASSETS / 'main/java/com/hydro/reedance/ui/BannerMessages.kt').read_text())
+        self.assertIn('PressButton(starter,', home)
         self.assertNotIn('PillTabs', home)
         self.assertIn('if(!home) item(key = "filters"', source)
         self.assertIn('if(home) latestSongs(it)', source)
@@ -383,11 +383,11 @@ class AssetTests(unittest.TestCase):
     def test_banner_progress_and_vertical_message_cycle_stay_inside(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'
         pager = (ui / 'HomePager.kt').read_text()
-        self.assertIn('BannerMessages(openSong, animate, Modifier.fillMaxSize().padding(26.dp))', pager)
+        self.assertIn('BannerMessages(explore, animate, Modifier.fillMaxSize().padding(26.dp))', pager)
         messages = (ui / 'BannerMessages.kt').read_text()
         for token in ['BANNER_MESSAGE_MILLIS = 6_000', 'repeatOnLifecycle(Lifecycle.State.STARTED)', 'animate && !reduced', 'progress.animateTo(1f', 'index = (index + 1) % bannerCopies.size', 'progress.snapTo(0f)', 'slideInVertically(tween(450)) { it }', 'slideOutVertically(tween(450)) { -it }', 'LinearProgressIndicator(progress = { progress.value }', 'Modifier.weight(1f)']:
             self.assertIn(token, messages)
-        self.assertLess(messages.index('PressButton({ openSong'), messages.index('LinearProgressIndicator('))
+        self.assertLess(messages.index('PressButton(explore,'), messages.index('LinearProgressIndicator('))
         self.assertIn('YOUR RHYTHM. YOUR WORDS.', messages)
 
     def test_supplied_starter_artwork_in_home_and_course(self):
@@ -403,6 +403,21 @@ class AssetTests(unittest.TestCase):
         self.assertEqual(6, png[25])
         provenance = load(ASSETS / 'main/assets/brand-icons-provenance.json')
         self.assertTrue(provenance['ico_starter']['source'].endswith('/ico_starter.png'))
+
+    def test_starter_float_and_banner_explore_action(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        artwork = (ui / 'StarterArtwork.kt').read_text()
+        for token in ['visible && !reduced', 'repeatOnLifecycle(Lifecycle.State.STARTED)', 'shift.animateTo(-4f', 'shift.animateTo(4f', 'translationY = shift.value.dp.toPx()', 'boundsInWindow()']:
+            self.assertIn(token, artwork)
+        messages = (ui / 'BannerMessages.kt').read_text()
+        self.assertIn('PressButton(explore,', messages)
+        self.assertNotIn('UiIcons.Play', messages)
+        self.assertNotIn('midnight-avenue', messages)
+        app = (ui / 'App.kt').read_text()
+        self.assertIn('{ navigate("starter") }, { navigate("explore") })', app)
+        catalog = (ui / 'Catalog.kt').read_text()
+        self.assertIn('PressButton(starter, Modifier.fillMaxWidth().heightIn(min = 52.dp)', catalog)
+        self.assertNotIn('PressTextButton(starter)', catalog)
 
     def test_headers_have_consistent_opaque_background(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'

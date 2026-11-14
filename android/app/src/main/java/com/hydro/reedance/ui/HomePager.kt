@@ -47,7 +47,7 @@ internal fun currentPersianMonth(now: Long = System.currentTimeMillis()): Persia
     return PersianMonth(year, month, today, offset, days)
 }
 
-@Composable fun HomePager(model: AppModel, openSong: (String) -> Unit) {
+@Composable fun HomePager(model: AppModel, explore: () -> Unit) {
     val pager = rememberPagerState(pageCount = { 2 })
     val scope = rememberCoroutineScope()
     val reduced = LocalReducedMotion.current
@@ -58,7 +58,7 @@ internal fun currentPersianMonth(now: Long = System.currentTimeMillis()): Persia
                 visible = bounds.width > 0f && bounds.height > 0f
             }, pageSpacing = 12.dp,
             key = { if(it == 0) "welcome" else "activity" }) { page ->
-            if(page == 0) WelcomeBanner(openSong, animate = visible && pager.currentPage == 0) else ActivityCalendar(model)
+            if(page == 0) WelcomeBanner(explore, animate = visible && pager.currentPage == 0) else ActivityCalendar(model)
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
             listOf(tr("شروع یادگیری", "Welcome"), tr("فعالیت این ماه", "This month's activity")).forEachIndexed { index, label ->
@@ -70,10 +70,10 @@ internal fun currentPersianMonth(now: Long = System.currentTimeMillis()): Persia
     }
 }
 
-@Composable private fun WelcomeBanner(openSong: (String) -> Unit, animate: Boolean) {
+@Composable private fun WelcomeBanner(explore: () -> Unit, animate: Boolean) {
     Box(Modifier.fillMaxSize().clip(RoundedCornerShape(28.dp)).background(Brush.linearGradient(listOf(Blue, Deep)))) {
         BannerGradient(animate, Modifier.matchParentSize())
-        BannerMessages(openSong, animate, Modifier.fillMaxSize().padding(26.dp))
+        BannerMessages(explore, animate, Modifier.fillMaxSize().padding(26.dp))
     }
 }
 

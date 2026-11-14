@@ -141,7 +141,7 @@ import com.hydro.reedance.data.*
          CompositionLocalProvider(LocalOverlayBottomInset provides if(independent) 0.dp else padding.calculateBottomPadding()) {
           pageStates.SaveableStateProvider(page) {
             when(page) {
-                "home", "explore" -> CatalogScreen(model, page == "home", { songId = it; navigate("song") }, { navigate("starter") })
+                "home", "explore" -> CatalogScreen(model, page == "home", { songId = it; navigate("song") }, { navigate("starter") }, { navigate("explore") })
                 "starter" -> StarterScreen(model)
                 "song" -> SongScreen(model, songId, songTab, { songTab = it }, { navigate("home") }, { reviewQuiz = false; navigate("quiz") })
                 "quiz" -> QuizScreen(model, reviewQuiz, { navigate(if(reviewQuiz) "review" else "song") }, { navigate("review") })

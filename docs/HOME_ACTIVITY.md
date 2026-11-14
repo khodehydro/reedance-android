@@ -97,3 +97,24 @@ partial fill is in-memory only and may restart when the lazy hero is disposed.
 and device timing/layout validation remain unavailable here. Verify six-second
 cycles, bottom placement, RTL/LTR, huge fonts, swipe/background/return pause-resume,
 reduced motion and that the gradient animation remains independent of text changes.
+
+## Starter action and mascot motion
+
+Home's Open Starter action is now a full-width primary-filled button (52dp minimum
+height, 18dp corners) with a direction-aware forward arrow. It retains the global
+press feedback and uses theme-aware foreground/background colors. The mascot in
+both Home and the course heading gently floats between -4dp and +4dp, easing over
+2.4 seconds per leg. Translation is evaluated in graphicsLayer, not layout; 6dp
+vertical padding keeps the illustration away from clipping boundaries. Motion
+pauses outside the clipped window or STARTED lifecycle and resets to neutral under
+reduced motion. ContentScale.Fit and the source artwork remain unchanged.
+
+Start learning in the welcome banner now navigates to Explore, with no play icon.
+A separate zero-argument Explore callback is wired through Catalog → HomePager →
+BannerMessages so individual song cards still open their selected song normally.
+Banner timing, fluid rendering, calendar and notifications are untouched.
+
+32 host checks and 47 Kotlin/KTS syntax checks pass. Device QA still needs to cover
+button prominence, arrow direction, floating motion/clip bounds, reduced motion,
+background/pause, font scaling and banner-versus-song-card destinations. No native
+build or on-device animation test was available in this sandbox.

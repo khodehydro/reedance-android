@@ -28,6 +28,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -67,7 +68,7 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
         bitmap?.let { Image(it.asImageBitmap(), description, Modifier.matchParentSize(), contentScale = ContentScale.Crop) }
     }
 }
-@Composable fun CatalogScreen(model: AppModel, home: Boolean, openSong: (String) -> Unit, starter: () -> Unit) {
+@Composable fun CatalogScreen(model: AppModel, home: Boolean, openSong: (String) -> Unit, starter: () -> Unit, explore: () -> Unit) {
     val catalog by model.catalog.collectAsStateWithLifecycle()
     val settings by model.settings.collectAsStateWithLifecycle()
     val targetLanguage = settings.targetLanguage
@@ -89,7 +90,7 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 20.dp + LocalOverlayBottomInset.current), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         if(home) {
             item(key = "hero", span = { GridItemSpan(maxLineSpan) }) {
-                HomePager(model, openSong)
+                HomePager(model, explore)
             }
             item(key = "starter", span = { GridItemSpan(maxLineSpan) }) {
                 Panel(tone = MaterialTheme.colorScheme.secondaryContainer) {
@@ -98,7 +99,11 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
                         StarterArtwork(Modifier.size(104.dp))
                     }
                     Text(tr("از حروف و صداها تا اولین سطر؛ انگلیسی، اسپانیایی و کره‌ای.", "Letters, sounds and your very first line. English, Spanish and Korean."))
-                    PressTextButton(starter) { Text(tr("ورود به استارتر", "Open Starter")) }
+                    PressButton(starter, Modifier.fillMaxWidth().heightIn(min = 52.dp), shape = RoundedCornerShape(18.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)) {
+                        Text(tr("ورود به استارتر", "Open Starter"), Modifier.weight(1f), style = MaterialTheme.typography.labelLarge)
+                        AppIcon(UiIcons.Back, null, Modifier.size(20.dp).graphicsLayer { rotationZ = 180f })
+                    }
                 }
             }
         }
