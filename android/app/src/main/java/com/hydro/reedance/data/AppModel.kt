@@ -109,14 +109,12 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
                         content.catalog()
                     }
                     val startersTask = async { content.starters() }
-                    val lessonTask = async { content.restoreDemo() }
                     val loadedSettings = preferences.flow.first()
                     val loadedSteps = dao.starter().first()
                     StarterPreload.settings = loadedSettings
                     StarterPreload.steps = loadedSteps
                     catalog.value = catalogTask.await()
                     starters.value = startersTask.await()
-                    lesson.value = lessonTask.await()
                 }
             } catch(cancelled: CancellationException) { throw cancelled } catch(_: Exception) { message.value = "خطا در بارگذاری / Could not load local data" } finally { ready.value = true }
         }
@@ -272,13 +270,6 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
             } catch(cancelled: CancellationException) { throw cancelled } catch(error: Exception) { message.value = error.message ?: "Installation failed" } finally { busy.value = false; installProgress.value = "" }
         }
     }
-    fun installDemo() {
-        if(!BuildConfig.DEBUG || busy.value) return
-        busy.value = true
-        operation("نصب دمو ناموفق بود / Demo installation failed") {
-            try { lesson.value = content.installDemo() } finally { busy.value = false }
-        }
-    }
     fun togglePlay() {
         playCommand?.cancel()
         playCommand = operation("پخش ناموفق / Playback failed") {
@@ -350,16 +341,6 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
         grade.missed.forEach { id -> val old = dao.review(id); dao.saveReview(ReviewCard(id, 1, System.currentTimeMillis(), old?.savedAt ?: System.currentTimeMillis())) }
         true
     } }
-    fun deleteDemo() {
-        if(busy.value) return
-        busy.value = true
-        operation("حذف فایل ناموفق / Could not remove song files") {
-            try {
-                pause(); prepareJob?.cancelAndJoin()
-                mediaMutex.withLock { controller?.stop(); controller?.clearMediaItems(); started.value = false; activePlayback.value = null; content.deleteDemo(); lesson.value = null }
-            } finally { busy.value = false }
-        }
-    }
     override fun onCleared() {
         speech?.close()
         controllerFuture?.let { MediaController.releaseFuture(it) }

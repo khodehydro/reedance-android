@@ -56,8 +56,10 @@ import kotlinx.coroutines.launch
         Text(tr("پاسخ درست: خانهٔ بعد با فاصلهٔ ۲، ۴، ۸ و ۱۶ روز. فراموشی: خانهٔ اول، یک دقیقهٔ دیگر.", "Remembered: next stage in 2, 4, 8 or 16 days. Forgotten: stage one, due in one minute."), style = MaterialTheme.typography.bodySmall)
     }
 }
-@Composable fun LibraryScreen(model: AppModel, song: () -> Unit) {
+@Composable fun LibraryScreen(model: AppModel, song: (String) -> Unit) {
     val bookmarks by model.bookmarks.collectAsStateWithLifecycle()
+    val catalog by model.catalog.collectAsStateWithLifecycle()
+    val installedIds by model.installedIds.collectAsStateWithLifecycle()
     val lesson by model.lesson.collectAsStateWithLifecycle()
     var index by remember { mutableIntStateOf(0) }
     var reveal by remember(index) { mutableStateOf(false) }
@@ -88,10 +90,15 @@ import kotlinx.coroutines.launch
                 PressTextButton({ model.toggleBookmark(mark.itemType, mark.itemId) }) { Text(tr("حذف نشان", "Remove bookmark")) }
             }
         }
-        Panel {
-            Text("Midnight Avenue", style = MaterialTheme.typography.titleLarge)
-            Text(if(lesson != null) tr("آمادهٔ آفلاین · دموی محلی", "Ready offline · local demo") else tr("نصب نشده", "Not installed"))
-            Action(tr("باز کردن آهنگ", "Open song"), onClick = song)
+        val installedSongs = catalog.filter { it.s("id") in installedIds }
+        if(installedSongs.isEmpty()) Panel {
+            Text(tr("هنوز آهنگی نصب نشده است.", "No songs installed yet."))
         }
+        installedSongs.forEach { entry -> Panel {
+            Text(entry.s("title"), style = MaterialTheme.typography.titleLarge)
+            Text(entry.s("artist"))
+            Text(tr("آمادهٔ آفلاین", "Ready offline"))
+            Action(tr("باز کردن آهنگ", "Open song"), onClick = { song(entry.s("id")) })
+        } }
     }
 }

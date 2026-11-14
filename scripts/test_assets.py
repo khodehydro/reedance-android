@@ -280,8 +280,22 @@ class AssetTests(unittest.TestCase):
         self.assertLess(command.index('player.seekTo('), command.index('player.play()'))
         self.assertIn('player.currentMediaItem?.mediaId == songId', command)
 
+    def test_no_demo_or_mock_catalog_ships_in_any_app_variant(self):
+        catalog = load(ASSETS / 'main/assets/catalog_preview.json')
+        self.assertEqual(['gulum-2'], [song['id'] for song in catalog])
+        self.assertTrue(all(song.get('bundledPack') for song in catalog))
+        for variant in ['main', 'debug', 'release']:
+            assets = ASSETS / variant / 'assets'
+            self.assertFalse((assets / 'demo_lesson.json').exists())
+            self.assertFalse((assets / 'midnight-avenue-demo.wav').exists())
+        for file in (ASSETS / 'main/java').rglob('*.kt'):
+            text = file.read_text()
+            self.assertNotIn('installDemo', text)
+            self.assertNotIn('restoreDemo', text)
+            self.assertNotIn('midnight-avenue', text)
+
     def test_lesson_matches_unchanged_v1_schema(self):
-        Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ASSETS / 'debug/assets/demo_lesson.json'))
+        Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))
 
     def test_bootstrap_has_no_invented_urls(self):
         catalog = load(ASSETS / 'main/assets/bootstrap_catalog.json')
@@ -289,8 +303,8 @@ class AssetTests(unittest.TestCase):
         self.assertEqual([], catalog['songs'])
 
     def test_audio_matches_lesson_and_markers(self):
-        lesson = load(ASSETS / 'debug/assets/demo_lesson.json')
-        audio = ASSETS / 'debug/assets/midnight-avenue-demo.wav'
+        lesson = load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json')
+        audio = ROOT / 'tests/fixtures/legacy-demo/midnight-avenue-demo.wav'
         self.assertEqual(hashlib.sha256(audio.read_bytes()).hexdigest(), lesson['media']['audio']['sha256'])
         with wave.open(str(audio)) as w:
             self.assertLessEqual(abs(w.getnframes()/w.getframerate()*1000-lesson['media']['audio']['durationMs']), 1000)
@@ -314,7 +328,7 @@ class AssetTests(unittest.TestCase):
             for key in ['alphabetGroups', 'sounds', 'grammar', 'words', 'practice']: self.assertTrue(course[key])
 
     def test_quiz_references_and_four_formats(self):
-        lesson = load(ASSETS / 'debug/assets/demo_lesson.json')
+        lesson = load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json')
         words = {w['lexemeId'] for w in lesson['vocabulary']}
         self.assertEqual({'choice','match','order','typing'}, {q['type'] for q in lesson['questions']})
         for q in lesson['questions']:
@@ -604,7 +618,7 @@ class AssetTests(unittest.TestCase):
         source = (ASSETS / 'main/java/com/hydro/reedance/ui/Catalog.kt').read_text()
         self.assertIn('onDrawWithContent { clipPath(outline)', source)
         self.assertIn('addRoundRect(RoundRect(', source)
-        self.assertIn('value = coverCache.get(resource) ?: withContext', source)
+        self.assertIn('if(resource == null) null else withContext', source)
         self.assertNotIn('if(value == null)', source)
 
     def test_home_pager_and_real_persian_activity_ledger(self):
@@ -783,11 +797,8 @@ class AssetTests(unittest.TestCase):
         self.assertIn('Dispatchers.Default', source)
         self.assertIn('withContext(cpu)', source)
         self.assertIn('withContext(io)', source)
-        self.assertIn('filesMutex.withLock', source)
-        self.assertIn('ensureActive()', source)
         self.assertIn('require(file.length() <= 4 * 1024 * 1024)', source)
         self.assertNotIn('audio.readBytes()', source)
-        self.assertIn('withContext(NonCancellable + io)', source)
         speech = (ASSETS / 'main/java/com/hydro/reedance/media/Speech.kt').read_text()
         self.assertIn('suspend fun say', speech)
         self.assertIn('initialized.await()', speech)

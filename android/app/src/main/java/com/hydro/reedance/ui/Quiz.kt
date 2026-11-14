@@ -46,7 +46,7 @@ private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val qu
 @Composable fun QuizScreen(model: AppModel, review: Boolean, done: () -> Unit, openReview: () -> Unit) {
     val lesson by model.lesson.collectAsStateWithLifecycle()
     val data = lesson
-    if(data == null) { Column(Modifier.padding(24.dp)) { Text(tr("ابتدا بستهٔ دمو را نصب کن.", "Install the demo lesson first.")); PressTextButton(done) { Text(tr("بازگشت", "Back")) } }; return }
+    if(data == null) { Column(Modifier.padding(24.dp)) { Text(tr("ابتدا بستهٔ آهنگ را نصب کن.", "Install a song lesson first.")); PressTextButton(done) { Text(tr("بازگشت", "Back")) } }; return }
     val session by produceState<QuizSessionData?>(null, data, review) {
         val due = if(review) model.dueReviewCards() else emptyList()
         value = withContext(Dispatchers.Default) {

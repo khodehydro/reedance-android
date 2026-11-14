@@ -99,12 +99,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                 item(key = "install") { Panel {
                     CoverImage(if(song.s("distributionRef") == "gulum-ii") "pending-gulum-ii" else songId, song.s("title"), Modifier.fillMaxWidth().height(200.dp))
                     Heading(song.s("title"), song.s("artist"))
-                    if(songId == "midnight-avenue" && BuildConfig.DEBUG) {
-                        Text(tr("صوت و تمام آموزش‌ها را یک‌بار در فضای خصوصی برنامه نصب کن؛ سپس آفلاین تمرین کن.", "Install the audio and lessons into private storage once, then practice offline."))
-                        Text(tr("نسخهٔ آزمایشی: این دمو همراه APK است؛ دانلود شبکه یا بستهٔ امضاشده نیست.", "Debug demo: bundled with the APK, not a network download or a signed production pack."), style = MaterialTheme.typography.bodySmall)
-                        if(busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-                        Action(tr("نصب و باز کردن دموی محلی", "Install and open local demo"), enabled = !busy, onClick = model::installDemo)
-                    } else if(song.s("distributionRef").isNotEmpty()) {
+                    if(song.s("distributionRef").isNotEmpty()) {
                         val status by model.installProgress.collectAsStateWithLifecycle()
                         if(busy) { LinearProgressIndicator(Modifier.fillMaxWidth()); Text(status) }
                         val bundled = song.get("bundledPack")?.asBoolean == true

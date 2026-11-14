@@ -82,7 +82,7 @@ import com.hydro.reedance.data.*
 }
 @Composable internal fun MainShell(model: AppModel) {
     var page by rememberSaveable { mutableStateOf("home") }
-    var songId by rememberSaveable { mutableStateOf("midnight-avenue") }
+    var songId by rememberSaveable { mutableStateOf("") }
     var songTab by rememberSaveable { mutableIntStateOf(0) }
     var reviewQuiz by rememberSaveable { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
@@ -147,7 +147,7 @@ import com.hydro.reedance.data.*
                 "song" -> SongScreen(model, songId, songTab, { songTab = it }, { navigate("home") }, { reviewQuiz = false; navigate("quiz") })
                 "quiz" -> QuizScreen(model, reviewQuiz, { navigate(if(reviewQuiz) "review" else "song") }, { navigate("review") })
                 "review" -> ReviewScreen(model) { reviewQuiz = true; navigate("quiz") }
-                "library" -> LibraryScreen(model) { songId = "midnight-avenue"; navigate("song") }
+                "library" -> LibraryScreen(model) { songId = it; navigate("song") }
                 "profile" -> ProfileScreen(model) { navigate("library") }
             }
            }

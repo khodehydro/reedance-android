@@ -20,7 +20,6 @@ import com.hydro.reedance.data.*
     val steps by model.steps.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val uri = LocalUriHandler.current
-    var confirmDelete by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 24.dp + LocalOverlayBottomInset.current), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         Heading(tr("فضای من", "My space"), tr("ریتم یادگیری خودت را پیدا کن.", "Make this little space your own."))
         Panel {
@@ -49,7 +48,6 @@ import com.hydro.reedance.data.*
         Panel {
             Text(tr("فضای آفلاین", "Offline storage"), style = MaterialTheme.typography.titleLarge)
             Text(if(lesson == null) tr("بسته‌ای نصب نیست.", "No package installed.") else lesson!!.s("title"))
-            if(lesson?.s("songId") == "midnight-avenue") PressOutlinedButton({ confirmDelete = true }) { Text(tr("پاک کردن فایل‌های آهنگ", "Remove song files")) }
             Text(tr("با حذف آهنگ، نشان‌ها و پیشرفت پاک نمی‌شوند.", "Removing a song keeps your bookmarks and progress."), style = MaterialTheme.typography.bodySmall)
         }
         Panel {
@@ -68,10 +66,9 @@ import com.hydro.reedance.data.*
         }
         Panel {
             Text(tr("دربارهٔ ری‌دنس", "About Reedance"), style = MaterialTheme.typography.titleLarge)
-            Text(tr("نسخهٔ بومی آزمایشی · Kotlin و Jetpack Compose\nمحتوای دمو مستقل و موسیقی بی‌کلام است.", "Native debug edition · Kotlin & Jetpack Compose\nOriginal demo material with instrumental music."))
+            Text(tr("Reedance · Kotlin و Jetpack Compose", "Reedance · Kotlin & Jetpack Compose"))
             DeveloperCredit()
             PressTextButton({ uri.openUri("https://github.com/khodehydro/reedance-android") }) { Text(tr("کد منبع", "Source code")) }
         }
     }
-    if(confirmDelete) AlertDialog(onDismissRequest = { confirmDelete = false }, title = { Text(tr("فایل‌های آهنگ حذف شوند؟", "Remove song files?")) }, text = { Text(tr("پیشرفت و نشان‌ها محفوظ می‌مانند.", "Your progress and bookmarks will be kept.")) }, confirmButton = { PressTextButton({ model.deleteDemo(); confirmDelete = false }) { Text(tr("حذف", "Remove")) } }, dismissButton = { PressTextButton({ confirmDelete = false }) { Text(tr("انصراف", "Cancel")) } })
 }

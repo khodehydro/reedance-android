@@ -41,10 +41,9 @@ import com.hydro.reedance.domain.latestSongs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-fun cover(id: String) = when(id) {
+fun cover(id: String): Int? = when(id) {
     "pending-gulum-ii", "gulum-2" -> R.drawable.gulum_ii
-    "despacito" -> R.drawable.despacito; "spring-day" -> R.drawable.spring_day; "flowers" -> R.drawable.flowers
-    "someone-like-you" -> R.drawable.someone_like_you; "blinding-lights" -> R.drawable.blinding_lights; else -> R.drawable.midnight_avenue
+    else -> null
 }
 // Approx. 6MB maximum, shared across Home/Explore; no image decode on the UI thread.
 private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
@@ -53,8 +52,8 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
 @Composable fun CoverImage(id: String, description: String, modifier: Modifier = Modifier) {
     val resource = cover(id)
     val resources = LocalContext.current.resources
-    val bitmap by produceState<Bitmap?>(coverCache.get(resource), resource) {
-        value = coverCache.get(resource) ?: withContext(Dispatchers.IO) {
+    val bitmap by produceState<Bitmap?>(resource?.let { coverCache.get(it) }, resource) {
+        value = resource?.let { coverCache.get(it) } ?: if(resource == null) null else withContext(Dispatchers.IO) {
             coverCache.get(resource) ?: BitmapFactory.decodeResource(resources, resource,
                 BitmapFactory.Options().apply { inSampleSize = 2; inScaled = false })?.also { coverCache.put(resource, it) }
         }
@@ -137,9 +136,6 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
         }
         if(filtered.isEmpty()) item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
             Panel { Text(if(home) tr("هنوز آهنگی برای این زبان منتشر نشده است.", "No songs published for this language yet.") else tr("آهنگی پیدا نشد؛ فیلترها را تغییر بده.", "No songs found. Try another filter.")) }
-        }
-        item(key = "notice", span = { GridItemSpan(maxLineSpan) }) {
-            Text(tr("فقط Midnight Avenue دموی محلی دارد. بقیهٔ عنوان‌ها پیش‌نمایش کاتالوگ‌اند، نه محتوای قابل خرید یا دانلود.", "Only Midnight Avenue has a local demo. Other titles are catalog previews, not purchasable or downloadable content."), style = MaterialTheme.typography.bodySmall)
         }
         item(key = "credits", span = { GridItemSpan(maxLineSpan) }) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
