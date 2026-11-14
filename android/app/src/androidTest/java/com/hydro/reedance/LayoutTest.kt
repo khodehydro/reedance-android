@@ -1,6 +1,6 @@
 package com.hydro.reedance
 
-import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -34,4 +34,18 @@ class LayoutTest {
         compose.onNodeWithText("Word").assertIsDisplayed()
         compose.onNodeWithText("sí").assertIsDisplayed()
     }
+    @Test fun flagTabsHaveAccessibleNamesAndUpdateSelection() {
+        compose.setContent {
+            var selected by remember { mutableIntStateOf(0) }
+            CompositionLocalProvider(LocalFa provides true, LocalReducedMotion provides true, LocalLayoutDirection provides LayoutDirection.Rtl) {
+                ReedanceTheme(Settings(language = "fa")) {
+                    PillTabs(listOf(PillOption("همه", description = "All languages"), PillOption("🇬🇧", description = "English")), selected) { selected = it }
+                }
+            }
+        }
+        compose.onNodeWithContentDescription("All languages").assertIsSelected()
+        compose.onNodeWithContentDescription("English").performClick().assertIsSelected()
+        compose.onNodeWithContentDescription("All languages").assertIsNotSelected()
+    }
+
 }

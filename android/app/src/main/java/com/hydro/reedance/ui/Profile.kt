@@ -3,8 +3,6 @@ package com.hydro.reedance.ui
 import android.content.Intent
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -26,7 +24,7 @@ import com.hydro.reedance.data.*
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         Heading(tr("فضای من", "My space"), tr("ریتم یادگیری خودت را پیدا کن.", "Make this little space your own."))
         Panel {
-            Icon(Icons.Rounded.PersonOutline, null, Modifier.size(36.dp), tint = MaterialTheme.colorScheme.primary)
+            AppIcon(UiIcons.User, null, Modifier.size(36.dp), tint = MaterialTheme.colorScheme.primary)
             Text(tr("سلام، همراه مهمان", "Hello, guest"), style = MaterialTheme.typography.titleLarge)
             Text(tr("حساب یا همگام‌سازی ابری فعال نیست. پیشرفت فقط روی این دستگاه ذخیره می‌شود.", "No account or cloud sync. Your progress stays on this device."))
             Text(tr("${reviews.size} واژه · ${steps.size} قدم استارتر · ${results.size} پاسخ ثبت‌شده", "${reviews.size} words · ${steps.size} starter steps · ${results.size} answers"))
@@ -59,7 +57,7 @@ import com.hydro.reedance.data.*
         Panel {
             Text(tr("به تجربه‌ات امتیاز بده", "How does it feel?"), style = MaterialTheme.typography.titleLarge)
             Row { (1..5).forEach { rating -> IconButton({ model.rating(rating) }) {
-                Icon(if(settings.rating >= rating) Icons.Rounded.Star else Icons.Rounded.StarBorder, "$rating", tint = MaterialTheme.colorScheme.primary)
+                AppIcon(UiIcons.Star, "$rating", tint = if(settings.rating >= rating) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)
             } } }
             Text(tr("این امتیاز فقط محلی است و به فروشگاه ارسال نمی‌شود.", "This rating is local only. It is not sent to a store."), style = MaterialTheme.typography.bodySmall)
             OutlinedButton({
@@ -70,7 +68,6 @@ import com.hydro.reedance.data.*
             Text(tr("دربارهٔ ری‌دنس", "About Reedance"), style = MaterialTheme.typography.titleLarge)
             Text(tr("نسخهٔ بومی آزمایشی · Kotlin و Jetpack Compose\nمحتوای دمو مستقل و موسیقی بی‌کلام است.", "Native debug edition · Kotlin & Jetpack Compose\nOriginal demo material with instrumental music."))
             Text("developed with ❤️ by HYDRO team")
-            Text(tr("فونت: Vazirmatn (SIL OFL). آیکن‌ها: Material Icons (Apache 2.0). نسخهٔ وب از Uicons by Flaticon استفاده می‌کند؛ آیکن‌های وب در این اپ کپی نشده‌اند.", "Font: Vazirmatn (SIL OFL). Icons: Material Icons (Apache 2.0). The web reference uses Uicons by Flaticon; those icons are not redistributed here."), style = MaterialTheme.typography.bodySmall)
             TextButton({ uri.openUri("https://github.com/khodehydro/reedance-android") }) { Text(tr("کد منبع", "Source code")) }
         }
     }

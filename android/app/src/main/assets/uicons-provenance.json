@@ -1,0 +1,117 @@
+{
+  "package": "@flaticon/flaticon-uicons",
+  "version": "3.3.1",
+  "style": "Regular Rounded",
+  "icons": {
+    "Back": {
+      "glyph": "arrow-left",
+      "codepoint": "0xf197",
+      "drawable": "uicon_back"
+    },
+    "Home": {
+      "glyph": "home",
+      "codepoint": "0xf7b8",
+      "drawable": "uicon_home"
+    },
+    "Explore": {
+      "glyph": "compass-alt",
+      "codepoint": "0xf4bd",
+      "drawable": "uicon_explore"
+    },
+    "Review": {
+      "glyph": "layers",
+      "codepoint": "0xf87c",
+      "drawable": "uicon_review"
+    },
+    "Library": {
+      "glyph": "books",
+      "codepoint": "0xf28d",
+      "drawable": "uicon_library"
+    },
+    "User": {
+      "glyph": "user",
+      "codepoint": "0xfea0",
+      "drawable": "uicon_user"
+    },
+    "Play": {
+      "glyph": "play",
+      "codepoint": "0xfa9e",
+      "drawable": "uicon_play"
+    },
+    "Pause": {
+      "glyph": "pause",
+      "codepoint": "0xfa0c",
+      "drawable": "uicon_pause"
+    },
+    "Lock": {
+      "glyph": "lock",
+      "codepoint": "0xf8d5",
+      "drawable": "uicon_lock"
+    },
+    "LockOpen": {
+      "glyph": "lock-open-alt",
+      "codepoint": "0xf8d4",
+      "drawable": "uicon_lock_open"
+    },
+    "Bookmark": {
+      "glyph": "bookmark",
+      "codepoint": "0xf28b",
+      "drawable": "uicon_bookmark"
+    },
+    "Quiz": {
+      "glyph": "clipboard-check",
+      "codepoint": "0xf438",
+      "drawable": "uicon_quiz"
+    },
+    "Repeat": {
+      "glyph": "arrows-repeat",
+      "codepoint": "0xf1c4",
+      "drawable": "uicon_repeat"
+    },
+    "Replay10": {
+      "glyph": "replay-10",
+      "codepoint": "0xfb41",
+      "drawable": "uicon_replay10"
+    },
+    "Forward10": {
+      "glyph": "time-forward-ten",
+      "codepoint": "0xfda6",
+      "drawable": "uicon_forward10"
+    },
+    "Volume": {
+      "glyph": "volume",
+      "codepoint": "0xfed0",
+      "drawable": "uicon_volume"
+    },
+    "Mute": {
+      "glyph": "volume-mute",
+      "codepoint": "0xfecd",
+      "drawable": "uicon_mute"
+    },
+    "Star": {
+      "glyph": "star",
+      "codepoint": "0xfce9",
+      "drawable": "uicon_star"
+    },
+    "Crown": {
+      "glyph": "crown",
+      "codepoint": "0xf4f9",
+      "drawable": "uicon_crown"
+    },
+    "Check": {
+      "glyph": "check",
+      "codepoint": "0xf3c8",
+      "drawable": "uicon_check"
+    },
+    "All": {
+      "glyph": "apps",
+      "codepoint": "0xf16c",
+      "drawable": "uicon_all"
+    },
+    "Globe": {
+      "glyph": "language",
+      "codepoint": "0xf868",
+      "drawable": "uicon_globe"
+    }
+  }
+}

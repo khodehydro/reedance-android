@@ -8,6 +8,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -37,9 +44,31 @@ import com.hydro.reedance.data.*
 @Composable fun Action(text: String, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -> Unit) {
     Button(onClick, modifier.heightIn(min = 48.dp), enabled = enabled, shape = RoundedCornerShape(14.dp)) { Text(text) }
 }
-@Composable fun ChoiceRow(items: List<String>, selected: Int, onSelect: (Int) -> Unit) {
-    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        items.forEachIndexed { index, label -> FilterChip(selected == index, { onSelect(index) }, label = { Text(label) }) }
+data class PillOption(val label: String, val icon: Int? = null, val description: String = label)
+@Composable fun ChoiceRow(items: List<String>, selected: Int, onSelect: (Int) -> Unit) =
+    PillTabs(items.map { PillOption(it) }, selected, onSelect)
+
+@Composable fun PillTabs(items: List<PillOption>, selected: Int, onSelect: (Int) -> Unit) {
+    val reduced = LocalReducedMotion.current
+    val duration = if(reduced) 0 else 150
+    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).selectableGroup().padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        items.forEachIndexed { index, option ->
+            val active = selected == index
+            val background by animateColorAsState(if(active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface, tween(duration), label = "pill-color")
+            val foreground by animateColorAsState(if(active) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant, tween(duration), label = "pill-ink")
+            val scale by animateFloatAsState(if(active) 1f else .97f, tween(duration), label = "pill-scale")
+            Surface(shape = RoundedCornerShape(50), color = background, contentColor = foreground,
+                shadowElevation = if(active) 3.dp else 0.dp,
+                border = BorderStroke(1.dp, if(active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f)),
+                modifier = Modifier.graphicsLayer { scaleX = scale; scaleY = scale }
+                    .selectable(active, role = Role.Tab, onClick = { if(!active) onSelect(index) })
+                    .semantics { contentDescription = option.description }) {
+                Row(Modifier.heightIn(min = 48.dp).padding(horizontal = 16.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
+                    option.icon?.let { AppIcon(it, null, Modifier.size(17.dp)) }
+                    Text(option.label, style = MaterialTheme.typography.labelLarge, fontWeight = if(active) FontWeight.Bold else FontWeight.Normal)
+                }
+            }
+        }
     }
 }
 /** Reference CSS: enter 390ms (-15,10), exit 220ms (30,0), mirrored in RTL. */

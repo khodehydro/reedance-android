@@ -4,9 +4,6 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -40,19 +37,19 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
         Surface(shadowElevation = if(collapsed) 4.dp else 0.dp) {
             Column {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(back) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, tr("بازگشت", "Back")) }
+                    IconButton(back) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
                     Column(Modifier.weight(1f)) {
                         Text(song.s("title"), style = MaterialTheme.typography.titleMedium)
                         Text("${song.s("language").uppercase()} · ${song.s("level")} · ${song.s("duration")}", style = MaterialTheme.typography.labelSmall)
                     }
                     IconButton({ model.toggleBookmark("song", songId) }) {
-                        Icon(if(bookmarks.any { it.itemType == "song" && it.itemId == songId }) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder, tr("ذخیره", "Save"))
+                        AppIcon(UiIcons.Bookmark, tr("ذخیره", "Save"), tint = if(bookmarks.any { it.itemType == "song" && it.itemId == songId }) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 AnimatedVisibility(collapsed && available) {
                     Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(song.s("title"), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-                        IconButton(model::togglePlay) { Icon(if(playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, tr("پخش یا مکث", "Play or pause")) }
+                        IconButton(model::togglePlay) { AppIcon(if(playing) UiIcons.Pause else UiIcons.Play, tr("پخش یا مکث", "Play or pause")) }
                     }
                 }
             }
@@ -60,7 +57,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
         Column(Modifier.weight(1f).verticalScroll(scroll).padding(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
             if(!available) {
                 Panel {
-                    Image(painterResource(cover(songId)), song.s("title"), Modifier.fillMaxWidth().height(200.dp))
+                    CoverImage(songId, song.s("title"), Modifier.fillMaxWidth().height(200.dp))
                     Heading(song.s("title"), song.s("artist"))
                     if(songId == "midnight-avenue" && BuildConfig.DEBUG) {
                         Text(tr("صوت و تمام آموزش‌ها را یک‌بار در فضای خصوصی برنامه نصب کن؛ سپس آفلاین تمرین کن.", "Install the audio and lessons into private storage once, then practice offline."))
@@ -74,7 +71,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                 PlayerPanel(model)
                 Text(data.obj("credits").tr("notice", fa), style = MaterialTheme.typography.bodySmall)
                 ChoiceRow(listOf(tr("لیریک", "Lyrics"), tr("نکته‌ها", "Notes"), tr("لغت‌ها", "Words"), tr("عبارت‌ها", "Phrases")), tab, setTab)
-                OutlinedButton(quiz, Modifier.fillMaxWidth()) { Icon(Icons.Rounded.Quiz, null); Text(tr("آزمون آهنگ", "Song quiz")) }
+                OutlinedButton(quiz, Modifier.fillMaxWidth()) { AppIcon(UiIcons.Quiz, null); Text(tr("آزمون آهنگ", "Song quiz")) }
                 when(tab) {
                     0 -> {
                         ChoiceRow(listOf(tr("متن اصلی", "Original"), tr("ترجمهٔ خطی", "Line by line"), tr("کلمه‌به‌کلمه", "Word by word")), mode) { mode = it }
@@ -143,7 +140,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     val bookmarks by model.bookmarks.collectAsStateWithLifecycle()
     val saved = bookmarks.any { it.itemType == type && it.itemId == id }
     TextButton({ model.toggleBookmark(type, id) }) {
-        Icon(if(saved) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder, null)
+        AppIcon(UiIcons.Bookmark, null, tint = if(saved) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
         Text(if(saved) tr("نشان‌شده", "Saved") else tr("نشان کردن", "Save for later"))
     }
 }
@@ -162,11 +159,11 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                 Slider(value = dragging ?: position.toFloat(), onValueChange = { dragging = it }, valueRange = 0f..duration.toFloat().coerceAtLeast(1f), onValueChangeFinished = { dragging?.let { model.seek(it.toLong()) }; dragging = null })
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text(clock(position)); Text(clock(duration)) }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(model::toggleRepeat) { Icon(Icons.Rounded.Repeat, tr("تکرار", "Repeat"), tint = if(repeat) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant) }
-                    IconButton({ model.seek(position - 10000) }) { Icon(Icons.Rounded.Replay10, tr("۱۰ ثانیه عقب", "Back 10 seconds")) }
-                    FilledIconButton(model::togglePlay, Modifier.size(64.dp)) { Icon(if(playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, tr("پخش یا مکث", "Play or pause"), Modifier.size(32.dp)) }
-                    IconButton({ model.seek(position + 10000) }) { Icon(Icons.Rounded.Forward10, tr("۱۰ ثانیه جلو", "Forward 10 seconds")) }
-                    IconButton(model::toggleMute) { Icon(if(muted) Icons.Rounded.VolumeOff else Icons.Rounded.VolumeUp, tr("بی‌صدا", "Mute")) }
+                    IconButton(model::toggleRepeat) { AppIcon(UiIcons.Repeat, tr("تکرار", "Repeat"), tint = if(repeat) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant) }
+                    IconButton({ model.seek(position - 10000) }) { AppIcon(UiIcons.Replay10, tr("۱۰ ثانیه عقب", "Back 10 seconds")) }
+                    FilledIconButton(model::togglePlay, Modifier.size(64.dp)) { AppIcon(if(playing) UiIcons.Pause else UiIcons.Play, tr("پخش یا مکث", "Play or pause"), Modifier.size(32.dp)) }
+                    IconButton({ model.seek(position + 10000) }) { AppIcon(UiIcons.Forward10, tr("۱۰ ثانیه جلو", "Forward 10 seconds")) }
+                    IconButton(model::toggleMute) { AppIcon(if(muted) UiIcons.Mute else UiIcons.Volume, tr("بی‌صدا", "Mute")) }
                 }
             }
         }

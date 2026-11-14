@@ -91,4 +91,34 @@ class AssetTests(unittest.TestCase):
                 self.assertNotIn(b'enc-test-v1', p.read_bytes(), str(p))
         self.assertFalse((main/'assets/demo_lesson.json').exists())
 
+    def test_uicons_vectors_and_reference_style(self):
+        import xml.etree.ElementTree as ET
+        provenance = load(ASSETS / 'main/assets/uicons-provenance.json')
+        self.assertEqual('3.3.1', provenance['version'])
+        self.assertEqual('Regular Rounded', provenance['style'])
+        self.assertEqual('compass-alt', provenance['icons']['Explore']['glyph'])
+        for icon in provenance['icons'].values():
+            vector = ET.parse(ASSETS / ('main/res/drawable/' + icon['drawable'] + '.xml')).getroot()
+            self.assertTrue(vector.find('path').attrib['{http://schemas.android.com/apk/res/android}pathData'])
+        for path in (ASSETS / 'main/java/com/hydro/reedance/ui').glob('*.kt'):
+            self.assertNotIn('Icons.Rounded', path.read_text())
+        self.assertTrue((ASSETS / 'main/assets/Uicons-LICENSE.txt').is_file())
+
+    def test_catalog_has_no_search_and_uses_lazy_offthread_covers(self):
+        source = (ASSETS / 'main/java/com/hydro/reedance/ui/Catalog.kt').read_text()
+        self.assertNotIn('OutlinedTextField', source)
+        self.assertIn('LazyVerticalGrid', source)
+        self.assertIn('withContext(Dispatchers.IO)', source)
+        self.assertIn('🇬🇧', source)
+        for name in ['vazirmatn.ttf','vazirmatn_bold.ttf','manrope_bold.ttf']:
+            self.assertGreater((ASSETS / ('main/res/font/' + name)).stat().st_size, 10000)
+
+    def test_only_one_splash_and_no_whole_page_transition(self):
+        source = (ASSETS / 'main/java/com/hydro/reedance/ui/App.kt').read_text()
+        self.assertNotIn('BrandSplash', source)
+        self.assertNotIn('AnimatedContent(page', source)
+        activity = (ASSETS / 'main/java/com/hydro/reedance/MainActivity.kt').read_text()
+        self.assertEqual(1, activity.count('= installSplashScreen()'))
+        self.assertIn('setKeepOnScreenCondition', activity)
+
 if __name__ == '__main__': unittest.main(verbosity=2)
