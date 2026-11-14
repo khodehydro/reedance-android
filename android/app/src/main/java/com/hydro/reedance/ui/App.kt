@@ -91,6 +91,7 @@ import com.hydro.reedance.data.*
     val settings by model.settings.collectAsStateWithLifecycle()
     val started by model.started.collectAsStateWithLifecycle()
     val playing by model.playing.collectAsStateWithLifecycle()
+    val activePlayback by model.activePlayback.collectAsStateWithLifecycle()
     val pageStates = rememberSaveableStateHolder()
     var compactNavigation by remember(page) { mutableStateOf(false) }
     val threshold = with(LocalDensity.current) { 36.dp.toPx() }
@@ -127,11 +128,8 @@ import com.hydro.reedance.data.*
         }
     }, bottomBar = {
         if(!independent) Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            if(started) Surface(modifier = Modifier.padding(horizontal = 20.dp), shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer) {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    PressTextButton({ songId = "midnight-avenue"; navigate("song") }, Modifier.weight(1f)) { Text("Midnight Avenue") }
-                    PressIconButton(model::togglePlay) { AppIcon(if(playing) UiIcons.Pause else UiIcons.Play, tr("پخش یا مکث", "Play or pause")) }
-                }
+            if(started) activePlayback?.let { active ->
+                MiniPlayer(active, playing, model::toggleActivePlayback, { songId = active.songId; navigate("song") })
             }
             FloatingNavigation(page, compactNavigation, ::navigate)
         }

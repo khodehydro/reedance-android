@@ -141,6 +141,12 @@
       "drawable": "uicon_search",
       "style": "Regular Rounded"
     },
+    "Coffee": {
+      "glyph": "coffee",
+      "codepoint": "0xf48f",
+      "drawable": "uicon_coffee",
+      "style": "Regular Rounded"
+    },
     "HomeFilled": {
       "glyph": "home",
       "codepoint": "0xf7ad",
@@ -169,6 +175,24 @@
       "glyph": "crown",
       "codepoint": "0xf4ef",
       "drawable": "uicon_crown_filled",
+      "style": "Solid Rounded"
+    },
+    "PlayFilled": {
+      "glyph": "play",
+      "codepoint": "0xfa7f",
+      "drawable": "uicon_play_filled",
+      "style": "Solid Rounded"
+    },
+    "PauseFilled": {
+      "glyph": "pause",
+      "codepoint": "0xf9fc",
+      "drawable": "uicon_pause_filled",
+      "style": "Solid Rounded"
+    },
+    "CoffeeFilled": {
+      "glyph": "coffee",
+      "codepoint": "0xf487",
+      "drawable": "uicon_coffee_filled",
       "style": "Solid Rounded"
     }
   }

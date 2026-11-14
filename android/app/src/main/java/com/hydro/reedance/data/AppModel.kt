@@ -25,6 +25,8 @@ import java.io.File
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
+data class ActivePlayback(val songId: String, val title: String, val artist: String, val coverPath: String?)
+
 class AppModel @JvmOverloads constructor(app: Application, private val starterOnly: Boolean = false): AndroidViewModel(app) {
     private val preload = if(starterOnly) StarterPreload.snapshot() else null
     private val database = LearningDatabase.get(app)
@@ -65,6 +67,7 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
     val busy = MutableStateFlow(false)
     val message = MutableStateFlow("")
     val playing = MutableStateFlow(false)
+    val activePlayback = MutableStateFlow<ActivePlayback?>(null)
     val position = MutableStateFlow(0L)
     val duration = MutableStateFlow(64000L)
     val started = MutableStateFlow(false)
@@ -150,6 +153,7 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
     }
     private suspend fun prepareMedia(): MediaController? = mediaMutex.withLock {
         val data = lesson.value ?: return@withLock null
+        val coverPath = content.coverPath(data.s("songId"), data)
         val audioUri = content.audioFile(data.s("songId"), data).toURI().toString()
         val player = controller ?: run {
             val app = getApplication<Application>()
@@ -184,7 +188,14 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
                 .setMediaMetadata(MediaMetadata.Builder().setTitle(data.s("title")).setArtist(data.s("artist")).build()).build(), saved)
             player.prepare(); updateProgress()
         }
+        activePlayback.value = ActivePlayback(data.s("songId"), data.s("title"), data.s("artist"), coverPath)
         player
+    }
+    /** Mini controls operate on the current Media3 item, never the browsed lesson. */
+    fun toggleActivePlayback() {
+        val player = controller ?: return
+        if(player.currentMediaItem == null) return
+        if(player.isPlaying) player.pause() else { started.value = true; player.play() }
     }
     fun preparePlayback() {
         if(prepareJob?.isActive == true) return
@@ -328,7 +339,7 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
         operation("حذف فایل ناموفق / Could not remove song files") {
             try {
                 pause(); prepareJob?.cancelAndJoin()
-                mediaMutex.withLock { controller?.stop(); controller?.clearMediaItems(); started.value = false; content.deleteDemo(); lesson.value = null }
+                mediaMutex.withLock { controller?.stop(); controller?.clearMediaItems(); started.value = false; activePlayback.value = null; content.deleteDemo(); lesson.value = null }
             } finally { busy.value = false }
         }
     }

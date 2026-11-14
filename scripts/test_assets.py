@@ -90,6 +90,32 @@ class AssetTests(unittest.TestCase):
         self.assertIn('context.assets.open("packs/$song/$name")', installer)
         self.assertIn('song, language, progress)', installer)
 
+    def test_mini_player_tracks_active_media_and_uses_solid_white_controls(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        shell = (ui / 'App.kt').read_text()
+        mini = (ui / 'MiniPlayer.kt').read_text()
+        model = (ASSETS / 'main/java/com/hydro/reedance/data/AppModel.kt').read_text()
+        self.assertIn('model.activePlayback.collectAsStateWithLifecycle()', shell)
+        self.assertIn('songId = active.songId; navigate("song")', shell)
+        self.assertIn('model::toggleActivePlayback', shell)
+        mini_toggle = model.split('fun toggleActivePlayback()')[1].split('fun preparePlayback()')[0]
+        self.assertNotIn('prepareMedia()', mini_toggle)
+        self.assertNotIn('lesson.value', mini_toggle)
+        self.assertIn('Color(0xFF2D2D2D)', mini)
+        self.assertIn('contentColor = Color.White', mini)
+        self.assertIn('UiIcons.PauseFilled else UiIcons.PlayFilled', mini)
+        self.assertIn('Modifier.size(18.dp)', mini)
+        self.assertIn('Modifier.size(32.dp).clip(CircleShape)', mini)
+        self.assertIn('song.title', mini)
+        self.assertIn('UiIcons.CoffeeFilled', mini)
+        self.assertIn('if(shareDialog) AlertDialog', mini)
+        self.assertIn('Intent.ACTION_SEND', mini)
+        self.assertIn('withContext(Dispatchers.IO)', mini)
+        icons = load(ASSETS / 'main/assets/uicons-provenance.json')['icons']
+        for name in ['PlayFilled', 'PauseFilled', 'CoffeeFilled']:
+            self.assertEqual(icons[name]['style'], 'Solid Rounded')
+            self.assertTrue((ASSETS / ('main/res/drawable/' + icons[name]['drawable'] + '.xml')).exists())
+
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ASSETS / 'debug/assets/demo_lesson.json'))
 

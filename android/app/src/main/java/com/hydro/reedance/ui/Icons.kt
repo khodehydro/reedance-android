@@ -19,6 +19,9 @@ object UiIcons {
     val Review = R.drawable.uicon_review
     val Library = R.drawable.uicon_library
     val User = R.drawable.uicon_user
+    val PlayFilled = R.drawable.uicon_play_filled
+    val PauseFilled = R.drawable.uicon_pause_filled
+    val CoffeeFilled = R.drawable.uicon_coffee_filled
     val Play = R.drawable.uicon_play
     val Pause = R.drawable.uicon_pause
     val Lock = R.drawable.uicon_lock

@@ -42,7 +42,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 fun cover(id: String) = when(id) {
-    "pending-gulum-ii" -> R.drawable.gulum_ii
+    "pending-gulum-ii", "gulum-2" -> R.drawable.gulum_ii
     "despacito" -> R.drawable.despacito; "spring-day" -> R.drawable.spring_day; "flowers" -> R.drawable.flowers
     "someone-like-you" -> R.drawable.someone_like_you; "blinding-lights" -> R.drawable.blinding_lights; else -> R.drawable.midnight_avenue
 }

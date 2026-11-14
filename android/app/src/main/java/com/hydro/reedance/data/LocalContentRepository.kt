@@ -58,6 +58,12 @@ class LocalContentRepository(context: Context, private val dao: LearningDao,
         val row = dao.installed(id) ?: error("Package not installed")
         File(row.activePath, lesson.obj("media").obj("audio").s("path")).also { require(it.isFile) }
     }
+    suspend fun coverPath(id: String, lesson: JsonObject): String? = withContext(io) {
+        val row = dao.installed(id) ?: return@withContext null
+        val name = lesson.obj("media").obj("cover").s("path")
+        if(name.isBlank()) return@withContext null
+        File(row.activePath, name).takeIf { it.isFile }?.path
+    }
     suspend fun starters(): JsonObject = StarterPreload.courses ?: StarterPreload.loadMutex.withLock {
         StarterPreload.courses ?: parseObject(assetText("starter.json")).also { StarterPreload.courses = it }
     }
