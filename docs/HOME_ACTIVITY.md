@@ -48,3 +48,20 @@ background playback exclusion, successful/failed/undone exercise actions, proces
 kill, persistent state after relaunch, pager RTL/LTR/swipe/controls, reduced motion,
 large fonts/narrow screens and vertical scrolling inside taller banner/calendar
 pages. Notification timing is untouched and remains in real-time mode.
+
+## Banner motion / Explore magnifier follow-up
+
+Explore search now has the official Uicons Regular Rounded `search` magnifier in
+its leading slot (20dp). Provenance and the import script include the glyph.
+
+The welcome banner draws a drifting linear gradient plus two translucent radial
+fields. Mixed low-frequency sine trajectories give smooth irregular movement
+rather than a single back-and-forth sweep. Text, action and layout stay stationary.
+Animation state is read only in Canvas drawing, not by the calendar/catalog text.
+It is frame-clock driven and gated by banner pager selection, clipped window
+visibility and STARTED lifecycle; reduced motion uses a static background. The
+existing rounded banner clip also clips the animated fields. There is no bitmap,
+blur, server or new dependency involved.
+
+29 host checks and 44 Kotlin/KTS syntax checks pass after this follow-up. Native
+build/device visual, contrast and frame-time validation remain pending.

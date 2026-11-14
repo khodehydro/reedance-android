@@ -135,6 +135,12 @@
       "drawable": "uicon_globe",
       "style": "Regular Rounded"
     },
+    "Search": {
+      "glyph": "search",
+      "codepoint": "0xfbba",
+      "drawable": "uicon_search",
+      "style": "Regular Rounded"
+    },
     "HomeFilled": {
       "glyph": "home",
       "codepoint": "0xf7ad",

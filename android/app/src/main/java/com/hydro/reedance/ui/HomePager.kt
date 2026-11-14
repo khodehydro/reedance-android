@@ -13,6 +13,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
@@ -49,10 +51,14 @@ internal fun currentPersianMonth(now: Long = System.currentTimeMillis()): Persia
     val pager = rememberPagerState(pageCount = { 2 })
     val scope = rememberCoroutineScope()
     val reduced = LocalReducedMotion.current
+    var visible by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        HorizontalPager(state = pager, modifier = Modifier.fillMaxWidth().height(420.dp), pageSpacing = 12.dp,
+        HorizontalPager(state = pager, modifier = Modifier.fillMaxWidth().height(420.dp).onGloballyPositioned {
+                val bounds = it.boundsInWindow()
+                visible = bounds.width > 0f && bounds.height > 0f
+            }, pageSpacing = 12.dp,
             key = { if(it == 0) "welcome" else "activity" }) { page ->
-            if(page == 0) WelcomeBanner(openSong) else ActivityCalendar(model)
+            if(page == 0) WelcomeBanner(openSong, animate = visible && pager.currentPage == 0) else ActivityCalendar(model)
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
             listOf(tr("شروع یادگیری", "Welcome"), tr("فعالیت این ماه", "This month's activity")).forEachIndexed { index, label ->
@@ -64,8 +70,9 @@ internal fun currentPersianMonth(now: Long = System.currentTimeMillis()): Persia
     }
 }
 
-@Composable private fun WelcomeBanner(openSong: (String) -> Unit) {
+@Composable private fun WelcomeBanner(openSong: (String) -> Unit, animate: Boolean) {
     Box(Modifier.fillMaxSize().clip(RoundedCornerShape(28.dp)).background(Brush.linearGradient(listOf(Blue, Deep)))) {
+        BannerGradient(animate, Modifier.matchParentSize())
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(26.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text(tr("یادگیری با ریتم تو", "YOUR RHYTHM. YOUR WORDS."), color = Color(0xFFCADFFF), style = MaterialTheme.typography.labelMedium)
             Text(tr("هر آهنگ،\nیک قدم جلوتر.", "Every song.\nOne step further."), color = Color.White, style = MaterialTheme.typography.headlineLarge)

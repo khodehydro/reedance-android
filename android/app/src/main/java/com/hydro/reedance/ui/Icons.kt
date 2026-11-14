@@ -35,6 +35,7 @@ object UiIcons {
     val Crown = R.drawable.uicon_crown
     val Check = R.drawable.uicon_check
     val All = R.drawable.uicon_all
+    val Search = R.drawable.uicon_search
     val Globe = R.drawable.uicon_globe
 }
 @Composable fun AppIcon(icon: Int, contentDescription: String?, modifier: Modifier = Modifier, tint: Color = LocalContentColor.current) {

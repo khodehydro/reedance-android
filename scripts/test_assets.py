@@ -362,6 +362,22 @@ class AssetTests(unittest.TestCase):
         self.assertIn('appModel.foregroundActivity(true)', main)
         self.assertIn('appModel.foregroundActivity(false)', main)
 
+    def test_explore_magnifier_and_draw_only_banner_gradient(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        catalog = (ui / 'Catalog.kt').read_text()
+        self.assertIn('leadingIcon = { AppIcon(UiIcons.Search, null, Modifier.size(20.dp)) }', catalog)
+        provenance = load(ASSETS / 'main/assets/uicons-provenance.json')
+        self.assertEqual('search', provenance['icons']['Search']['glyph'])
+        self.assertEqual('Regular Rounded', provenance['icons']['Search']['style'])
+        gradient = (ui / 'BannerGradient.kt').read_text()
+        for token in ['Canvas(modifier)', 'withFrameNanos', 'repeatOnLifecycle(Lifecycle.State.STARTED)', 'animate && !reduced', 'sin(t *', 'Brush.radialGradient']:
+            self.assertIn(token, gradient)
+        self.assertLess(gradient.index('Canvas(modifier)'), gradient.index('val t = seconds'))
+        pager = (ui / 'HomePager.kt').read_text()
+        self.assertIn('BannerGradient(animate, Modifier.matchParentSize())', pager)
+        self.assertIn('animate = visible && pager.currentPage == 0', pager)
+        self.assertIn('boundsInWindow()', pager)
+
     def test_headers_have_consistent_opaque_background(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'
         theme = (ui / 'Theme.kt').read_text()

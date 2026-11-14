@@ -110,6 +110,7 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
                     shape = RoundedCornerShape(20.dp),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(onSearch = { searchFocus?.dismiss?.invoke() }),
+                    leadingIcon = { AppIcon(UiIcons.Search, null, Modifier.size(20.dp)) },
                     singleLine = true, label = { Text(tr("جست‌وجوی آهنگ یا خواننده", "Search songs or artists")) },
                     trailingIcon = { if(query.isNotEmpty()) PressTextButton({ query = "" }) { Text(tr("پاک کردن", "Clear")) } })
                 PillTabs(listOf(
