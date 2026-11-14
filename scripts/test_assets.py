@@ -397,6 +397,8 @@ class AssetTests(unittest.TestCase):
         artwork = (ui / 'StarterArtwork.kt').read_text()
         self.assertIn('R.drawable.reedance_starter', artwork)
         self.assertIn('ContentScale.Fit', artwork)
+        self.assertIn('val fa = LocalFa.current', artwork)
+        self.assertIn('scaleX = if(fa) -1f else 1f', artwork)
         self.assertNotIn('ContentScale.Crop', artwork)
         png = (ASSETS / 'main/res/drawable-nodpi/reedance_starter.png').read_bytes()
         self.assertEqual((384,384), struct.unpack('>II', png[16:24]))

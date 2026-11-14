@@ -22,6 +22,7 @@ import kotlinx.coroutines.isActive
 /** Small draw-layer drift; padding keeps ears/headphones clear of parent clipping. */
 @Composable internal fun StarterArtwork(modifier: Modifier = Modifier) {
     val reduced = LocalReducedMotion.current
+    val fa = LocalFa.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val shift = remember { Animatable(0f) }
     var visible by remember { mutableStateOf(false) }
@@ -38,6 +39,9 @@ import kotlinx.coroutines.isActive
         modifier = modifier.onGloballyPositioned {
             val bounds = it.boundsInWindow()
             visible = bounds.width > 0f && bounds.height > 0f
-        }.padding(vertical = 6.dp).graphicsLayer { translationY = shift.value.dp.toPx() },
+        }.padding(vertical = 6.dp).graphicsLayer {
+            scaleX = if(fa) -1f else 1f
+            translationY = shift.value.dp.toPx()
+        },
         contentScale = ContentScale.Fit)
 }
