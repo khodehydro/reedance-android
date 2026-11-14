@@ -416,10 +416,33 @@ class AssetTests(unittest.TestCase):
         self.assertNotIn('UiIcons.Play', messages)
         self.assertNotIn('midnight-avenue', messages)
         app = (ui / 'App.kt').read_text()
-        self.assertIn('{ navigate("starter") }, { navigate("explore") })', app)
+        self.assertIn('com.hydro.reedance.StarterActivity::class.java', app)
+        self.assertIn('{ navigate("explore") })', app)
         catalog = (ui / 'Catalog.kt').read_text()
         self.assertIn('PressButton(starter, Modifier.fillMaxWidth().heightIn(min = 52.dp)', catalog)
         self.assertNotIn('PressTextButton(starter)', catalog)
+
+    def test_starter_is_separate_activity_with_own_header_and_language_picker(self):
+        source = ASSETS / 'main/java/com/hydro/reedance'
+        manifest = (ASSETS / 'main/AndroidManifest.xml').read_text()
+        self.assertIn('android:name=".StarterActivity" android:exported="false" android:theme="@style/Theme.Reedance"', manifest)
+        activity = (source / 'StarterActivity.kt').read_text()
+        self.assertIn('class StarterActivity: ComponentActivity()', activity)
+        self.assertIn('StarterDestination(model, ::finish)', activity)
+        self.assertNotIn('installSplashScreen()', activity)
+        self.assertIn('model.foregroundActivity(true)', activity)
+        self.assertIn('model.foregroundActivity(false)', activity)
+        app = (source / 'ui/App.kt').read_text()
+        self.assertNotIn('"starter" -> StarterScreen', app)
+        self.assertIn('context.startActivity(android.content.Intent(context, com.hydro.reedance.StarterActivity::class.java))', app)
+        destination = (source / 'ui/StarterDestination.kt').read_text()
+        for token in ['PressIconButton(back', 'tr("استارتر", "Starter")', 'ModalBottomSheet', 'Modifier.size(32.dp).clip(CircleShape)', 'LocalOverlayBottomInset provides 0.dp', 'StarterScreen(model, selected.first)']:
+            self.assertIn(token, destination)
+        self.assertNotIn('FloatingNavigation', destination)
+        self.assertNotIn('MainHeader(', destination)
+        starter = (source / 'ui/Starter.kt').read_text()
+        self.assertIn('rememberSaveable(code)', starter)
+        self.assertNotIn('ChoiceRow(listOf("English"', starter)
 
     def test_headers_have_consistent_opaque_background(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'

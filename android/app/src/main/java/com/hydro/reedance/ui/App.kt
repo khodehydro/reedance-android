@@ -24,7 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hydro.reedance.R
 import com.hydro.reedance.data.*
 
-@Composable fun ReedanceApp(model: AppModel) {
+@Composable fun ReedanceApp(model: AppModel, destination: (@Composable () -> Unit)? = null) {
     val settings by model.settings.collectAsStateWithLifecycle()
     val ready by model.ready.collectAsStateWithLifecycle()
     val density = LocalDensity.current
@@ -51,6 +51,7 @@ import com.hydro.reedance.data.*
                     !ready -> Box(Modifier.fillMaxSize()) // Covered by the single system splash.
                     settings.language.isEmpty() -> Setup(model)
                     !settings.permissionsSetup -> PermissionSetup(model)
+                    destination != null -> destination()
                     else -> MainShell(model)
                 }
             } }
@@ -86,6 +87,7 @@ import com.hydro.reedance.data.*
     var reviewQuiz by rememberSaveable { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
     val message by model.message.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     val settings by model.settings.collectAsStateWithLifecycle()
     val started by model.started.collectAsStateWithLifecycle()
     val playing by model.playing.collectAsStateWithLifecycle()
@@ -141,8 +143,7 @@ import com.hydro.reedance.data.*
          CompositionLocalProvider(LocalOverlayBottomInset provides if(independent) 0.dp else padding.calculateBottomPadding()) {
           pageStates.SaveableStateProvider(page) {
             when(page) {
-                "home", "explore" -> CatalogScreen(model, page == "home", { songId = it; navigate("song") }, { navigate("starter") }, { navigate("explore") })
-                "starter" -> StarterScreen(model)
+                "home", "explore" -> CatalogScreen(model, page == "home", { songId = it; navigate("song") }, { context.startActivity(android.content.Intent(context, com.hydro.reedance.StarterActivity::class.java)) }, { navigate("explore") })
                 "song" -> SongScreen(model, songId, songTab, { songTab = it }, { navigate("home") }, { reviewQuiz = false; navigate("quiz") })
                 "quiz" -> QuizScreen(model, reviewQuiz, { navigate(if(reviewQuiz) "review" else "song") }, { navigate("review") })
                 "review" -> ReviewScreen(model) { reviewQuiz = true; navigate("quiz") }

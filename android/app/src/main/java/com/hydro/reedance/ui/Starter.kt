@@ -13,12 +13,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hydro.reedance.data.*
 
 @OptIn(ExperimentalLayoutApi::class)
-@Composable fun StarterScreen(model: AppModel) {
+@Composable fun StarterScreen(model: AppModel, code: String) {
     val courses by model.starters.collectAsStateWithLifecycle()
     val progress by model.steps.collectAsStateWithLifecycle()
-    var language by rememberSaveable { mutableIntStateOf(0) }
-    var step by rememberSaveable { mutableIntStateOf(0) }
-    val code = listOf("en", "es", "ko")[language]
+    var step by rememberSaveable(code) { mutableIntStateOf(0) }
     val course = courses.obj(code)
     val fa = LocalFa.current
     val names = listOf(tr("حروف", "Alphabet"), tr("صداها", "Sounds"), tr("گرامر", "Grammar"), tr("واژه‌ها", "Words"), tr("اولین سطر", "First line"))
@@ -29,7 +27,6 @@ import com.hydro.reedance.data.*
             Column(Modifier.weight(1f)) { Heading(tr("استارتر", "A small start"), course.tr("intro", fa)) }
             StarterArtwork(Modifier.size(96.dp))
         }
-        ChoiceRow(listOf("English", "Español", "한국어"), language) { language = it; step = 0 }
         LinearProgressIndicator(progress = { done / 5f }, modifier = Modifier.fillMaxWidth())
         Text(tr("$done از ۵ قدم", "$done of 5 steps"))
         ChoiceRow(names.mapIndexed { i, text -> if(progress.any { it.targetLanguage == code && it.stepId == i }) "✓ $text" else text }, step) { step = it }
