@@ -33,12 +33,12 @@ import com.hydro.reedance.data.*
         Panel {
             Text(tr("تنظیمات برنامه", "Make yourself at home"), style = MaterialTheme.typography.titleLarge)
             Text(tr("زبان رابط", "App language"))
-            ChoiceRow(listOf("English", "فارسی"), if(settings.language == "en") 0 else 1) { model.language(if(it == 0) "en" else "fa") }
+            ChoiceRow(listOf("English", "فارسی"), if(settings.language == "en") 0 else 1, List(2) { UiIcons.Globe to UiIcons.GlobeFilled }) { model.language(if(it == 0) "en" else "fa") }
             ReminderControls(model)
             Text(tr("ظاهر", "Appearance"))
-            ChoiceRow(listOf(tr("دستگاه", "System"), tr("روشن", "Light"), tr("تاریک", "Dark")), listOf("system", "light", "dark").indexOf(settings.theme)) { model.theme(listOf("system", "light", "dark")[it]) }
+            ChoiceRow(listOf(tr("دستگاه", "System"), tr("روشن", "Light"), tr("تاریک", "Dark")), listOf("system", "light", "dark").indexOf(settings.theme), listOf(UiIcons.System to UiIcons.SystemFilled, UiIcons.Light to UiIcons.LightFilled, UiIcons.Dark to UiIcons.DarkFilled)) { model.theme(listOf("system", "light", "dark")[it]) }
             Text(tr("اندازهٔ نوشته", "Text size"))
-            ChoiceRow(listOf(tr("کوچک", "Small"), tr("معمولی", "Default"), tr("بزرگ", "Large")), settings.textSize, model::textSize)
+            ChoiceRow(listOf(tr("کوچک", "Small"), tr("معمولی", "Default"), tr("بزرگ", "Large")), settings.textSize, List(3) { UiIcons.WordMode to UiIcons.WordModeFilled }, model::textSize)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(tr("حرکت کمتر", "Reduce motion"), Modifier.weight(1f))
                 PressSwitch(settings.reduceMotion, model::motion)

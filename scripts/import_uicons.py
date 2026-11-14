@@ -13,13 +13,13 @@ css = (pkg/'css/regular/rounded.css').read_text()
 codepoints = dict(re.findall(r'\.fi-rr-([a-z0-9-]+):before\{content:"\\([0-9a-f]+)"\}', css))
 font = TTFont(next((pkg/'css').glob('uicons-regular-rounded-*.woff2')))
 glyphs, cmap = font.getGlyphSet(), font.getBestCmap()
-names = {'Back':'arrow-left','Home':'home','Explore':'compass-alt','Review':'layers','Library':'books','User':'user','Play':'play','Pause':'pause','Lock':'lock','LockOpen':'lock-open-alt','Bookmark':'bookmark','Quiz':'clipboard-check','Repeat':'arrows-repeat','Replay10':'replay-10','Forward10':'time-forward-ten','Volume':'volume','Mute':'volume-mute','Star':'star','Crown':'crown','Check':'check','All':'apps','Globe':'language','Search':'search','Coffee':'coffee','Share':'share'}
+names = {'Back':'arrow-left','Home':'home','Explore':'compass-alt','Review':'layers','Library':'books','User':'user','Play':'play','Pause':'pause','Lock':'lock','LockOpen':'lock-open-alt','Bookmark':'bookmark','Quiz':'clipboard-check','Repeat':'arrows-repeat','Replay10':'replay-10','Forward10':'time-forward-ten','Volume':'volume','Mute':'volume-mute','Star':'star','Crown':'crown','Check':'check','All':'apps','Globe':'language','Search':'search','Coffee':'coffee','Share':'share','Lyrics':'music-alt','Notes':'document','Words':'book-alt','Phrases':'comment-alt','Original':'text','Lines':'list','WordMode':'text-size','System':'computer','Light':'sun','Dark':'moon'}
 solid_css = (pkg/'css/solid/rounded.css').read_text()
 solid_codes = dict(re.findall(r'\.fi-sr-([a-z0-9-]+):before\{content:"\\([0-9a-f]+)"\}', solid_css))
 solid_font = TTFont(next((pkg/'css').glob('uicons-solid-rounded-*.woff2')))
 solid_glyphs, solid_cmap = solid_font.getGlyphSet(), solid_font.getBestCmap()
 manifest = {}
-for name, cssname in list(names.items()) + [(n+'Filled', names[n]) for n in ['Home','Explore','Review','Library','Crown','Play','Pause','Coffee','Share','Bookmark']]:
+for name, cssname in list(names.items()) + [(n+'Filled', names[n]) for n in ['Home','Explore','Review','Library','Crown','Play','Pause','Coffee','Share','Bookmark','Lyrics','Notes','Words','Phrases','Original','Lines','WordMode','All','Check','Globe','Volume','System','Light','Dark']]:
     filled = name.endswith('Filled')
     codepoints, glyphs, cmap = (solid_codes, solid_glyphs, solid_cmap) if filled else (dict(re.findall(r'\.fi-rr-([a-z0-9-]+):before\{content:"\\([0-9a-f]+)"\}', css)), font.getGlyphSet(), font.getBestCmap())
     code = int(codepoints[cssname],16)

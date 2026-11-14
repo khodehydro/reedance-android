@@ -153,6 +153,66 @@
       "drawable": "uicon_share",
       "style": "Regular Rounded"
     },
+    "Lyrics": {
+      "glyph": "music-alt",
+      "codepoint": "0xf994",
+      "drawable": "uicon_lyrics",
+      "style": "Regular Rounded"
+    },
+    "Notes": {
+      "glyph": "document",
+      "codepoint": "0xf57a",
+      "drawable": "uicon_notes",
+      "style": "Regular Rounded"
+    },
+    "Words": {
+      "glyph": "book-alt",
+      "codepoint": "0xf274",
+      "drawable": "uicon_words",
+      "style": "Regular Rounded"
+    },
+    "Phrases": {
+      "glyph": "comment-alt",
+      "codepoint": "0xf4a1",
+      "drawable": "uicon_phrases",
+      "style": "Regular Rounded"
+    },
+    "Original": {
+      "glyph": "text",
+      "codepoint": "0xfd85",
+      "drawable": "uicon_original",
+      "style": "Regular Rounded"
+    },
+    "Lines": {
+      "glyph": "list",
+      "codepoint": "0xf8c4",
+      "drawable": "uicon_lines",
+      "style": "Regular Rounded"
+    },
+    "WordMode": {
+      "glyph": "text-size",
+      "codepoint": "0xfd82",
+      "drawable": "uicon_word_mode",
+      "style": "Regular Rounded"
+    },
+    "System": {
+      "glyph": "computer",
+      "codepoint": "0xf4cc",
+      "drawable": "uicon_system",
+      "style": "Regular Rounded"
+    },
+    "Light": {
+      "glyph": "sun",
+      "codepoint": "0xfd17",
+      "drawable": "uicon_light",
+      "style": "Regular Rounded"
+    },
+    "Dark": {
+      "glyph": "moon",
+      "codepoint": "0xf972",
+      "drawable": "uicon_dark",
+      "style": "Regular Rounded"
+    },
     "HomeFilled": {
       "glyph": "home",
       "codepoint": "0xf7ad",
@@ -211,6 +271,90 @@
       "glyph": "bookmark",
       "codepoint": "0xf289",
       "drawable": "uicon_bookmark_filled",
+      "style": "Solid Rounded"
+    },
+    "LyricsFilled": {
+      "glyph": "music-alt",
+      "codepoint": "0xf985",
+      "drawable": "uicon_lyrics_filled",
+      "style": "Solid Rounded"
+    },
+    "NotesFilled": {
+      "glyph": "document",
+      "codepoint": "0xf56e",
+      "drawable": "uicon_notes_filled",
+      "style": "Solid Rounded"
+    },
+    "WordsFilled": {
+      "glyph": "book-alt",
+      "codepoint": "0xf272",
+      "drawable": "uicon_words_filled",
+      "style": "Solid Rounded"
+    },
+    "PhrasesFilled": {
+      "glyph": "comment-alt",
+      "codepoint": "0xf499",
+      "drawable": "uicon_phrases_filled",
+      "style": "Solid Rounded"
+    },
+    "OriginalFilled": {
+      "glyph": "text",
+      "codepoint": "0xfd5b",
+      "drawable": "uicon_original_filled",
+      "style": "Solid Rounded"
+    },
+    "LinesFilled": {
+      "glyph": "list",
+      "codepoint": "0xf8b7",
+      "drawable": "uicon_lines_filled",
+      "style": "Solid Rounded"
+    },
+    "WordModeFilled": {
+      "glyph": "text-size",
+      "codepoint": "0xfd58",
+      "drawable": "uicon_word_mode_filled",
+      "style": "Solid Rounded"
+    },
+    "AllFilled": {
+      "glyph": "apps",
+      "codepoint": "0xf16d",
+      "drawable": "uicon_all_filled",
+      "style": "Solid Rounded"
+    },
+    "CheckFilled": {
+      "glyph": "check",
+      "codepoint": "0xf3c0",
+      "drawable": "uicon_check_filled",
+      "style": "Solid Rounded"
+    },
+    "GlobeFilled": {
+      "glyph": "language",
+      "codepoint": "0xf85b",
+      "drawable": "uicon_globe_filled",
+      "style": "Solid Rounded"
+    },
+    "VolumeFilled": {
+      "glyph": "volume",
+      "codepoint": "0xfea8",
+      "drawable": "uicon_volume_filled",
+      "style": "Solid Rounded"
+    },
+    "SystemFilled": {
+      "glyph": "computer",
+      "codepoint": "0xf4c4",
+      "drawable": "uicon_system_filled",
+      "style": "Solid Rounded"
+    },
+    "LightFilled": {
+      "glyph": "sun",
+      "codepoint": "0xfcef",
+      "drawable": "uicon_light_filled",
+      "style": "Solid Rounded"
+    },
+    "DarkFilled": {
+      "glyph": "moon",
+      "codepoint": "0xf962",
+      "drawable": "uicon_dark_filled",
       "style": "Solid Rounded"
     }
   }

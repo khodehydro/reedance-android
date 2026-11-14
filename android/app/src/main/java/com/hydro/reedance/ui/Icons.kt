@@ -9,6 +9,30 @@ import com.hydro.reedance.R
 
 // Exact Regular Rounded outlines from the web reference, drawn as native vectors.
 object UiIcons {
+    val Lyrics = R.drawable.uicon_lyrics
+    val LyricsFilled = R.drawable.uicon_lyrics_filled
+    val Notes = R.drawable.uicon_notes
+    val NotesFilled = R.drawable.uicon_notes_filled
+    val Words = R.drawable.uicon_words
+    val WordsFilled = R.drawable.uicon_words_filled
+    val Phrases = R.drawable.uicon_phrases
+    val PhrasesFilled = R.drawable.uicon_phrases_filled
+    val Original = R.drawable.uicon_original
+    val OriginalFilled = R.drawable.uicon_original_filled
+    val Lines = R.drawable.uicon_lines
+    val LinesFilled = R.drawable.uicon_lines_filled
+    val WordMode = R.drawable.uicon_word_mode
+    val WordModeFilled = R.drawable.uicon_word_mode_filled
+    val System = R.drawable.uicon_system
+    val SystemFilled = R.drawable.uicon_system_filled
+    val Light = R.drawable.uicon_light
+    val LightFilled = R.drawable.uicon_light_filled
+    val Dark = R.drawable.uicon_dark
+    val DarkFilled = R.drawable.uicon_dark_filled
+    val AllFilled = R.drawable.uicon_all_filled
+    val CheckFilled = R.drawable.uicon_check_filled
+    val GlobeFilled = R.drawable.uicon_globe_filled
+    val VolumeFilled = R.drawable.uicon_volume_filled
     val HomeFilled = R.drawable.uicon_home_filled
     val ExploreFilled = R.drawable.uicon_explore_filled
     val ReviewFilled = R.drawable.uicon_review_filled

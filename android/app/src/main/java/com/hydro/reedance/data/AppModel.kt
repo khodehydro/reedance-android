@@ -285,6 +285,19 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
             prepareMedia()?.let { if(it.isPlaying) it.pause() else { started.value = true; it.play() } }
         }
     }
+    fun playFromLine(songId: String, startMs: Long) {
+        playCommand?.cancel()
+        playCommand = operation("پخش خط ناموفق / Could not play this line") {
+            require(lesson.value?.s("songId") == songId)
+            val player = prepareMedia() ?: return@operation
+            require(player.currentMediaItem?.mediaId == songId && lesson.value?.s("songId") == songId)
+            val maximum = player.duration.takeIf { it > 0 } ?: lesson.value!!.obj("media").obj("audio").n("durationMs")
+            player.seekTo(startMs.coerceIn(0, maximum.coerceAtLeast(0)))
+            started.value = true
+            player.play()
+            updateProgress(); checkpoint(force = true)
+        }
+    }
     fun pause() { playCommand?.cancel(); controller?.pause(); updateProgress(); checkpoint(force = true) }
     fun seek(ms: Long) { controller?.seekTo(ms.coerceIn(0, duration.value)); position.value = ms.coerceIn(0, duration.value); checkpoint(force = true) }
     fun toggleRepeat() { repeat.value = !repeat.value; controller?.repeatMode = if(repeat.value) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF }

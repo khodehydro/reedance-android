@@ -101,8 +101,8 @@ class AssetTests(unittest.TestCase):
         mini_toggle = model.split('fun toggleActivePlayback()')[1].split('fun preparePlayback()')[0]
         self.assertNotIn('prepareMedia()', mini_toggle)
         self.assertNotIn('lesson.value', mini_toggle)
-        self.assertIn('Color(0xFF03050E)', mini)
-        self.assertIn('BannerGradient(animate = playing, modifier = Modifier.matchParentSize(), palette = FluidPalette.Midnight)', mini)
+        self.assertIn('Color(0xFF0B0B0B)', mini)
+        self.assertNotIn('BannerGradient(', mini)
         gradient = (ui / 'BannerGradient.kt').read_text()
         self.assertIn('MIDNIGHT_FLUID_SHADER', gradient)
         self.assertNotIn('seconds * if(palette == FluidPalette.Midnight) .35f', gradient)
@@ -252,6 +252,33 @@ class AssetTests(unittest.TestCase):
         app = (ui / 'App.kt').read_text()
         self.assertIn('key(page) {', app)
         self.assertIn('pageStates.SaveableStateProvider(page)', app)
+
+    def test_solid_minimized_players_icon_tabs_and_line_play_action(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        song = (ui / 'Song.kt').read_text()
+        compact = song.split('@Composable private fun CompactSongController')[1]
+        self.assertIn('Color(0xFF0B0B0B)', compact)
+        self.assertNotIn('BannerGradient(', compact)
+        full = song.split('@Composable private fun PlayerPanel')[1].split('@Composable private fun CompactSongController')[0]
+        self.assertIn('BannerGradient(', full)
+        self.assertIn('model.playFromLine(songId, line.n("startMs"))', song)
+        self.assertNotIn('Text(clock(line.n("startMs")))', song)
+        self.assertNotIn('Tap a timestamp', song)
+        lyric = (ui / 'LyricLine.kt').read_text()
+        self.assertIn('PressIconButton(onPlay', lyric)
+        self.assertIn('UiIcons.PlayFilled', lyric)
+        self.assertIn('if(mode == 1)', lyric)
+        self.assertIn('interfaceDirection', lyric)
+        self.assertIn('if(active) option.filledIcon ?: option.icon else option.icon', (ui / 'Components.kt').read_text())
+        icons = load(ASSETS / 'main/assets/uicons-provenance.json')['icons']
+        for name in ['Lyrics', 'Notes', 'Words', 'Phrases', 'Original', 'Lines', 'WordMode']:
+            self.assertEqual('Regular Rounded', icons[name]['style'])
+            self.assertEqual('Solid Rounded', icons[name + 'Filled']['style'])
+            self.assertIn('filledIcon = UiIcons.' + name + 'Filled', song)
+        model = (ASSETS / 'main/java/com/hydro/reedance/data/AppModel.kt').read_text()
+        command = model.split('fun playFromLine(')[1].split('fun pause()')[0]
+        self.assertLess(command.index('player.seekTo('), command.index('player.play()'))
+        self.assertIn('player.currentMediaItem?.mediaId == songId', command)
 
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ASSETS / 'debug/assets/demo_lesson.json'))

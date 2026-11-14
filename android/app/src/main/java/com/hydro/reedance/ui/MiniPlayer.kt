@@ -26,9 +26,8 @@ import kotlinx.coroutines.withContext
     var shareDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     Surface(modifier = Modifier.padding(horizontal = 20.dp), shape = CircleShape,
-        color = Color(0xFF03050E), contentColor = Color.White) {
+        color = Color(0xFF0B0B0B), contentColor = Color.White) {
         Box {
-            BannerGradient(animate = playing, modifier = Modifier.matchParentSize(), palette = FluidPalette.Midnight)
             Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Row(Modifier.weight(1f).clip(CircleShape).clickable(onClick = openSong).heightIn(min = 48.dp).padding(horizontal = 8.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {

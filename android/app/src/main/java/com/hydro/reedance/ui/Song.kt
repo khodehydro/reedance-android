@@ -120,30 +120,28 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                 val data = lesson!!
                 item(key = "player", contentType = "player") { PlayerPanel(model, data) }
                 item(key = "credits") { Text(data.obj("credits").tr("notice", fa), style = MaterialTheme.typography.bodySmall) }
-                item(key = "tabs") { ChoiceRow(listOf(tr("لیریک", "Lyrics"), tr("نکته‌ها", "Notes"), tr("لغت‌ها", "Words"), tr("عبارت‌ها", "Phrases")), tab, setTab) }
+                item(key = "tabs") { PillTabs(listOf(
+                    PillOption(tr("لیریک", "Lyrics"), UiIcons.Lyrics, filledIcon = UiIcons.LyricsFilled),
+                    PillOption(tr("نکته‌ها", "Notes"), UiIcons.Notes, filledIcon = UiIcons.NotesFilled),
+                    PillOption(tr("لغت‌ها", "Words"), UiIcons.Words, filledIcon = UiIcons.WordsFilled),
+                    PillOption(tr("عبارت‌ها", "Phrases"), UiIcons.Phrases, filledIcon = UiIcons.PhrasesFilled)
+                ), tab, setTab) }
                 item(key = "quiz") { PressOutlinedButton(openQuiz, Modifier.fillMaxWidth()) { AppIcon(UiIcons.Quiz, null); Text(tr("آزمون آهنگ", "Song quiz")) } }
                 when(tab) {
                     0 -> {
-                        item(key = "lyric-mode") { ChoiceRow(listOf(tr("متن اصلی", "Original"), tr("ترجمهٔ خطی", "Line by line"), tr("کلمه‌به‌کلمه", "Word by word")), mode) { mode = it } }
-                        item(key = "lyric-help") { Text(tr("روی زمان برای جابه‌جایی و روی واژه برای معنی بزن.", "Tap a timestamp to seek, or a word to explore it."), style = MaterialTheme.typography.bodySmall) }
+                        item(key = "lyric-mode") { PillTabs(listOf(
+                            PillOption(tr("متن اصلی", "Original"), UiIcons.Original, filledIcon = UiIcons.OriginalFilled),
+                            PillOption(tr("ترجمهٔ خطی", "Line by line"), UiIcons.Lines, filledIcon = UiIcons.LinesFilled),
+                            PillOption(tr("کلمه‌به‌کلمه", "Word by word"), UiIcons.WordMode, filledIcon = UiIcons.WordModeFilled)
+                        ), mode) { mode = it } }
+                        item(key = "lyric-help") { Text(tr("برای پخش از هر خط، روی آیکون پخش کنار آن بزن؛ برای معنی روی واژه بزن.", "Tap the play icon beside a line to play from there, or a word to explore it."), style = MaterialTheme.typography.bodySmall) }
                         items(lines.take(access.limit("lyrics")), key = { "lyric-${it.s("id")}" }, contentType = { "lyric" }) { line ->
                             val active = activeLineId == line.s("id")
-                            Panel(tone = if(active) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface) {
-                                PressTextButton({ model.seek(line.n("startMs")) }) { Text(clock(line.n("startMs"))) }
-                                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                                    FlowRow(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                                        line.a("tokens").forEach { token ->
-                                            Column(Modifier.clickable {
-                                                if(access.preview && token.s("lexemeId") !in wordsById) subscriptionInfo = true
-                                                else selectedWord = wordsById[token.s("lexemeId")] ?: JsonObject().apply { addProperty("lemma", token.s("surface")); addProperty("translationFa", token.s("translationFa")); addProperty("translationEn", token.s("translationEn")) }
-                                            }.padding(horizontal = 3.dp, vertical = 8.dp)) {
-                                                Text(token.s("surface"), style = MaterialTheme.typography.titleMedium)
-                                                if(mode == 2) Text(token.tr("translation", fa), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                                            }
-                                        }
-                                    }
+                            LyricLine(line, mode, active, onPlay = { model.playFromLine(songId, line.n("startMs")) }) { token ->
+                                if(access.preview && token.s("lexemeId") !in wordsById) subscriptionInfo = true
+                                else selectedWord = wordsById[token.s("lexemeId")] ?: JsonObject().apply {
+                                    addProperty("lemma", token.s("surface")); addProperty("translationFa", token.s("translationFa")); addProperty("translationEn", token.s("translationEn"))
                                 }
-                                if(mode == 1) Text(line.tr("translation", fa))
                             }
                         }
                         if(lines.size > access.limit("lyrics")) item(key = "lyrics-preview") { PremiumPreview() }
@@ -257,9 +255,8 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     val playing by model.playing.collectAsStateWithLifecycle()
     val position by model.position.collectAsStateWithLifecycle()
     Surface(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), shape = RoundedCornerShape(18.dp),
-        color = Color(0xFF01020A), contentColor = Color.White) {
+        color = Color(0xFF0B0B0B), contentColor = Color.White) {
         Box {
-            BannerGradient(animate = playing, modifier = Modifier.matchParentSize())
             Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f).clickable(onClick = expand).padding(horizontal = 8.dp)) {
                     Text(data.s("title"), maxLines = 1, overflow = TextOverflow.Ellipsis, color = Color.White, style = MaterialTheme.typography.bodyMedium)

@@ -29,7 +29,7 @@ import com.hydro.reedance.data.*
         }
         LinearProgressIndicator(progress = { done / 5f }, modifier = Modifier.fillMaxWidth())
         Text(tr("$done از ۵ قدم", "$done of 5 steps"))
-        ChoiceRow(names.mapIndexed { i, text -> if(progress.any { it.targetLanguage == code && it.stepId == i }) "✓ $text" else text }, step) { step = it }
+        ChoiceRow(names.mapIndexed { i, text -> if(progress.any { it.targetLanguage == code && it.stepId == i }) "✓ $text" else text }, step, listOf(UiIcons.Original to UiIcons.OriginalFilled, UiIcons.Volume to UiIcons.VolumeFilled, UiIcons.Notes to UiIcons.NotesFilled, UiIcons.Words to UiIcons.WordsFilled, UiIcons.Lines to UiIcons.LinesFilled)) { step = it }
         } }
         when(step) {
             0 -> {

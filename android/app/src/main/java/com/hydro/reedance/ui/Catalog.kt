@@ -123,8 +123,8 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
                     singleLine = true, label = { Text(tr("جست‌وجوی آهنگ یا خواننده", "Search songs or artists")) },
                     trailingIcon = { if(query.isNotEmpty()) PressTextButton({ query = "" }) { Text(tr("پاک کردن", "Clear")) } })
                 PillTabs(listOf(
-                    PillOption(tr("همه", "All"), UiIcons.All), PillOption(tr("رایگان", "Free"), UiIcons.Play),
-                    PillOption(tr("پریمیوم", "Premium"), UiIcons.Crown), PillOption(tr("دانلودشده‌ها", "Downloaded"), UiIcons.Check)
+                    PillOption(tr("همه", "All"), UiIcons.All, filledIcon = UiIcons.AllFilled), PillOption(tr("رایگان", "Free"), UiIcons.Play, filledIcon = UiIcons.PlayFilled),
+                    PillOption(tr("پریمیوم", "Premium"), UiIcons.Crown, filledIcon = UiIcons.CrownFilled), PillOption(tr("دانلودشده‌ها", "Downloaded"), UiIcons.Check, filledIcon = UiIcons.CheckFilled)
                 ), access) { access = it }
             }
         }

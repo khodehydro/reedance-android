@@ -50,9 +50,14 @@ import com.hydro.reedance.data.*
 @Composable fun Action(text: String, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -> Unit) {
     PressButton(onClick, modifier.heightIn(min = 48.dp), enabled = enabled, shape = RoundedCornerShape(14.dp)) { Text(text) }
 }
-data class PillOption(val label: String, val icon: Int? = null, val description: String = label, val flag: Int? = null)
+data class PillOption(val label: String, val icon: Int? = null, val description: String = label, val flag: Int? = null, val filledIcon: Int? = null)
 @Composable fun ChoiceRow(items: List<String>, selected: Int, onSelect: (Int) -> Unit) =
     PillTabs(items.map { PillOption(it) }, selected, onSelect)
+
+@Composable fun ChoiceRow(items: List<String>, selected: Int, icons: List<Pair<Int, Int>>, onSelect: (Int) -> Unit) {
+    require(items.size == icons.size)
+    PillTabs(items.mapIndexed { index, label -> PillOption(label, icons[index].first, filledIcon = icons[index].second) }, selected, onSelect)
+}
 
 @Composable fun PillTabs(items: List<PillOption>, selected: Int, onSelect: (Int) -> Unit) {
     val reduced = LocalReducedMotion.current
@@ -72,7 +77,7 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
                 if(option.flag != null) {
                     Image(painterResource(option.flag), null, Modifier.size(48.dp).padding(if(active) 3.dp else 1.dp).clip(CircleShape), contentScale = ContentScale.Crop)
                 } else Row(Modifier.heightIn(min = 48.dp).padding(horizontal = 16.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
-                    option.icon?.let { AppIcon(it, null, Modifier.size(17.dp)) }
+                    (if(active) option.filledIcon ?: option.icon else option.icon)?.let { AppIcon(it, null, Modifier.size(17.dp)) }
                     Text(option.label, style = MaterialTheme.typography.labelLarge, fontWeight = if(active) FontWeight.Bold else FontWeight.Normal)
                 }
             }
