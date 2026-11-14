@@ -55,7 +55,7 @@ private val songLanguages = listOf(
             AppIcon(UiIcons.User, tr("فضای من و تنظیمات", "My space and settings"))
         }
     }
-    if(choosingLanguage) ModalBottomSheet(onDismissRequest = { choosingLanguage = false }) {
+    if(choosingLanguage) ReedanceBottomSheet(onDismissRequest = { choosingLanguage = false }) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 24.dp).selectableGroup(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(tr("زبان آهنگ‌ها", "Song language"), style = MaterialTheme.typography.titleLarge)
             Text(tr("می‌خواهی با آهنگ‌های کدام زبان یاد بگیری؟", "Which language would you like to learn through music?"), style = MaterialTheme.typography.bodyMedium)

@@ -50,7 +50,7 @@ private val courseFlags = listOf("en" to R.drawable.flag_gb_circle, "es" to R.dr
             )) { StarterScreen(model, selected.first) }
         }
     }
-    if(choosing) ModalBottomSheet(onDismissRequest = { choosing = false }) {
+    if(choosing) ReedanceBottomSheet(onDismissRequest = { choosing = false }) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 24.dp).selectableGroup(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(tr("زبان آموزش استارتر", "Starter learning language"), style = MaterialTheme.typography.titleLarge)
             courseFlags.forEach { (code, flag) ->

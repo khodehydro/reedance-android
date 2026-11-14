@@ -204,7 +204,7 @@ class AssetTests(unittest.TestCase):
     def test_centered_brand_and_persistent_song_language_picker(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'
         header = (ui / 'MainHeader.kt').read_text()
-        for token in ['ModalBottomSheet', 'Modifier.weight(1f)', 'slideInVertically', 'slideOutVertically', 'repeatOnLifecycle(Lifecycle.State.STARTED)', 'if(!reduced)', 'clearAndSetSemantics']:
+        for token in ['ReedanceBottomSheet', 'Modifier.weight(1f)', 'slideInVertically', 'slideOutVertically', 'repeatOnLifecycle(Lifecycle.State.STARTED)', 'if(!reduced)', 'clearAndSetSemantics']:
             self.assertIn(token, header)
         for code in ['en', 'es', 'ko']:
             self.assertIn('SongLanguage("' + code + '"', header)
@@ -436,7 +436,7 @@ class AssetTests(unittest.TestCase):
         self.assertNotIn('"starter" -> StarterScreen', app)
         self.assertIn('context.startActivity(android.content.Intent(context, com.hydro.reedance.StarterActivity::class.java))', app)
         destination = (source / 'ui/StarterDestination.kt').read_text()
-        for token in ['PressIconButton(back', 'tr("استارتر", "Starter")', 'ModalBottomSheet', 'Modifier.size(32.dp).clip(CircleShape)', 'LocalOverlayBottomInset provides padding.calculateBottomPadding()', 'StarterScreen(model, selected.first)']:
+        for token in ['PressIconButton(back', 'tr("استارتر", "Starter")', 'ReedanceBottomSheet', 'Modifier.size(32.dp).clip(CircleShape)', 'LocalOverlayBottomInset provides padding.calculateBottomPadding()', 'StarterScreen(model, selected.first)']:
             self.assertIn(token, destination)
         self.assertNotIn('FloatingNavigation', destination)
         self.assertNotIn('MainHeader(', destination)
@@ -461,6 +461,16 @@ class AssetTests(unittest.TestCase):
         destination = (source / 'ui/StarterDestination.kt').read_text()
         self.assertNotIn('.padding(padding)', destination)
         self.assertIn('LocalOverlayBottomInset provides padding.calculateBottomPadding()', destination)
+
+    def test_all_sheets_use_blue_white_shared_palette(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        sheet = (ui / 'ReedanceBottomSheet.kt').read_text()
+        for token in ['Color(0xFF062FFD)', 'containerColor = SheetBlue', 'contentColor = Color.White', 'primary = Color.White', 'onSurface = Color.White', 'tonalElevation = 0.dp']:
+            self.assertIn(token, sheet)
+        for name in ['MainHeader.kt', 'StarterDestination.kt', 'Song.kt']:
+            source = (ui / name).read_text()
+            self.assertIn('ReedanceBottomSheet(', source)
+            self.assertNotIn('ModalBottomSheet(', source)
 
     def test_headers_have_consistent_opaque_background(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'

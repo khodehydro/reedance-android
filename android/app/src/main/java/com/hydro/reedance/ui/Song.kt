@@ -145,7 +145,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
         text = { Text(tr("خرید اشتراک هنوز به فروشگاه متصل نشده است؛ در این نسخه پرداختی انجام نمی‌شود.", "Subscription checkout is not connected yet. No payment is taken in this version.")) },
         confirmButton = { PressTextButton({ subscriptionInfo = false }) { Text(tr("باشه", "OK")) } }
     )
-    selectedWord?.let { word -> ModalBottomSheet(onDismissRequest = { selectedWord = null }) {
+    selectedWord?.let { word -> ReedanceBottomSheet(onDismissRequest = { selectedWord = null }) {
         Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Foreign(word.s("lemma"), large = true); Foreign(word.s("ipa"))
             if(fa) Text(word.s("faReading"))
