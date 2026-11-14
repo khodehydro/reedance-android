@@ -202,6 +202,32 @@ class AssetTests(unittest.TestCase):
         icons = load(ASSETS / 'main/assets/uicons-provenance.json')['icons']
         self.assertEqual('Solid Rounded', icons['BookmarkFilled']['style'])
 
+    def test_dark_theme_uses_neutral_charcoal_surfaces_and_readable_text(self):
+        import re
+        source = (ASSETS / 'main/java/com/hydro/reedance/ui/Theme.kt').read_text()
+        palette = source.split('internal val CharcoalDarkColors = darkColorScheme(')[1].split('@Composable fun tr')[0]
+        colors = {key: tuple(int(value[i:i+2], 16) / 255 for i in (2,4,6))
+                  for key, value in re.findall(r'(\w+) = Color\(0x([A-F0-9]{8})\)', palette)}
+        for role in ['background', 'surface', 'surfaceVariant', 'surfaceDim', 'surfaceBright',
+                     'surfaceContainerLowest', 'surfaceContainerLow', 'surfaceContainer',
+                     'surfaceContainerHigh', 'surfaceContainerHighest', 'primaryContainer',
+                     'secondaryContainer', 'tertiaryContainer', 'outline', 'outlineVariant']:
+            r, g, b = colors[role]
+            self.assertEqual(r, g, role)
+            self.assertEqual(g, b, role)
+        def luminance(rgb):
+            linear = [x / 12.92 if x <= .04045 else ((x + .055) / 1.055) ** 2.4 for x in rgb]
+            return sum(x * w for x, w in zip(linear, [.2126, .7152, .0722]))
+        for text, background in [('onBackground', 'background'), ('onSurface', 'surface'),
+                                 ('onSurfaceVariant', 'surfaceContainerHighest'),
+                                 ('onPrimaryContainer', 'primaryContainer'),
+                                 ('onSecondaryContainer', 'secondaryContainer'), ('onPrimary', 'primary')]:
+            a, b = sorted([luminance(colors[text]), luminance(colors[background])])
+            self.assertGreaterEqual((b + .05) / (a + .05), 4.5, text)
+        self.assertIn('surfaceTint = Color.Transparent', palette)
+        self.assertIn('if(dark) CharcoalDarkColors', source)
+        self.assertIn('else lightColorScheme(primary = Blue, background = Paper, surface = Color.White', source)
+
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ASSETS / 'debug/assets/demo_lesson.json'))
 
