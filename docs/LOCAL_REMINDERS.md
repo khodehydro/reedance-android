@@ -40,16 +40,12 @@ notifications within a stage. Returning resets the inactivity journey and replac
 the pending request. Disabling cancels the chain and visible notification. The old
 periodic work name is explicitly canceled for migration.
 
-TEMPORARY DEBUG TEST MODE: BuildConfig.DEBUG uses a ten-second unit in place of
-12 hours, so stages are approximately 10s, 20s, 30s, 60s, 140s and then every 140s
-since the last visit. Release policy retains the real schedule (release publishing
-is still blocked by the existing gate). Remove this debug scale in a later revision.
-The onboarding/settings description intentionally has no timings or implementation
-jargon. Enable notifications, continue past setup and leave the app with Home;
-do not force-stop. The first debug reminder is eligible after ten seconds, not
-while the app remains foreground. WorkManager scheduling/Doze may delay it; a
-one-time request is used because periodic work cannot run every ten seconds.
-There is no exact alarm, foreground test service or battery-exemption request.
+The temporary ten-second scale has been removed from all builds, including debug.
+First delivery is eligible after 12 hours away, then 24h/36h/72h/7d/weekly milestones.
+No debug timing switch remains. Previously queued test work is replaced on startup
+or a visit with the same unique real-time chain. Onboarding/settings copy has no
+hours or implementation jargon. Android WorkManager/Doze can delay delivery; these
+are eligibility thresholds, not exact alarms.
 
 DataStore holds opt-in, completed setup, last visit and last notification time.
 Activity start/stop update the visit and reschedule. Clock rollback, no first visit,
@@ -70,7 +66,7 @@ failures retry; cancellation is rethrown. There is no fabricated streak statisti
 ## Validation and remaining device checks
 
 24 host source/asset checks passed; five pure JVM ReminderPolicy tests cover
-milestone boundaries, the temporary debug scale, stage deduplication, reset/clock
+milestone boundaries, the real twelve-hour threshold, stage deduplication, reset/clock
 handling and stage-specific activity-aware messages. JVM/native
 build and instrumentation have NOT run: JDK/Android SDK are absent. Syntax parsing
 is not Kotlin type checking or an Android build.

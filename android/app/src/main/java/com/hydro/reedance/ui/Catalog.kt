@@ -5,6 +5,8 @@ import android.graphics.BitmapFactory
 import android.util.LruCache
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -12,6 +14,17 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -39,12 +52,18 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
     val resource = cover(id)
     val resources = LocalContext.current.resources
     val bitmap by produceState<Bitmap?>(coverCache.get(resource), resource) {
-        if(value == null) value = withContext(Dispatchers.IO) {
+        value = coverCache.get(resource) ?: withContext(Dispatchers.IO) {
             coverCache.get(resource) ?: BitmapFactory.decodeResource(resources, resource,
                 BitmapFactory.Options().apply { inSampleSize = 2; inScaled = false })?.also { coverCache.put(resource, it) }
         }
     }
-    Box(modifier.background(MaterialTheme.colorScheme.secondaryContainer)) {
+    // Draw-time clipping is independent of lazy animateItem/retained graphics layers.
+    // Apply it to both placeholder and decoded image on every draw.
+    Box(modifier.drawWithCache {
+        val radius = 20.dp.toPx()
+        val outline = Path().apply { addRoundRect(RoundRect(Rect(Offset.Zero, size), CornerRadius(radius))) }
+        onDrawWithContent { clipPath(outline) { this@onDrawWithContent.drawContent() } }
+    }.background(MaterialTheme.colorScheme.secondaryContainer)) {
         bitmap?.let { Image(it.asImageBitmap(), description, Modifier.matchParentSize(), contentScale = ContentScale.Crop) }
     }
 }
@@ -57,6 +76,8 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
     val grid = rememberLazyGridState()
     val lesson by model.lesson.collectAsStateWithLifecycle()
     val installedIds = remember(lesson) { listOfNotNull(lesson?.s("songId")?.takeIf { it.isNotBlank() }).toSet() }
+    val searchFocus = LocalSearchFocus.current
+    DisposableEffect(searchFocus) { onDispose { searchFocus?.focused = false } }
     val reduced = LocalReducedMotion.current
     val filtered = remember(catalog, targetLanguage, home, access, installedIds, query) { catalog.filter { s ->
         (s.s("language") == targetLanguage) &&
@@ -90,7 +111,12 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
         }
         if(!home) item(key = "filters", span = { GridItemSpan(maxLineSpan) }) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(value = query, onValueChange = { query = it }, modifier = Modifier.fillMaxWidth(),
+                OutlinedTextField(value = query, onValueChange = { query = it }, modifier = Modifier.fillMaxWidth()
+                    .onFocusChanged { searchFocus?.focused = it.isFocused }
+                    .onGloballyPositioned { searchFocus?.bounds = it.boundsInRoot() },
+                    shape = RoundedCornerShape(20.dp),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { searchFocus?.dismiss?.invoke() }),
                     singleLine = true, label = { Text(tr("جست‌وجوی آهنگ یا خواننده", "Search songs or artists")) },
                     trailingIcon = { if(query.isNotEmpty()) PressTextButton({ query = "" }) { Text(tr("پاک کردن", "Clear")) } })
                 PillTabs(listOf(
@@ -122,7 +148,7 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
 @Composable private fun SongTile(song: JsonObject, modifier: Modifier, onClick: () -> Unit) {
     Column(modifier.clickable(onClick = onClick), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Box {
-            CoverImage(song.s("id"), song.s("title"), Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(20.dp)))
+            CoverImage(song.s("id"), song.s("title"), Modifier.fillMaxWidth().aspectRatio(1f))
         }
         SongTitle(song.s("title"), premium = song.s("access") == "paid")
         Text(song.s("artist"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

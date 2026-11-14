@@ -88,3 +88,24 @@ their back controls.
 20 host checks and 31 Kotlin/KTS syntax checks passed. A new instrumentation test
 covers opening the sheet, selecting Spanish and opening Profile; it has NOT run.
 Native build, visual centering, animation timing and TalkBack still need device QA.
+
+## Cover clipping and search interaction follow-up
+
+CoverImage now clips its placeholder and image together with a cached rounded path
+at draw time rather than relying on a retained graphics-layer outline beneath lazy
+item placement/fade animation. This makes rounded rendering independent of page
+switches/item reuse; filter placement animation remains enabled. The intermittent
+square-corner report has not been reproduced on a device here, so this is a targeted
+rendering safeguard, not a verified diagnosis of an Android renderer defect.
+Resource-keyed image loading also assigns the correct cache/decode result on EVERY
+resource change (produceState's initial value alone does not reset an existing
+non-null state when its key changes).
+
+Explore search uses a 20dp field shape. A shell-level pointer observer clears focus
+and hides IME on outside touch-down without consuming the touch, including toolbar
+and bottom navigation. Focused search handles Back before destination navigation;
+IME Search also dismisses. Query text/results stay intact after dismissal. The
+observer and geometry do not rebuild list contents on every pointer movement.
+Native/device QA must verify focus/IME predictive Back, outside taps, keyboard Search,
+RTL/LTR, long text, switching Home/Explore repeatedly and filtering with warm/cold
+cover cache. Source tests do not replace frame capture or native compilation.

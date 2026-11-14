@@ -16,5 +16,5 @@ Source URLs and SHA-256 hashes are recorded in
   not a status-bar small icon.
 
 No notification schedule, debug timing, message or permission behavior is changed.
-The temporary ten-second debug testing mode remains enabled. Actual status-bar
+The subsequent reminder-timing revision removed the temporary test scale; all builds now use real inactivity milestones. Actual status-bar
 rendering and header appearance still need Android device validation.

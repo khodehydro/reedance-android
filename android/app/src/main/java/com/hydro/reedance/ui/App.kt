@@ -113,7 +113,7 @@ import com.hydro.reedance.data.*
     fun navigate(to: String) { if(to == "quiz") model.pause(); page = to }
     val independent = page in listOf("song", "quiz")
     BackHandler(page != "home") { page = if(page == "quiz") if(reviewQuiz) "review" else "song" else "home" }
-    Scaffold(containerColor = Color.Transparent, snackbarHost = { SnackbarHost(snackbar) }, topBar = {
+    SearchDismissHost { Scaffold(containerColor = Color.Transparent, snackbarHost = { SnackbarHost(snackbar) }, topBar = {
         if(page != "song") HeaderSurface { Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             if(page == "quiz") {
                 PressIconButton({ page = if(reviewQuiz) "review" else "song" }) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
@@ -152,5 +152,6 @@ import com.hydro.reedance.data.*
           }
          }
         }
+    }
     }
 }

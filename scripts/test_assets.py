@@ -319,6 +319,31 @@ class AssetTests(unittest.TestCase):
         self.assertTrue(provenance['ico_header']['source'].endswith('/ico_header.png'))
         self.assertTrue(provenance['ico_notif']['source'].endswith('/ico_notif.png'))
 
+    def test_real_reminder_timing_and_search_dismissal(self):
+        source = ASSETS / 'main/java/com/hydro/reedance'
+        policy = (source / 'domain/ReminderPolicy.kt').read_text()
+        worker = (source / 'notifications/LearningReminders.kt').read_text()
+        self.assertIn('const val UNIT_MILLIS = 12 * 60 * 60 * 1000L', policy)
+        for text in [policy, worker]:
+            self.assertNotIn('testMode', text)
+            self.assertNotIn('BuildConfig.DEBUG', text)
+            self.assertNotIn('10_000L', text)
+        search = (source / 'ui/SearchDismiss.kt').read_text()
+        for token in ['BackHandler(session.focused)', 'PointerEventPass.Initial', '!session.bounds.contains', 'focus.clearFocus(force = true)', 'keyboard?.hide()']:
+            self.assertIn(token, search)
+        self.assertNotIn('.consume()', search)
+        catalog = (source / 'ui/Catalog.kt').read_text()
+        self.assertIn('shape = RoundedCornerShape(20.dp)', catalog)
+        self.assertIn('onFocusChanged', catalog)
+        self.assertIn('KeyboardActions(onSearch', catalog)
+
+    def test_cover_clips_every_draw_and_resets_resource_state(self):
+        source = (ASSETS / 'main/java/com/hydro/reedance/ui/Catalog.kt').read_text()
+        self.assertIn('onDrawWithContent { clipPath(outline)', source)
+        self.assertIn('addRoundRect(RoundRect(', source)
+        self.assertIn('value = coverCache.get(resource) ?: withContext', source)
+        self.assertNotIn('if(value == null)', source)
+
     def test_headers_have_consistent_opaque_background(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'
         theme = (ui / 'Theme.kt').read_text()
