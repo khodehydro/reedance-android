@@ -13,6 +13,24 @@ import org.junit.Test
 
 class LayoutTest {
     @get:Rule val compose = createComposeRule()
+    @Test fun headerSelectsSongLanguageWithoutChangingInterfaceLanguage() {
+        var selected by mutableStateOf("en")
+        var openedProfile = false
+        compose.setContent {
+            CompositionLocalProvider(LocalFa provides false, LocalReducedMotion provides true) {
+                ReedanceTheme(Settings(language = "en")) {
+                    MainHeader(selected, { selected = it }, { openedProfile = true })
+                }
+            }
+        }
+        compose.onNodeWithContentDescription("Choose song language: English").performClick()
+        compose.onNodeWithText("Spanish").performClick()
+        compose.onNodeWithContentDescription("Choose song language: Spanish").assertIsDisplayed()
+        compose.runOnIdle { org.junit.Assert.assertEquals("es", selected) }
+        compose.onNodeWithContentDescription("My space and settings").performClick()
+        compose.runOnIdle { org.junit.Assert.assertTrue(openedProfile) }
+    }
+
     @Test fun persianTableAndLatinTextRemainReadableInRtl() {
         val table = JsonParser.parseString("""{"titleFa":"جدول واژه‌ها","columns":[{"fa":"واژه","en":"Word"},{"fa":"معنی","en":"Meaning"}],"rows":[["hope",{"fa":"امید","en":"hope"}]]}""").asJsonObject
         compose.setContent {

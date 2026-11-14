@@ -67,3 +67,24 @@ Compare the same Home/Explore fling with navigation expansion, then long Lyrics,
 Words and Starter scrolls on a physical phone using System Trace / FrameTimeline.
 Check compact/expanded navigation at all three app font sizes, system font scaling,
 RTL/LTR and reduced motion. Preserve filter reflow and press animations.
+
+## Centered header / target-language selection
+
+The shared main header now has equal 48dp side controls, with an isolated centered
+brand slot. Every three seconds the wordmark exits upward while the logo enters
+from below, then reverses the content on the next cycle (same upward direction).
+The slot is fixed-height and clipped, so this does not resize the header or lists.
+The timer only runs while the destination lifecycle is STARTED; reduced motion
+keeps the wordmark static. Accessibility exposes one stable Reedance label.
+
+The former logo position is a circular target-language flag (English by default).
+Its modal bottom sheet selects English, Spanish or Korean. This is a persisted
+DataStore setting independent of the interface language, shared by Home/Explore.
+The inline language pills / All languages option are removed; access/downloaded
+pills and item-reflow animations remain. App-language selection is only in initial
+setup and Profile settings, not the header. Song/quiz contextual headers retain
+their back controls.
+
+20 host checks and 31 Kotlin/KTS syntax checks passed. A new instrumentation test
+covers opening the sheet, selecting Spanish and opening Profile; it has NOT run.
+Native build, visual centering, animation timing and TalkBack still need device QA.

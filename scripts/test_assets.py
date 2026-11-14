@@ -137,7 +137,7 @@ class AssetTests(unittest.TestCase):
             self.assertEqual(6, png[25])  # RGBA: transparent outside circular edge
         source = (ASSETS / 'main/java/com/hydro/reedance/ui/Catalog.kt').read_text()
         self.assertIn('3 -> s.s("id") in installedIds', source)
-        self.assertIn('remember(catalog, language, access, installedIds)', source)
+        self.assertIn('remember(catalog, targetLanguage, access, installedIds)', source)
         self.assertIn('.animateItem(', source)
         self.assertNotIn('"Playable"', source)
         for path in (ASSETS / 'main/java/com/hydro/reedance/ui').glob('*.kt'):
@@ -199,6 +199,26 @@ class AssetTests(unittest.TestCase):
         self.assertIn('heightIn(min = slotHeight)', nav)
         self.assertIn('labelSmall.lineHeight.toDp()', nav)
         self.assertNotIn('if(compact)', nav[nav.index('val slotHeight'):nav.index('// Keep')])
+
+    def test_centered_brand_and_persistent_song_language_picker(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        header = (ui / 'MainHeader.kt').read_text()
+        for token in ['ModalBottomSheet', 'Modifier.weight(1f)', 'slideInVertically', 'slideOutVertically', 'repeatOnLifecycle(Lifecycle.State.STARTED)', 'if(!reduced)', 'clearAndSetSemantics']:
+            self.assertIn(token, header)
+        for code in ['en', 'es', 'ko']:
+            self.assertIn('SongLanguage("' + code + '"', header)
+        app = (ui / 'App.kt').read_text()
+        self.assertIn('MainHeader(settings.targetLanguage, model::targetLanguage', app)
+        self.assertNotIn('LocalFaValue', app)
+        self.assertNotIn('model.language(if', app)
+        catalog = (ui / 'Catalog.kt').read_text()
+        self.assertIn('s.s("language") == targetLanguage', catalog)
+        self.assertNotIn('flag = R.drawable.flag_', catalog)
+        self.assertNotIn('var language', catalog)
+        settings = (ASSETS / 'main/java/com/hydro/reedance/data/Settings.kt').read_text()
+        self.assertIn('val targetLanguage: String = "en"', settings)
+        self.assertIn('stringPreferencesKey("target_language")', settings)
+        self.assertIn('ChoiceRow(listOf("English", "فارسی")', (ui / 'Profile.kt').read_text())
 
     def test_headers_have_consistent_opaque_background(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'

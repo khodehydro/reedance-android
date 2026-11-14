@@ -13,7 +13,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -86,6 +85,7 @@ import com.hydro.reedance.data.*
     var reviewQuiz by rememberSaveable { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
     val message by model.message.collectAsStateWithLifecycle()
+    val settings by model.settings.collectAsStateWithLifecycle()
     val started by model.started.collectAsStateWithLifecycle()
     val playing by model.playing.collectAsStateWithLifecycle()
     val pageStates = rememberSaveableStateHolder()
@@ -118,10 +118,7 @@ import com.hydro.reedance.data.*
                 PressIconButton({ page = if(reviewQuiz) "review" else "song" }) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
                 Text(tr("آزمون", "Practice"), style = MaterialTheme.typography.titleLarge)
             } else {
-                Image(painterResource(R.drawable.reedance_logo), "Reedance", Modifier.size(40.dp))
-                Text("Reedance", Modifier.padding(start = 8.dp).weight(1f), style = MaterialTheme.typography.titleLarge.copy(fontFamily = BrandFont, fontWeight = FontWeight.ExtraBold))
-                PressTextButton({ model.language(if(LocalFaValue(model)) "en" else "fa") }) { Text(tr("EN", "فا")) }
-                PressIconButton({ navigate("profile") }) { AppIcon(UiIcons.User, tr("فضای من", "My space")) }
+                MainHeader(settings.targetLanguage, model::targetLanguage, { navigate("profile") })
             }
         }
         }
@@ -156,4 +153,3 @@ import com.hydro.reedance.data.*
         }
     }
 }
-private fun LocalFaValue(model: AppModel) = model.settings.value.language != "en"

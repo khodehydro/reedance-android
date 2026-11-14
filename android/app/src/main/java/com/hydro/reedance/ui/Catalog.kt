@@ -49,14 +49,15 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
 }
 @Composable fun CatalogScreen(model: AppModel, home: Boolean, openSong: (String) -> Unit, starter: () -> Unit) {
     val catalog by model.catalog.collectAsStateWithLifecycle()
-    var language by rememberSaveable { mutableIntStateOf(0) }
+    val settings by model.settings.collectAsStateWithLifecycle()
+    val targetLanguage = settings.targetLanguage
     var access by rememberSaveable { mutableIntStateOf(0) }
     val grid = rememberLazyGridState()
     val lesson by model.lesson.collectAsStateWithLifecycle()
     val installedIds = remember(lesson) { listOfNotNull(lesson?.s("songId")?.takeIf { it.isNotBlank() }).toSet() }
     val reduced = LocalReducedMotion.current
-    val filtered = remember(catalog, language, access, installedIds) { catalog.filter { s ->
-        (language == 0 || s.s("language") == listOf("", "en", "es", "ko")[language]) && when(access) {
+    val filtered = remember(catalog, targetLanguage, access, installedIds) { catalog.filter { s ->
+        (s.s("language") == targetLanguage) && when(access) {
             1 -> s.s("access") == "free"; 2 -> s.s("access") == "paid"; 3 -> s.s("id") in installedIds; else -> true
         }
     } }
@@ -86,12 +87,6 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
         }
         item(key = "filters", span = { GridItemSpan(maxLineSpan) }) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                PillTabs(listOf(
-                    PillOption(tr("همه", "All"), UiIcons.Globe, tr("همهٔ زبان‌ها", "All languages")),
-                    PillOption("", description = tr("انگلیسی", "English"), flag = R.drawable.flag_gb_circle),
-                    PillOption("", description = tr("اسپانیایی", "Spanish"), flag = R.drawable.flag_es_circle),
-                    PillOption("", description = tr("کره‌ای", "Korean"), flag = R.drawable.flag_kr_circle)
-                ), language) { language = it }
                 PillTabs(listOf(
                     PillOption(tr("همه", "All"), UiIcons.All), PillOption(tr("رایگان", "Free"), UiIcons.LockOpen),
                     PillOption(tr("پولی", "Premium"), UiIcons.Crown), PillOption(tr("دانلودشده‌ها", "Downloaded"), UiIcons.Check)

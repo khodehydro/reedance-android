@@ -183,6 +183,7 @@ class AppModel(app: Application): AndroidViewModel(app) {
             if(!engine.say(text, locale)) message.value = "صدای آفلاین نصب نیست؛ متن را بخوانید / No offline voice installed; use the text"
         }
     }
+    fun targetLanguage(value: String) { operation("ذخیره تنظیمات ناموفق / Settings save failed") { preferences.targetLanguage(value) } }
     fun language(value: String) { operation("ذخیره تنظیمات ناموفق / Settings save failed") { preferences.language(value) } }
     fun theme(value: String) { operation("ذخیره تنظیمات ناموفق / Settings save failed") { preferences.theme(value) } }
     fun textSize(value: Int) { operation("ذخیره تنظیمات ناموفق / Settings save failed") { preferences.size(value) } }
