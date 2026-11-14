@@ -25,7 +25,9 @@ class LocalContentRepository(context: Context, private val dao: LearningDao,
         val text = assetText("catalog_preview.json")
         return withContext(cpu) { JsonParser.parseString(text).asJsonArray.map { it.asJsonObject } }
     }
-    suspend fun starters() = parseObject(assetText("starter.json"))
+    suspend fun starters(): JsonObject = StarterPreload.courses ?: StarterPreload.loadMutex.withLock {
+        StarterPreload.courses ?: parseObject(assetText("starter.json")).also { StarterPreload.courses = it }
+    }
     suspend fun restoreDemo(): JsonObject? = filesMutex.withLock {
         val text = withContext(io) {
             staging.deleteRecursively()

@@ -20,7 +20,9 @@ RTL/LTR, reduced motion, themed system bars and loading/onboarding gates are sha
 without composing MainShell. StarterActivity uses Theme.Reedance (not the launch
 splash theme), adds no splash handler, and renders neither the global header,
 floating menu nor mini-player. OS system navigation is NOT hidden; its safe inset
-is still respected. LocalOverlayBottomInset is explicitly zero for this screen.
+is still respected. The system navigation inset is trailing list content space, not viewport bottom
+padding; rows can scroll underneath the transparent system bar while the final
+controls remain reachable.
 
 The activity owns its own lifecycle AppModel, with the existing singleton Room and
 shared application DataStores. Pronunciation is lazy and released with its model.
@@ -35,3 +37,34 @@ pending (no JDK/Android SDK here): launch/finish and predictive Back, rotation a
 process restoration, language sheet dismissal and course switching, progress/TTS,
 activity ledger continuity, RTL/LTR/font scaling, status/navigation safe areas,
 return-to-home scroll preservation and absence of duplicate splash/global menu.
+
+
+## Warm launch and navigation-bar follow-up
+
+StarterActivity disables Android navigation-bar contrast enforcement immediately
+following enableEdgeToEdge, matching MainActivity even before Compose's first
+SideEffect. The root theme still applies transparent system bars and light/dark
+icon appearance. Starter's content viewport extends beneath system navigation,
+with its measured safe inset appended inside the list instead of reserving a
+separate bottom strip. Test both gesture and three-button navigation on Android.
+
+Main startup now warms a process-only Starter snapshot (parsed course JSON, actual
+settings and current step progress). The repository memoizes course parsing behind
+a shared mutex; both activities use the same read-only JSON data. Live DataStore
+and Room flows refresh settings/progress snapshots. A Starter-specific AppModel
+factory seeds its first states and ready flag from that snapshot, removing the
+second blank/loading gate on a normal Home-to-Starter entry. No Activity/ViewModel
+or Compose tree is cached and no Activity is created offscreen.
+
+Cold process restoration still reads Starter prerequisites asynchronously, but no
+longer waits for catalog loading or demo-file restore/staging cleanup. The default
+single-Application AppModel constructor is retained via @JvmOverloads for the main
+AndroidViewModel factory. Room/DataStore remain authoritative; snapshots are not
+persisted independently and disappear when the process ends. This removes known
+redundant I/O, not Android Activity/first-frame rendering cost; zero-ms startup is
+not claimed.
+
+34 host source/asset checks and Kotlin syntax/manifest checks cover the follow-up.
+No native build or timing measurement was possible here. Compare warm entry and
+process-restored entry on-device, check current settings/progress without flashes,
+rotation, TTS, both system navigation modes and final-row reachability.

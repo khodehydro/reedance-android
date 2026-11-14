@@ -6,6 +6,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModel
 import com.hydro.reedance.data.AppModel
 import com.hydro.reedance.ui.ReedanceApp
 import com.hydro.reedance.ui.StarterDestination
@@ -16,7 +17,14 @@ class StarterActivity: ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge(navigationBarStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT))
-        model = ViewModelProvider(this)[AppModel::class.java]
+        if(android.os.Build.VERSION.SDK_INT >= 29) window.isNavigationBarContrastEnforced = false
+        model = ViewModelProvider(this, object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                require(modelClass == AppModel::class.java)
+                return AppModel(application, starterOnly = true) as T
+            }
+        })[AppModel::class.java]
         setContent { ReedanceApp(model) { StarterDestination(model, ::finish) } }
     }
     override fun onResume() {

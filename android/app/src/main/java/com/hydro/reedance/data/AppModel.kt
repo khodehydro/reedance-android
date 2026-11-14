@@ -24,7 +24,8 @@ import java.io.File
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-class AppModel(app: Application): AndroidViewModel(app) {
+class AppModel @JvmOverloads constructor(app: Application, private val starterOnly: Boolean = false): AndroidViewModel(app) {
+    private val preload = if(starterOnly) StarterPreload.snapshot() else null
     private val database = LearningDatabase.get(app)
     val dao = database.learning()
     private val content = LocalContentRepository(app, dao)
@@ -47,15 +48,17 @@ class AppModel(app: Application): AndroidViewModel(app) {
             try { while(true) { delay(5_000); flush() } } catch(cancelled: CancellationException) { throw cancelled } catch(_: Exception) { message.value = "ذخیره فعالیت ناموفق / Activity save failed" } finally { withContext(NonCancellable) { try { flush() } catch(_: Exception) { message.value = "ذخیره فعالیت ناموفق / Activity save failed" } } }
         }
     }
+    private var settingsLoaded = preload != null
+    private var stepsLoaded = preload != null
     val preferences = SettingsRepository(app)
-    val settings = preferences.flow.stateIn(viewModelScope, SharingStarted.Eagerly, Settings())
-    val ready = MutableStateFlow(false)
+    val settings = preferences.flow.onEach { StarterPreload.settings = it; settingsLoaded = true }.stateIn(viewModelScope, SharingStarted.Eagerly, preload?.settings ?: Settings())
+    val ready = MutableStateFlow(preload != null)
     val bookmarks = dao.bookmarks().distinctUntilChanged().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
     val reviews = dao.reviews().distinctUntilChanged().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-    val steps = dao.starter().distinctUntilChanged().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val steps = dao.starter().distinctUntilChanged().onEach { StarterPreload.steps = it; stepsLoaded = true }.stateIn(viewModelScope, SharingStarted.Eagerly, preload?.steps ?: emptyList())
     val resultCount = dao.resultCount().distinctUntilChanged().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
     val catalog = MutableStateFlow<List<JsonObject>>(emptyList())
-    val starters = MutableStateFlow(JsonObject())
+    val starters = MutableStateFlow(preload?.courses ?: JsonObject())
     val lesson = MutableStateFlow<JsonObject?>(null)
     val busy = MutableStateFlow(false)
     val message = MutableStateFlow("")
@@ -88,12 +91,21 @@ class AppModel(app: Application): AndroidViewModel(app) {
         }
         viewModelScope.launch {
             try {
-                coroutineScope {
+                if(starterOnly) {
+                    // Warm entry is already ready from snapshots. Cold restoration
+                    // loads only the Starter prerequisites, not catalog/audio/demo.
+                    starters.value = content.starters()
+                    settings.first { settingsLoaded }
+                    steps.first { stepsLoaded }
+                } else coroutineScope {
                     // Independent reads run concurrently; I/O and JSON CPU work have separate dispatchers.
                     val catalogTask = async { content.catalog() }
                     val startersTask = async { content.starters() }
                     val lessonTask = async { content.restoreDemo() }
-                    preferences.flow.first()
+                    val loadedSettings = preferences.flow.first()
+                    val loadedSteps = dao.starter().first()
+                    StarterPreload.settings = loadedSettings
+                    StarterPreload.steps = loadedSteps
                     catalog.value = catalogTask.await()
                     starters.value = startersTask.await()
                     lesson.value = lessonTask.await()

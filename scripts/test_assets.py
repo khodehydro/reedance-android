@@ -436,13 +436,31 @@ class AssetTests(unittest.TestCase):
         self.assertNotIn('"starter" -> StarterScreen', app)
         self.assertIn('context.startActivity(android.content.Intent(context, com.hydro.reedance.StarterActivity::class.java))', app)
         destination = (source / 'ui/StarterDestination.kt').read_text()
-        for token in ['PressIconButton(back', 'tr("استارتر", "Starter")', 'ModalBottomSheet', 'Modifier.size(32.dp).clip(CircleShape)', 'LocalOverlayBottomInset provides 0.dp', 'StarterScreen(model, selected.first)']:
+        for token in ['PressIconButton(back', 'tr("استارتر", "Starter")', 'ModalBottomSheet', 'Modifier.size(32.dp).clip(CircleShape)', 'LocalOverlayBottomInset provides padding.calculateBottomPadding()', 'StarterScreen(model, selected.first)']:
             self.assertIn(token, destination)
         self.assertNotIn('FloatingNavigation', destination)
         self.assertNotIn('MainHeader(', destination)
         starter = (source / 'ui/Starter.kt').read_text()
         self.assertIn('rememberSaveable(code)', starter)
         self.assertNotIn('ChoiceRow(listOf("English"', starter)
+
+    def test_starter_preload_and_transparent_system_navigation(self):
+        source = ASSETS / 'main/java/com/hydro/reedance'
+        activity = (source / 'StarterActivity.kt').read_text()
+        self.assertIn('window.isNavigationBarContrastEnforced = false', activity)
+        self.assertIn('starterOnly = true', activity)
+        model = (source / 'data/AppModel.kt').read_text()
+        for token in ['@JvmOverloads constructor', 'StarterPreload.snapshot()', 'MutableStateFlow(preload != null)', 'preload?.courses ?: JsonObject()', 'preload?.settings ?: Settings()', 'preload?.steps ?: emptyList()', 'if(starterOnly)']:
+            self.assertIn(token, model)
+        repo = (source / 'data/LocalContentRepository.kt').read_text()
+        self.assertIn('StarterPreload.loadMutex.withLock', repo)
+        self.assertIn('StarterPreload.courses = it', repo)
+        cache = (source / 'data/StarterPreload.kt').read_text()
+        self.assertNotIn('Activity:', cache)
+        self.assertIn('@Volatile var courses', cache)
+        destination = (source / 'ui/StarterDestination.kt').read_text()
+        self.assertNotIn('.padding(padding)', destination)
+        self.assertIn('LocalOverlayBottomInset provides padding.calculateBottomPadding()', destination)
 
     def test_headers_have_consistent_opaque_background(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'

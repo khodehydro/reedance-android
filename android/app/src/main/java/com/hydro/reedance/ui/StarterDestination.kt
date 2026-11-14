@@ -42,8 +42,12 @@ private val courseFlags = listOf("en" to R.drawable.flag_gb_circle, "es" to R.dr
             }
         }
     }) { padding ->
-        CompositionLocalProvider(LocalOverlayBottomInset provides 0.dp) {
-            Box(Modifier.fillMaxSize().padding(padding)) { StarterScreen(model, selected.first) }
+        CompositionLocalProvider(LocalOverlayBottomInset provides padding.calculateBottomPadding()) {
+            Box(Modifier.fillMaxSize().padding(
+                start = padding.calculateStartPadding(androidx.compose.ui.platform.LocalLayoutDirection.current),
+                end = padding.calculateEndPadding(androidx.compose.ui.platform.LocalLayoutDirection.current),
+                top = padding.calculateTopPadding()
+            )) { StarterScreen(model, selected.first) }
         }
     }
     if(choosing) ModalBottomSheet(onDismissRequest = { choosing = false }) {
