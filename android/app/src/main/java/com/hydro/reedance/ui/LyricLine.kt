@@ -15,14 +15,15 @@ import com.hydro.reedance.data.*
 
 /** A play action at the start of the original line; translation sits below the text, not the button. */
 @OptIn(ExperimentalLayoutApi::class)
-@Composable internal fun LyricLine(line: JsonObject, mode: Int, active: Boolean, onPlay: () -> Unit, onToken: (JsonObject) -> Unit) {
+@Composable internal fun LyricLine(line: JsonObject, mode: Int, active: Boolean, onPlay: () -> Unit, onToken: (JsonObject) -> Unit, playing: Boolean = false) {
     val fa = LocalFa.current
     val interfaceDirection = LocalLayoutDirection.current
     Panel(tone = if(active) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface) {
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 PressIconButton(onPlay, Modifier.size(48.dp)) {
-                    AppIcon(UiIcons.PlayFilled, tr("پخش خط: ${line.s("text")}", "Play line: ${line.s("text")}"), Modifier.size(18.dp),
+                    AppIcon(if(playing) UiIcons.PauseFilled else UiIcons.PlayFilled,
+                        if(playing) tr("مکث خط: ${line.s("text")}", "Pause line: ${line.s("text")}") else tr("پخش خط: ${line.s("text")}", "Play line: ${line.s("text")}"), Modifier.size(18.dp),
                         tint = if(active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {

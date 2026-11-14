@@ -266,7 +266,7 @@ class AssetTests(unittest.TestCase):
         self.assertNotIn('Tap a timestamp', song)
         lyric = (ui / 'LyricLine.kt').read_text()
         self.assertIn('PressIconButton(onPlay', lyric)
-        self.assertIn('UiIcons.PlayFilled', lyric)
+        self.assertIn('UiIcons.PauseFilled else UiIcons.PlayFilled', lyric)
         self.assertIn('if(mode == 1)', lyric)
         self.assertIn('interfaceDirection', lyric)
         self.assertIn('if(active) option.filledIcon ?: option.icon else option.icon', (ui / 'Components.kt').read_text())
@@ -293,6 +293,18 @@ class AssetTests(unittest.TestCase):
             self.assertNotIn('installDemo', text)
             self.assertNotIn('restoreDemo', text)
             self.assertNotIn('midnight-avenue', text)
+
+    def test_item_bookmarks_are_icon_only_at_trailing_edge_and_lyric_pause_is_scoped(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        song = (ui / 'Song.kt').read_text()
+        action = song.split('@Composable fun SaveAction')[1].split('@Composable private fun PlayerPanel')[0]
+        self.assertIn('horizontalArrangement = Arrangement.End', action)
+        self.assertIn('ItemBookmarkButton(saved', action)
+        self.assertNotIn('Text(', action)
+        self.assertIn('playing && active && activePlayback?.songId == songId', song)
+        self.assertIn(') model.pause()', song)
+        self.assertIn('else model.playFromLine(', song)
+        self.assertIn('if(playing) UiIcons.PauseFilled else UiIcons.PlayFilled', (ui / 'LyricLine.kt').read_text())
 
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))
@@ -738,10 +750,10 @@ class AssetTests(unittest.TestCase):
         self.assertNotIn('.padding(padding)', destination)
         self.assertIn('LocalOverlayBottomInset provides padding.calculateBottomPadding()', destination)
 
-    def test_all_sheets_use_blue_white_shared_palette(self):
+    def test_all_sheets_follow_active_theme_palette(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'
         sheet = (ui / 'ReedanceBottomSheet.kt').read_text()
-        for token in ['Color(0xFF062FFD)', 'containerColor = SheetBlue', 'contentColor = Color.White', 'primary = Color.White', 'onSurface = Color.White', 'tonalElevation = 0.dp']:
+        for token in ['val colors = MaterialTheme.colorScheme', 'containerColor = colors.surfaceContainerLow', 'contentColor = colors.onSurface', 'color = colors.onSurfaceVariant', 'tonalElevation = 0.dp']:
             self.assertIn(token, sheet)
         for name in ['MainHeader.kt', 'StarterDestination.kt', 'Song.kt']:
             source = (ui / name).read_text()

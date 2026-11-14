@@ -1,6 +1,6 @@
 package com.hydro.reedance
 
-import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -29,6 +29,20 @@ class LyricLineTest {
         compose.onNodeWithText("Hello world").assertIsDisplayed()
         compose.onNodeWithContentDescription("Play line: Merhaba dünya").performClick()
         compose.runOnIdle { assertEquals(1, plays) }
+    }
+
+    @Test fun playingLineSwitchesToPauseAndBack() {
+        var playing by mutableStateOf(false)
+        compose.setContent {
+            CompositionLocalProvider(LocalFa provides false, LocalReducedMotion provides true) {
+                ReedanceTheme(Settings(language = "en")) {
+                    LyricLine(line, 1, true, { playing = !playing }, {}, playing = playing)
+                }
+            }
+        }
+        compose.onNodeWithContentDescription("Play line: Merhaba dünya").performClick()
+        compose.onNodeWithContentDescription("Pause line: Merhaba dünya").assertIsDisplayed().performClick()
+        compose.onNodeWithContentDescription("Play line: Merhaba dünya").assertIsDisplayed()
     }
 
     @Test fun persianTranslationAndForeignLineRemainVisibleInRtl() {

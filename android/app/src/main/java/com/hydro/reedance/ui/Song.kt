@@ -39,6 +39,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     val busy by model.busy.collectAsStateWithLifecycle()
     val activeLineId by model.activeLineId.collectAsStateWithLifecycle()
     val playing by model.playing.collectAsStateWithLifecycle()
+    val activePlayback by model.activePlayback.collectAsStateWithLifecycle()
     val bookmarks by model.bookmarks.collectAsStateWithLifecycle()
     val song = catalog.find { it.s("id") == songId } ?: JsonObject()
     val access = LessonAccess(premium = song.s("access") == "paid")
@@ -132,12 +133,16 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                         item(key = "lyric-help") { Text(tr("برای پخش از هر خط، روی آیکون پخش کنار آن بزن؛ برای معنی روی واژه بزن.", "Tap the play icon beside a line to play from there, or a word to explore it."), style = MaterialTheme.typography.bodySmall) }
                         items(lines.take(access.limit("lyrics")), key = { "lyric-${it.s("id")}" }, contentType = { "lyric" }) { line ->
                             val active = activeLineId == line.s("id")
-                            LyricLine(line, mode, active, onPlay = { model.playFromLine(songId, line.n("startMs")) }) { token ->
+                            LyricLine(line, mode, active, playing = playing && active && activePlayback?.songId == songId,
+                                onPlay = {
+                                    if(playing && active && activePlayback?.songId == songId) model.pause()
+                                    else model.playFromLine(songId, line.n("startMs"))
+                                }, onToken = { token ->
                                 if(access.preview && token.s("lexemeId") !in wordsById) subscriptionInfo = true
                                 else selectedWord = wordsById[token.s("lexemeId")] ?: JsonObject().apply {
                                     addProperty("lemma", token.s("surface")); addProperty("translationFa", token.s("translationFa")); addProperty("translationEn", token.s("translationEn"))
                                 }
-                            }
+                            })
                         }
                         if(lines.size > access.limit("lyrics")) item(key = "lyrics-preview") { PremiumPreview() }
                         item(key = "lyric-quiz") { Action(tr("آماده‌ای؟ خودت را امتحان کن", "Ready? Test what you learned"), Modifier.fillMaxWidth(), onClick = openQuiz) }
@@ -195,9 +200,8 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     val bookmarks by model.bookmarks.collectAsStateWithLifecycle()
     val lesson by model.lesson.collectAsStateWithLifecycle()
     val saved = bookmarks.any { it.songId == lesson?.s("songId") && it.itemType == type && it.itemId == id }
-    PressTextButton({ model.toggleBookmark(type, id) }) {
-        AnimatedBookmarkIcon(saved)
-        Text(if(saved) tr("نشان‌شده", "Saved") else tr("نشان کردن", "Save for later"))
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        ItemBookmarkButton(saved, { model.toggleBookmark(type, id) })
     }
 }
 @Composable private fun PlayerPanel(model: AppModel, data: JsonObject) {

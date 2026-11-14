@@ -32,3 +32,14 @@ import androidx.compose.ui.semantics.semantics
         AnimatedBookmarkIcon(saved, tr("نشان کردن آهنگ", "Bookmark song"))
     }
 }
+
+/** Icon-only learning-item action; accessible labels remain available to TalkBack. */
+@Composable internal fun ItemBookmarkButton(saved: Boolean, onClick: () -> Unit) {
+    val state = if(saved) tr("نشان‌شده", "Saved") else tr("نشان نشده", "Not saved")
+    PressIconButton(onClick, Modifier.semantics {
+        selected = saved
+        stateDescription = state
+    }) {
+        AnimatedBookmarkIcon(saved, if(saved) tr("حذف نشان", "Remove bookmark") else tr("نشان کردن", "Save for later"))
+    }
+}
