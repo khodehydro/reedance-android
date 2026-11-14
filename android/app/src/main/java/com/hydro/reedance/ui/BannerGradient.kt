@@ -19,14 +19,16 @@ import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.isActive
 import kotlin.math.sin
 
+internal enum class FluidPalette { Ocean, Aurora }
+
 /** Fluid light ribbons over near-black pools, not moving circular color stops. */
-@Composable internal fun BannerGradient(animate: Boolean, modifier: Modifier = Modifier) {
+@Composable internal fun BannerGradient(animate: Boolean, modifier: Modifier = Modifier, palette: FluidPalette = FluidPalette.Ocean) {
     val reduced = LocalReducedMotion.current
     val paused = LocalBackgroundMotion.current.paused
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var seconds by remember { mutableFloatStateOf(0f) }
-    val fluid = remember {
-        if(Build.VERSION.SDK_INT >= 33) runCatching { FluidShader() }.getOrNull() else null
+    val fluid = remember(palette) {
+        if(Build.VERSION.SDK_INT >= 33) runCatching { FluidShader(palette) }.getOrNull() else null
     }
     LaunchedEffect(animate, reduced, paused, lifecycle) {
         if(reduced) seconds = 0f
@@ -48,15 +50,15 @@ import kotlin.math.sin
             fluid.shader.setFloatUniform("resolution", size.width.coerceAtLeast(1f), size.height.coerceAtLeast(1f))
             fluid.shader.setFloatUniform("time", t)
             drawRect(fluid.brush)
-        } else drawFluidFallback(t)
+        } else if(palette == FluidPalette.Aurora) drawFluidFallback(t, true) else drawFluidFallback(t)
         // Preserve the light text's contrast; the fluid itself remains unblurred text-wise.
         drawRect(Brush.verticalGradient(listOf(Color(0x33000410), Color.Transparent, Color(0x55000312))))
     }
 }
 
 @RequiresApi(33)
-private class FluidShader {
-    val shader = RuntimeShader(FLUID_SHADER)
+private class FluidShader(palette: FluidPalette) {
+    val shader = if(palette == FluidPalette.Aurora) RuntimeShader(AURORA_FLUID_SHADER) else RuntimeShader(FLUID_SHADER)
     val brush = ShaderBrush(shader)
 }
 
@@ -106,10 +108,17 @@ half4 main(float2 position) {
 }
 """
 
+/** Same domain-warped fluid, recolored orchid / coral over plum for invitation cards. */
+internal val AURORA_FLUID_SHADER = FLUID_SHADER
+    .replace("float3(0.002, 0.003, 0.014)", "float3(0.025, 0.006, 0.045)")
+    .replace("float3(0.015, 0.012, 0.65)", "float3(0.32, 0.025, 0.55)")
+    .replace("float3(0.0, 0.14, 0.30)", "float3(0.35, 0.05, 0.15)")
+    .replace("float3(0.0, 0.56, 0.72)", "float3(0.98, 0.46, 0.40)")
+
 /** API 26–32 / shader-failure fallback: soft nested ribbons, no bitmap/CPU noise loop. */
-private fun DrawScope.drawFluidFallback(t: Float) {
-    drawRect(Color(0xFF01020A))
-    drawRect(Brush.radialGradient(listOf(Color(0xFF1010A8), Color.Transparent),
+private fun DrawScope.drawFluidFallback(t: Float, aurora: Boolean = false) {
+    drawRect(if(aurora) Color(0xFF180923) else Color(0xFF01020A))
+    drawRect(Brush.radialGradient(listOf(if(aurora) Color(0xFF7427A8) else Color(0xFF1010A8), Color.Transparent),
         center = Offset(size.width * .08f, size.height * .55f), radius = size.maxDimension * .8f))
     repeat(2) { ribbon ->
         val path = Path()
@@ -122,7 +131,8 @@ private fun DrawScope.drawFluidFallback(t: Float) {
         }
         for(layer in 10 downTo 1) {
             val outer = layer / 10f
-            val color = if(layer > 5) Color(0xFF0719BB) else Color(0xFF0094C4)
+            val color = if(aurora) { if(layer > 5) Color(0xFFAB3AA8) else Color(0xFFFF897C) }
+                else if(layer > 5) Color(0xFF0719BB) else Color(0xFF0094C4)
             drawPath(path, color.copy(alpha = .075f + (1f - outer) * .065f),
                 style = Stroke(width = size.minDimension * (.025f + outer * .23f)))
         }

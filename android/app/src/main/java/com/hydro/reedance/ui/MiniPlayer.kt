@@ -44,16 +44,12 @@ import kotlinx.coroutines.withContext
             }
         }
     }
-    if(shareDialog) AlertDialog(onDismissRequest = { shareDialog = false },
-        title = { Text(tr("یک فنجان موسیقی با دوستان", "Share a cup of music")) },
-        text = { Text(tr("ری‌دنس را برای دوستانت بفرست تا آن‌ها هم با موسیقی زبان یاد بگیرند.", "Send Reedance to your friends so they can learn languages through music too.")) },
-        confirmButton = { PressTextButton({
-            shareDialog = false
-            val share = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT,
-                "Reedance — learn languages through music. https://github.com/khodehydro/reedance-android")
-            context.startActivity(Intent.createChooser(share, null))
-        }) { Text(tr("اشتراک‌گذاری برنامه", "Share Reedance")) } },
-        dismissButton = { PressTextButton({ shareDialog = false }) { Text(tr("فعلاً نه", "Not now")) } })
+    if(shareDialog) ShareAppDialog(onDismiss = { shareDialog = false }, onShare = {
+        shareDialog = false
+        val share = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT,
+            "Reedance — learn languages through music. https://github.com/khodehydro/reedance-android")
+        context.startActivity(Intent.createChooser(share, null))
+    })
 }
 
 @Composable private fun MiniCover(song: ActivePlayback) {

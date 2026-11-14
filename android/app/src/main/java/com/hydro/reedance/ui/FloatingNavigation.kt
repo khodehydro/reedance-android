@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -33,11 +34,11 @@ private data class Destination(val id: String, val label: String, val outline: I
     // Keep the Scaffold bottom slot stable while the capsule animates. Otherwise
     // its changing height updates every page's trailing inset on every frame.
     Box(Modifier.fillMaxWidth().heightIn(min = slotHeight).padding(horizontal = inset), contentAlignment = Alignment.BottomCenter) {
-        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface.copy(alpha = .96f), shadowElevation = 2.dp, tonalElevation = 0.dp) {
+        Surface(shape = CircleShape, color = Color(0xFF0A2EFE), contentColor = Color.White, shadowElevation = 2.dp, tonalElevation = 0.dp) {
             Row(Modifier.fillMaxWidth().selectableGroup().padding(4.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
                 destinations.forEach { destination ->
                     val active = page == destination.id
-                    val tint by animateColorAsState(if(active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant, tween(duration), label = "nav-icon")
+                    val tint = Color.White
                     Column(Modifier.weight(1f).clip(CircleShape)
                         .selectable(active, role = Role.Tab, onClick = { onNavigate(destination.id) })
                         .semantics { contentDescription = destination.label }

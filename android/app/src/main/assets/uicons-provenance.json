@@ -147,6 +147,12 @@
       "drawable": "uicon_coffee",
       "style": "Regular Rounded"
     },
+    "Share": {
+      "glyph": "share",
+      "codepoint": "0xfbd5",
+      "drawable": "uicon_share",
+      "style": "Regular Rounded"
+    },
     "HomeFilled": {
       "glyph": "home",
       "codepoint": "0xf7ad",
@@ -193,6 +199,12 @@
       "glyph": "coffee",
       "codepoint": "0xf487",
       "drawable": "uicon_coffee_filled",
+      "style": "Solid Rounded"
+    },
+    "ShareFilled": {
+      "glyph": "share",
+      "codepoint": "0xfbaf",
+      "drawable": "uicon_share_filled",
       "style": "Solid Rounded"
     }
   }

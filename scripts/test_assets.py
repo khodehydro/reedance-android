@@ -108,13 +108,36 @@ class AssetTests(unittest.TestCase):
         self.assertIn('Modifier.size(32.dp).clip(CircleShape)', mini)
         self.assertIn('song.title', mini)
         self.assertIn('UiIcons.CoffeeFilled', mini)
-        self.assertIn('if(shareDialog) AlertDialog', mini)
+        self.assertIn('if(shareDialog) ShareAppDialog', mini)
         self.assertIn('Intent.ACTION_SEND', mini)
         self.assertIn('withContext(Dispatchers.IO)', mini)
         icons = load(ASSETS / 'main/assets/uicons-provenance.json')['icons']
         for name in ['PlayFilled', 'PauseFilled', 'CoffeeFilled']:
             self.assertEqual(icons[name]['style'], 'Solid Rounded')
             self.assertTrue((ASSETS / ('main/res/drawable/' + icons[name]['drawable'] + '.xml')).exists())
+
+    def test_player_metadata_navigation_palette_and_square_share_card(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        song = (ui / 'Song.kt').read_text()
+        player = song.split('@Composable private fun PlayerPanel')[1]
+        self.assertNotIn('Midnight Avenue', player)
+        self.assertNotIn('Reedance Originals', player)
+        self.assertIn('Foreign(data.s("title"), large = true)', player)
+        self.assertIn('Text(data.s("artist")', player)
+        self.assertIn('PlayerPanel(model, data)', song)
+        nav = (ui / 'FloatingNavigation.kt').read_text()
+        self.assertIn('color = Color(0xFF0A2EFE), contentColor = Color.White', nav)
+        self.assertIn('val tint = Color.White', nav)
+        dialog = (ui / 'ShareAppDialog.kt').read_text()
+        self.assertIn('Dialog(onDismissRequest = onDismiss)', dialog)
+        self.assertIn('.aspectRatio(1f)', dialog)
+        self.assertIn('FluidPalette.Aurora', dialog)
+        self.assertIn('UiIcons.ShareFilled', dialog)
+        self.assertIn('verticalScroll(rememberScrollState())', dialog)
+        self.assertIn('backgroundMotion.overlays++', dialog)
+        self.assertIn('backgroundMotion.overlays--', dialog)
+        icons = load(ASSETS / 'main/assets/uicons-provenance.json')['icons']
+        self.assertEqual(icons['ShareFilled']['style'], 'Solid Rounded')
 
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ASSETS / 'debug/assets/demo_lesson.json'))

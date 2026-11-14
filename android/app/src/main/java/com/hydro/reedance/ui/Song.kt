@@ -87,7 +87,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                 }
             } else {
                 val data = lesson!!
-                item(key = "player", contentType = "player") { PlayerPanel(model) }
+                item(key = "player", contentType = "player") { PlayerPanel(model, data) }
                 item(key = "credits") { Text(data.obj("credits").tr("notice", fa), style = MaterialTheme.typography.bodySmall) }
                 item(key = "tabs") { ChoiceRow(listOf(tr("لیریک", "Lyrics"), tr("نکته‌ها", "Notes"), tr("لغت‌ها", "Words"), tr("عبارت‌ها", "Phrases")), tab, setTab) }
                 item(key = "quiz") { PressOutlinedButton(openQuiz, Modifier.fillMaxWidth()) { AppIcon(UiIcons.Quiz, null); Text(tr("آزمون آهنگ", "Song quiz")) } }
@@ -175,7 +175,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
         Text(if(saved) tr("نشان‌شده", "Saved") else tr("نشان کردن", "Save for later"))
     }
 }
-@Composable private fun PlayerPanel(model: AppModel) {
+@Composable private fun PlayerPanel(model: AppModel, data: JsonObject) {
     val playing by model.playing.collectAsStateWithLifecycle()
     val position by model.position.collectAsStateWithLifecycle()
     val duration by model.duration.collectAsStateWithLifecycle()
@@ -183,8 +183,8 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     val muted by model.muted.collectAsStateWithLifecycle()
     var dragging by remember { mutableStateOf<Float?>(null) }
     Panel {
-        Foreign("Midnight Avenue", large = true)
-        Text("Reedance Originals · " + tr("دموی بی‌کلام", "Instrumental demo"), style = MaterialTheme.typography.bodySmall)
+        Foreign(data.s("title"), large = true)
+        Text(data.s("artist"), style = MaterialTheme.typography.bodySmall)
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
             Column {
                 Slider(value = dragging ?: position.toFloat(), onValueChange = { dragging = it }, valueRange = 0f..duration.toFloat().coerceAtLeast(1f), onValueChangeFinished = { dragging?.let { model.seek(it.toLong()) }; dragging = null })

@@ -21,6 +21,7 @@ object UiIcons {
     val User = R.drawable.uicon_user
     val PlayFilled = R.drawable.uicon_play_filled
     val PauseFilled = R.drawable.uicon_pause_filled
+    val ShareFilled = R.drawable.uicon_share_filled
     val CoffeeFilled = R.drawable.uicon_coffee_filled
     val Play = R.drawable.uicon_play
     val Pause = R.drawable.uicon_pause

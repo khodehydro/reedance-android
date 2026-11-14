@@ -29,8 +29,8 @@ class MiniPlayerTest {
         compose.onNodeWithContentDescription("Pause").performClick()
         compose.onNodeWithContentDescription("Play").assertIsDisplayed()
         compose.onNodeWithContentDescription("Invite friends").performClick()
-        compose.onNodeWithText("Share Reedance").assertIsDisplayed()
-        compose.onNodeWithText("Not now").performClick()
+        compose.onNodeWithText("Share Reedance").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Not now").performScrollTo().performClick()
         compose.onNodeWithText("Share Reedance").assertDoesNotExist()
         compose.runOnIdle { active = ActivePlayback("midnight-avenue", "Midnight Avenue", "Reedance Originals", null) }
         compose.onNodeWithText("Midnight Avenue").performClick()
