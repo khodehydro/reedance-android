@@ -102,8 +102,13 @@ class PackInstaller(private val context: Context) {
         }
     }
     private fun syncDirectory(directory: File) {
-        val fd = android.system.Os.open(directory.path, android.system.OsConstants.O_RDONLY or android.system.OsConstants.O_DIRECTORY, 0)
-        try { android.system.Os.fsync(fd) } finally { android.system.Os.close(fd) }
+        // O_DIRECTORY is not exposed by Android's public OsConstants SDK.
+        // Open read-only, then verify the opened descriptor (not just the path).
+        val fd = android.system.Os.open(directory.path, android.system.OsConstants.O_RDONLY, 0)
+        try {
+            require(android.system.OsConstants.S_ISDIR(android.system.Os.fstat(fd).st_mode)) { "Expected directory for fsync" }
+            android.system.Os.fsync(fd)
+        } finally { android.system.Os.close(fd) }
     }
     private suspend fun recoverLocked() {
         File(root, ".staging").listFiles()?.forEach { it.deleteRecursively() }

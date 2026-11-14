@@ -19,6 +19,15 @@ def load(p): return json.loads(p.read_text())
 def b64(s): return base64.urlsafe_b64decode(s + '=' * (-len(s) % 4))
 
 class AssetTests(unittest.TestCase):
+    def test_directory_sync_uses_public_android_sdk_and_checks_descriptor(self):
+        # Source regression guard only; native compilation/device fsync need Android CI.
+        source = (ASSETS / 'main/java/com/hydro/reedance/install/PackInstaller.kt').read_text()
+        self.assertNotIn('OsConstants.O_DIRECTORY', source)
+        self.assertIn('Os.open(directory.path, android.system.OsConstants.O_RDONLY, 0)', source)
+        self.assertIn('OsConstants.S_ISDIR(android.system.Os.fstat(fd).st_mode)', source)
+        self.assertIn('android.system.Os.fsync(fd)', source)
+        self.assertIn('finally { android.system.Os.close(fd) }', source)
+
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ASSETS / 'debug/assets/demo_lesson.json'))
 
