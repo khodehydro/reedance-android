@@ -1,0 +1,22 @@
+{
+  "file_name": "v000001-e83715d2eb2fec5205fdc0bec16267858ea4a7d04ae9b1ceb3f1c0d50aa092af.rdpack",
+  "size_bytes": 7583238,
+  "sha256": "e83715d2eb2fec5205fdc0bec16267858ea4a7d04ae9b1ceb3f1c0d50aa092af",
+  "content_version_code": 1,
+  "container": "RDPACK1",
+  "encryption": "AES-256-GCM",
+  "encryption_key_id": "enc-studio-e896d1",
+  "header_bytes": 46,
+  "plaintext_zip_bytes": 7583176,
+  "tag_bytes": 16,
+  "checks_passed": [
+    "filename_hash",
+    "magic",
+    "key_id_syntax",
+    "bounded_length"
+  ],
+  "publisher_signature": "not_verified_requires_signed_manifest_and_trusted_public_key",
+  "gcm_authentication": "not_verified_requires_matching_distribution_key",
+  "archive_extraction": "not_attempted",
+  "android_install_or_playback": "not_tested"
+}

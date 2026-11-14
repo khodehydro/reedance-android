@@ -10,6 +10,7 @@ jobs:
           python-version: '3.11'
       - run: pip install -r scripts/requirements-test.txt
       - run: python scripts/test_assets.py
+      - run: python scripts/test_inspect_rdpack.py
   debug:
     runs-on: ubuntu-latest
     steps:
