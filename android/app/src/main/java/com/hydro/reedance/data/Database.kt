@@ -30,6 +30,8 @@ data class QuizResult(val songId: String, val questionId: String, val versionCod
     @Query("SELECT * FROM SongPlayback WHERE songId = :id") suspend fun playback(id: String): SongPlayback?
     @Insert suspend fun saveResult(value: QuizResult)
     @Query("SELECT COUNT(*) FROM QuizResult") fun resultCount(): Flow<Int>
+    @Query("SELECT COUNT(*) FROM ReviewCard WHERE dueAt <= :now") suspend fun dueCount(now: Long): Int
+    @Query("SELECT COUNT(*) FROM StarterProgress") suspend fun stepCount(): Int
     @Query("SELECT * FROM ReviewCard WHERE dueAt <= :now ORDER BY dueAt") suspend fun dueReviews(now: Long): List<ReviewCard>
     @Query("SELECT * FROM QuizResult ORDER BY gradedAt DESC") fun results(): Flow<List<QuizResult>>
     @Query("SELECT * FROM InstalledPackage WHERE songId = :id") suspend fun installed(id: String): InstalledPackage?

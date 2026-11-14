@@ -34,6 +34,7 @@ import com.hydro.reedance.data.*
             Text(tr("تنظیمات برنامه", "Make yourself at home"), style = MaterialTheme.typography.titleLarge)
             Text(tr("زبان رابط", "App language"))
             ChoiceRow(listOf("English", "فارسی"), if(settings.language == "en") 0 else 1) { model.language(if(it == 0) "en" else "fa") }
+            ReminderControls(model)
             Text(tr("ظاهر", "Appearance"))
             ChoiceRow(listOf(tr("دستگاه", "System"), tr("روشن", "Light"), tr("تاریک", "Dark")), listOf("system", "light", "dark").indexOf(settings.theme)) { model.theme(listOf("system", "light", "dark")[it]) }
             Text(tr("اندازهٔ نوشته", "Text size"))
@@ -67,7 +68,7 @@ import com.hydro.reedance.data.*
         Panel {
             Text(tr("دربارهٔ ری‌دنس", "About Reedance"), style = MaterialTheme.typography.titleLarge)
             Text(tr("نسخهٔ بومی آزمایشی · Kotlin و Jetpack Compose\nمحتوای دمو مستقل و موسیقی بی‌کلام است.", "Native debug edition · Kotlin & Jetpack Compose\nOriginal demo material with instrumental music."))
-            Text("developed with ❤️ by HYDRO team")
+            DeveloperCredit()
             PressTextButton({ uri.openUri("https://github.com/khodehydro/reedance-android") }) { Text(tr("کد منبع", "Source code")) }
         }
     }

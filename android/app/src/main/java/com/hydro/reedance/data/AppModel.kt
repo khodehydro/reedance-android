@@ -63,6 +63,11 @@ class AppModel(app: Application): AndroidViewModel(app) {
 
     init {
         viewModelScope.launch {
+            preferences.flow.map { it.reminders }.distinctUntilChanged().collect { enabled ->
+                com.hydro.reedance.notifications.LearningReminders.schedule(app, enabled)
+            }
+        }
+        viewModelScope.launch {
             try {
                 coroutineScope {
                     // Independent reads run concurrently; I/O and JSON CPU work have separate dispatchers.
@@ -183,6 +188,9 @@ class AppModel(app: Application): AndroidViewModel(app) {
             if(!engine.say(text, locale)) message.value = "صدای آفلاین نصب نیست؛ متن را بخوانید / No offline voice installed; use the text"
         }
     }
+    fun reminders(enabled: Boolean) { operation("ذخیره تنظیمات ناموفق / Settings save failed") { preferences.reminders(enabled) } }
+    fun completePermissionSetup() { operation("ذخیره تنظیمات ناموفق / Settings save failed") { preferences.completeSetup() } }
+    fun recordVisit() { operation("ذخیره تنظیمات ناموفق / Settings save failed") { preferences.visited() } }
     fun targetLanguage(value: String) { operation("ذخیره تنظیمات ناموفق / Settings save failed") { preferences.targetLanguage(value) } }
     fun language(value: String) { operation("ذخیره تنظیمات ناموفق / Settings save failed") { preferences.language(value) } }
     fun theme(value: String) { operation("ذخیره تنظیمات ناموفق / Settings save failed") { preferences.theme(value) } }

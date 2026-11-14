@@ -52,13 +52,15 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
     val catalog by model.catalog.collectAsStateWithLifecycle()
     val settings by model.settings.collectAsStateWithLifecycle()
     val targetLanguage = settings.targetLanguage
+    var query by rememberSaveable { mutableStateOf("") }
     var access by rememberSaveable { mutableIntStateOf(0) }
     val grid = rememberLazyGridState()
     val lesson by model.lesson.collectAsStateWithLifecycle()
     val installedIds = remember(lesson) { listOfNotNull(lesson?.s("songId")?.takeIf { it.isNotBlank() }).toSet() }
     val reduced = LocalReducedMotion.current
-    val filtered = remember(catalog, targetLanguage, home, access, installedIds) { catalog.filter { s ->
-        (s.s("language") == targetLanguage) && when(if(home) 0 else access) {
+    val filtered = remember(catalog, targetLanguage, home, access, installedIds, query) { catalog.filter { s ->
+        (s.s("language") == targetLanguage) &&
+        (home || query.isBlank() || listOf(s.s("title"), s.s("artist")).any { it.contains(query.trim(), ignoreCase = true) }) && when(if(home) 0 else access) {
             1 -> s.s("access") == "free"; 2 -> s.s("access") == "paid"; 3 -> s.s("id") in installedIds; else -> true
         }
     }.let { if(home) latestSongs(it) else it } }
@@ -88,6 +90,9 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
         }
         if(!home) item(key = "filters", span = { GridItemSpan(maxLineSpan) }) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(value = query, onValueChange = { query = it }, modifier = Modifier.fillMaxWidth(),
+                    singleLine = true, label = { Text(tr("جست‌وجوی آهنگ یا خواننده", "Search songs or artists")) },
+                    trailingIcon = { if(query.isNotEmpty()) PressTextButton({ query = "" }) { Text(tr("پاک کردن", "Clear")) } })
                 PillTabs(listOf(
                     PillOption(tr("همه", "All"), UiIcons.All), PillOption(tr("رایگان", "Free"), UiIcons.Play),
                     PillOption(tr("پریمیوم", "Premium"), UiIcons.Crown), PillOption(tr("دانلودشده‌ها", "Downloaded"), UiIcons.Check)
@@ -109,7 +114,7 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
         }
         item(key = "credits", span = { GridItemSpan(maxLineSpan) }) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("developed with ❤️ by HYDRO team", style = MaterialTheme.typography.labelSmall)
+                DeveloperCredit()
             }
         }
     }

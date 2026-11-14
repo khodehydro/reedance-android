@@ -46,13 +46,14 @@ import com.hydro.reedance.data.*
                     }
                 }
             }
-            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            HeartOverlay { Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                 when {
                     !ready -> Box(Modifier.fillMaxSize()) // Covered by the single system splash.
                     settings.language.isEmpty() -> Setup(model)
+                    !settings.permissionsSetup -> PermissionSetup(model)
                     else -> MainShell(model)
                 }
-            }
+            } }
         }
     }
 }

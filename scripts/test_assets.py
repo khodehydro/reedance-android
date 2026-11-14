@@ -104,9 +104,10 @@ class AssetTests(unittest.TestCase):
             self.assertNotIn('Icons.Rounded', path.read_text())
         self.assertTrue((ASSETS / 'main/assets/Uicons-LICENSE.txt').is_file())
 
-    def test_catalog_has_no_search_and_uses_lazy_offthread_covers(self):
+    def test_catalog_explore_search_and_lazy_offthread_covers(self):
         source = (ASSETS / 'main/java/com/hydro/reedance/ui/Catalog.kt').read_text()
-        self.assertNotIn('OutlinedTextField', source)
+        self.assertIn('if(!home) item(key = "filters"', source)
+        self.assertIn('OutlinedTextField(value = query', source)
         self.assertIn('LazyVerticalGrid', source)
         self.assertIn('withContext(Dispatchers.IO)', source)
         self.assertIn('🇬🇧', source)
@@ -137,7 +138,7 @@ class AssetTests(unittest.TestCase):
             self.assertEqual(6, png[25])  # RGBA: transparent outside circular edge
         source = (ASSETS / 'main/java/com/hydro/reedance/ui/Catalog.kt').read_text()
         self.assertIn('3 -> s.s("id") in installedIds', source)
-        self.assertIn('remember(catalog, targetLanguage, home, access, installedIds)', source)
+        self.assertIn('remember(catalog, targetLanguage, home, access, installedIds, query)', source)
         self.assertIn('.animateItem(', source)
         self.assertNotIn('"Playable"', source)
         for path in (ASSETS / 'main/java/com/hydro/reedance/ui').glob('*.kt'):
@@ -239,6 +240,7 @@ class AssetTests(unittest.TestCase):
         self.assertIn('UiIcons.CrownFilled', title)
         self.assertIn('style.fontSize.toDp() * .9f', title)
         self.assertIn('if(premium)', title)
+        self.assertLess(title.index('if(premium) AppIcon'), title.index('Text(title,'))
         self.assertNotIn('Surface(', title)
         self.assertNotIn('.background(', title)
         tile = (ui / 'Catalog.kt').read_text().split('@Composable private fun SongTile')[1]
@@ -272,6 +274,30 @@ class AssetTests(unittest.TestCase):
         self.assertIn('"lyrics" -> 3', policy)
         self.assertIn('else -> 2', policy)
         self.assertIn('.take(40)', policy)
+
+    def test_local_reminders_permissions_search_and_hearts(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        catalog = (ui / 'Catalog.kt').read_text()
+        search = catalog[catalog.index('if(!home) item(key = "filters"'):catalog.index('items(filtered,')]
+        self.assertIn('OutlinedTextField(value = query', search)
+        self.assertIn('home || query.isBlank()', catalog)
+        for name in ['Catalog.kt', 'Profile.kt']:
+            self.assertIn('DeveloperCredit()', (ui / name).read_text())
+        hearts = (ui / 'Hearts.kt').read_text()
+        for token in ['positionInRoot()', 'Canvas(Modifier.matchParentSize())', 'origin.y - t *', 'job?.cancel()', 'if(reduced)']:
+            self.assertIn(token, hearts)
+        app = (ui / 'App.kt').read_text()
+        self.assertIn('HeartOverlay {', app)
+        self.assertIn('!settings.permissionsSetup -> PermissionSetup(model)', app)
+        manifest = (ASSETS / 'main/AndroidManifest.xml').read_text()
+        self.assertIn('android.permission.POST_NOTIFICATIONS', manifest)
+        for permission in ['WRITE_EXTERNAL_STORAGE', 'READ_EXTERNAL_STORAGE', 'MANAGE_EXTERNAL_STORAGE', 'SCHEDULE_EXACT_ALARM']:
+            self.assertNotIn(permission, manifest)
+        worker = (ASSETS / 'main/java/com/hydro/reedance/notifications/LearningReminders.kt').read_text()
+        for token in ['enqueueUniquePeriodicWork', 'ExistingPeriodicWorkPolicy.KEEP', 'cancelUniqueWork', 'ReminderPolicy.eligible', 'dueCount(now)', 'stepCount()', 'FLAG_IMMUTABLE', 'catch(_: SecurityException)']:
+            self.assertIn(token, worker)
+        self.assertNotIn('http', worker)
+        self.assertIn('ReminderControls(model)', (ui / 'Profile.kt').read_text())
 
     def test_headers_have_consistent_opaque_background(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'

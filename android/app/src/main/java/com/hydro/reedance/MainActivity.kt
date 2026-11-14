@@ -21,8 +21,15 @@ class MainActivity: ComponentActivity() {
         splash.setKeepOnScreenCondition { !model.ready.value }
         setContent { ReedanceApp(model) }
     }
+    override fun onStart() {
+        super.onStart()
+        if(::appModel.isInitialized) {
+            appModel.recordVisit()
+            androidx.core.app.NotificationManagerCompat.from(this).cancel(com.hydro.reedance.notifications.LearningReminders.NOTIFICATION)
+        }
+    }
     override fun onStop() {
-        if(::appModel.isInitialized) appModel.onBackground()
+        if(::appModel.isInitialized) { appModel.onBackground(); appModel.recordVisit() }
         super.onStop()
     }
 

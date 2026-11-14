@@ -163,8 +163,8 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
     val crownSize = with(LocalDensity.current) { style.fontSize.toDp() * .9f }
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(title, Modifier.weight(1f, fill = false), style = style, maxLines = 2, overflow = TextOverflow.Ellipsis)
             if(premium) AppIcon(UiIcons.CrownFilled, tr("پریمیوم", "Premium"), Modifier.size(crownSize), tint = Color(0xFFE6A800))
+            Text(title, Modifier.weight(1f, fill = false), style = style, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
     }
 }
