@@ -113,7 +113,7 @@ import com.hydro.reedance.data.*
     val independent = page in listOf("song", "quiz")
     BackHandler(page != "home") { page = if(page == "quiz") if(reviewQuiz) "review" else "song" else "home" }
     Scaffold(containerColor = Color.Transparent, snackbarHost = { SnackbarHost(snackbar) }, topBar = {
-        if(page != "song") Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        if(page != "song") HeaderSurface { Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             if(page == "quiz") {
                 PressIconButton({ page = if(reviewQuiz) "review" else "song" }) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
                 Text(tr("آزمون", "Practice"), style = MaterialTheme.typography.titleLarge)
@@ -123,6 +123,7 @@ import com.hydro.reedance.data.*
                 PressTextButton({ model.language(if(LocalFaValue(model)) "en" else "fa") }) { Text(tr("EN", "فا")) }
                 PressIconButton({ navigate("profile") }) { AppIcon(UiIcons.User, tr("فضای من", "My space")) }
             }
+        }
         }
     }, bottomBar = {
         if(!independent) Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {

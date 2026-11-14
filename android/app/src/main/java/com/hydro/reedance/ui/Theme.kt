@@ -35,3 +35,15 @@ val LocalReducedMotion = staticCompositionLocalOf { false }
         CompositionLocalProvider(LocalIndication provides rememberPressFeedback(), LocalRippleConfiguration provides null, content = content)
     }
 }
+
+// Opaque and elevation-independent: headers never reveal scrolling content or
+// acquire a Material tonal overlay when the song header collapses.
+@Composable internal fun HeaderSurface(content: @Composable () -> Unit) {
+    Surface(
+        color = MaterialTheme.colorScheme.background,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+        content = content
+    )
+}

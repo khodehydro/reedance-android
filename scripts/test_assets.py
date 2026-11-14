@@ -184,6 +184,17 @@ class AssetTests(unittest.TestCase):
         self.assertEqual((512,512), struct.unpack('>II', png[16:24]))
         self.assertEqual(6, png[25])
 
+    def test_headers_have_consistent_opaque_background(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        theme = (ui / 'Theme.kt').read_text()
+        header = theme[theme.index('@Composable internal fun HeaderSurface'):]
+        for token in ['color = MaterialTheme.colorScheme.background', 'tonalElevation = 0.dp', 'shadowElevation = 0.dp']:
+            self.assertIn(token, header)
+        self.assertIn('if(page != "song") HeaderSurface {', (ui / 'App.kt').read_text())
+        song = (ui / 'Song.kt').read_text()
+        self.assertIn('HeaderSurface {', song)
+        self.assertNotIn('shadowElevation = if(collapsed)', song)
+
     def test_coroutine_startup_and_observer_driven_playback(self):
         source = (ASSETS / 'main/java/com/hydro/reedance/data/AppModel.kt').read_text()
         self.assertIn('coroutineScope {', source)

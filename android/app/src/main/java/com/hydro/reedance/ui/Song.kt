@@ -37,7 +37,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     val lines = remember(lesson) { lesson?.a("lyrics").orEmpty() }
     val wordsById = remember(lesson) { lesson?.a("vocabulary").orEmpty().associateBy { it.s("lexemeId") } }
     Column(Modifier.fillMaxSize()) {
-        Surface(shadowElevation = if(collapsed) 4.dp else 0.dp) {
+        HeaderSurface {
             Column {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                     PressIconButton(back) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
