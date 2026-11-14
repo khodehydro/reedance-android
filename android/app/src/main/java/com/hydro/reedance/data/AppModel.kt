@@ -217,10 +217,13 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
     private var installRequest: java.util.UUID? = null
     val installProgress = MutableStateFlow("")
     fun cancelInstall() { installRequest?.let { WorkManager.getInstance(getApplication()).cancelWorkById(it) } }
-    fun openInstalled(id: String) = operation("بارگذاری بسته ناموفق / Package load failed") {
+    fun cachedLesson(id: String): JsonObject? = content.cachedLesson(id)
+    suspend fun openInstalled(id: String) {
         checkpoint(force = true)
+        content.cachedLesson(id)?.let { lesson.value = it }
         lesson.value = content.installedLesson(id)
     }
+    suspend fun songCoverPath(id: String, data: JsonObject): String? = content.coverPath(id, data)
     val savingPackPassword = MutableStateFlow(false)
     fun savePackPassword(password: String) {
         if(savingPackPassword.value || busy.value) return

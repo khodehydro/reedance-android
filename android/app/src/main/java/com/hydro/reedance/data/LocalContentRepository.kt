@@ -18,6 +18,11 @@ class LocalContentRepository(context: Context, private val dao: LearningDao,
     val demoDir = File(app.filesDir, "demo/midnight-avenue/1")
     private val staging = File(app.filesDir, "demo-staging")
     private val filesMutex = Mutex()
+    // Bound retained parsed lessons; catalog reads must not grow memory with the whole library.
+    private val lessonCache = java.util.Collections.synchronizedMap(object : LinkedHashMap<String, JsonObject>(4, .75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, JsonObject>?): Boolean = size > 4
+    })
+    fun cachedLesson(id: String): JsonObject? = lessonCache[id]
 
     private suspend fun assetText(name: String) = withContext(io) { app.assets.open(name).bufferedReader().use { it.readText() } }
     private suspend fun parseObject(text: String) = withContext(cpu) { JsonParser.parseString(text).asJsonObject }
@@ -48,11 +53,11 @@ class LocalContentRepository(context: Context, private val dao: LearningDao,
         return installed + songs.filter { it.s("id") !in replacedPreviewIds }
     }
     suspend fun installedLesson(id: String): JsonObject? = withContext(io) {
-        val row = dao.installed(id) ?: return@withContext null
+        val row = dao.installed(id) ?: run { lessonCache.remove(id); return@withContext null }
         val file = File(row.activePath, "lesson.json")
-        if(!file.isFile || row.state !in listOf("VERIFIED", "LOCAL_PASSWORD", "DEMO")) return@withContext null
+        check(file.isFile && row.state in listOf("VERIFIED", "LOCAL_PASSWORD", "DEMO")) { "Installed package is unavailable" }
         require(file.length() <= 4 * 1024 * 1024)
-        com.hydro.reedance.contract.PackVerifier.strictJson(file.inputStream().use { it.readBytes() }, 4 * 1024 * 1024)
+        com.hydro.reedance.contract.PackVerifier.strictJson(file.inputStream().use { it.readBytes() }, 4 * 1024 * 1024).also { lessonCache[id] = it }
     }
     suspend fun audioFile(id: String, lesson: JsonObject): File = withContext(io) {
         val row = dao.installed(id) ?: error("Package not installed")
@@ -73,7 +78,7 @@ class LocalContentRepository(context: Context, private val dao: LearningDao,
             if(BuildConfig.DEBUG && File(demoDir, "lesson.json").isFile && File(demoDir, "audio.wav").isFile)
                 File(demoDir, "lesson.json").readText() else null
         }
-        text?.let { parseObject(it) }
+        text?.let { parseObject(it).also { data -> lessonCache[data.s("songId")] = data } }
     }
     suspend fun installDemo(): JsonObject = filesMutex.withLock {
         check(BuildConfig.DEBUG)
@@ -106,10 +111,10 @@ class LocalContentRepository(context: Context, private val dao: LearningDao,
                     dao.saveInstalled(InstalledPackage("midnight-avenue", 1, "LOCAL-DEMO-NOT-A-SIGNED-PACK", demoDir.path, "DEMO", System.currentTimeMillis()))
                 } catch(error: Exception) { demoDir.renameTo(staging); throw error }
             }
-            data
+            data.also { lessonCache[it.s("songId")] = it }
         } finally { withContext(NonCancellable + io) { staging.deleteRecursively() } }
     }
     suspend fun deleteDemo() = filesMutex.withLock {
-        withContext(io) { check(!demoDir.exists() || demoDir.deleteRecursively()); dao.deleteInstalled("midnight-avenue") }
+        withContext(io) { check(!demoDir.exists() || demoDir.deleteRecursively()); dao.deleteInstalled("midnight-avenue"); lessonCache.remove("midnight-avenue") }
     }
 }

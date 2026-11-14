@@ -147,6 +147,30 @@ class AssetTests(unittest.TestCase):
         icons = load(ASSETS / 'main/assets/uicons-provenance.json')['icons']
         self.assertEqual(icons['ShareFilled']['style'], 'Solid Rounded')
 
+    def test_installed_song_entry_and_wave_controller(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        song = (ui / 'Song.kt').read_text()
+        self.assertIn('model.cachedLesson(songId)', song)
+        self.assertIn('var loading by remember(songId) { mutableStateOf(true) }', song)
+        self.assertIn('SongEntryState.NOT_INSTALLED', song)
+        self.assertIn('SongEntryState.LOADING', song)
+        self.assertIn('try { model.openInstalled(songId) }', song)
+        self.assertIn('SongArtwork(songId', song)
+        self.assertIn('Modifier.size(40.dp).clip(CircleShape)', song)
+        controller = song.split('@Composable private fun PlayerPanel')[1]
+        self.assertIn('BannerGradient(animate = playing, modifier = Modifier.matchParentSize())', controller)
+        self.assertIn('contentColor = Color.White', controller)
+        self.assertIn('fontSize = 11.sp', controller)
+        self.assertNotIn('Modifier.size(64.dp)', controller)
+        self.assertIn('WaveSeekBar(', controller)
+        wave = (ui / 'WaveSeekBar.kt').read_text()
+        self.assertIn('Slider(value = value.coerceIn', wave)
+        self.assertIn('Offset(end, center), Offset(size.width, center)', wave)
+        self.assertIn('drawPath(path, Color.White', wave)
+        self.assertIn('if(playing && !reduced && !paused)', wave)
+        self.assertIn('contentDescription = description', wave)
+        self.assertIn('repeatOnLifecycle(Lifecycle.State.STARTED)', wave)
+
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ASSETS / 'debug/assets/demo_lesson.json'))
 
@@ -322,7 +346,8 @@ class AssetTests(unittest.TestCase):
             self.assertIn('contentType =', source)
         song = (ui / 'Song.kt').read_text()
         self.assertIn('rememberLazyListState()', song)
-        self.assertIn('scroll.firstVisibleItemIndex > 0', song)
+        self.assertIn('SongArtwork(songId', song)
+        self.assertIn('Modifier.size(40.dp).clip(CircleShape)', song)
         self.assertIn('items(lines.take(access.limit("lyrics")), key =', song)
         nav = (ui / 'FloatingNavigation.kt').read_text()
         self.assertIn('heightIn(min = slotHeight)', nav)

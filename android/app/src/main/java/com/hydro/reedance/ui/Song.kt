@@ -5,6 +5,8 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -18,12 +20,18 @@ import com.google.gson.JsonObject
 import com.hydro.reedance.BuildConfig
 import com.hydro.reedance.data.*
 import com.hydro.reedance.domain.LessonAccess
+import com.hydro.reedance.domain.SongEntryState
+import com.hydro.reedance.domain.songEntryState
 
 fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable fun SongScreen(model: AppModel, songId: String, tab: Int, setTab: (Int) -> Unit, back: () -> Unit, quiz: () -> Unit) {
     val catalog by model.catalog.collectAsStateWithLifecycle()
-    val lesson by model.lesson.collectAsStateWithLifecycle()
+    val loadedLesson by model.lesson.collectAsStateWithLifecycle()
+    val lesson = loadedLesson?.takeIf { it.s("songId") == songId } ?: model.cachedLesson(songId)
+    var loading by remember(songId) { mutableStateOf(true) }
+    var loadError by remember(songId) { mutableStateOf(false) }
+    var reload by remember(songId) { mutableIntStateOf(0) }
     val busy by model.busy.collectAsStateWithLifecycle()
     val activeLineId by model.activeLineId.collectAsStateWithLifecycle()
     val playing by model.playing.collectAsStateWithLifecycle()
@@ -36,10 +44,18 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     var mode by rememberSaveable { mutableIntStateOf(1) }
     var selectedWord by remember { mutableStateOf<JsonObject?>(null) }
     val scroll = rememberLazyListState()
-    val collapsed by remember { derivedStateOf { scroll.firstVisibleItemIndex > 0 || scroll.firstVisibleItemScrollOffset > 300 } }
     val available = lesson?.s("songId") == songId
-    LaunchedEffect(songId) { model.openInstalled(songId) }
-    LaunchedEffect(available, lesson) { if(available) model.preparePlayback() }
+    val entryState = songEntryState(available, loading, loadError)
+    LaunchedEffect(songId, reload) {
+        loading = true; loadError = false
+        try { model.openInstalled(songId) } catch(cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch(_: Exception) { loadError = true }
+        finally { loading = false }
+    }
+    LaunchedEffect(loadedLesson) { if(loadedLesson?.s("songId") == songId) model.preparePlayback() }
+    val coverResult by produceState<Pair<String, String?>?>(null, songId, lesson) {
+        value = songId to lesson?.let { model.songCoverPath(songId, it) }
+    }
+    val coverPath = coverResult?.takeIf { it.first == songId }?.second
     val lines = remember(lesson) { lesson?.a("lyrics").orEmpty() }
     val wordsById = remember(lesson, access) { lesson?.a("vocabulary").orEmpty().take(access.limit("vocabulary")).associateBy { it.s("lexemeId") } }
     Column(Modifier.fillMaxSize()) {
@@ -47,24 +63,25 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
             Column {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                     PressIconButton(back) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
-                    Column(Modifier.weight(1f)) {
-                        SongTitle(song.s("title"), premium = access.premium, style = MaterialTheme.typography.titleMedium)
-                        Text("${song.s("language").uppercase()} · ${song.s("level")} · ${song.s("duration")}", style = MaterialTheme.typography.labelSmall)
+                    Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                        SongArtwork(songId, song.s("title"), coverPath, Modifier.size(40.dp).clip(CircleShape))
                     }
                     PressIconButton({ model.toggleBookmark("song", songId) }) {
                         AppIcon(UiIcons.Bookmark, tr("ذخیره", "Save"), tint = if(bookmarks.any { it.itemType == "song" && it.itemId == songId }) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-                AnimatedVisibility(collapsed && available) {
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(song.s("title"), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-                        PressIconButton(model::togglePlay) { AppIcon(if(playing) UiIcons.Pause else UiIcons.Play, tr("پخش یا مکث", "Play or pause")) }
-                    }
-                }
+
             }
         }
         LazyColumn(state = scroll, modifier = Modifier.weight(1f), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-            if(!available) {
+            if(entryState == SongEntryState.ERROR) {
+                item(key = "load-error") { Panel {
+                    Text(tr("خواندن بسته ناموفق بود؛ نصب قبلی حفظ شده است.", "Could not read the installed package. Your installation is unchanged."))
+                    Action(tr("تلاش دوباره", "Retry")) { reload++ }
+                } }
+            } else if(entryState == SongEntryState.LOADING) {
+                item(key = "loading") { Box(Modifier.fillMaxWidth().height(180.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
+            } else if(entryState == SongEntryState.NOT_INSTALLED) {
                 item(key = "install") { Panel {
                     CoverImage(if(song.s("distributionRef") == "gulum-ii") "pending-gulum-ii" else songId, song.s("title"), Modifier.fillMaxWidth().height(200.dp))
                     Heading(song.s("title"), song.s("artist"))
@@ -181,20 +198,39 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     val duration by model.duration.collectAsStateWithLifecycle()
     val repeat by model.repeat.collectAsStateWithLifecycle()
     val muted by model.muted.collectAsStateWithLifecycle()
-    var dragging by remember { mutableStateOf<Float?>(null) }
-    Panel {
-        Foreign(data.s("title"), large = true)
-        Text(data.s("artist"), style = MaterialTheme.typography.bodySmall)
-        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-            Column {
-                Slider(value = dragging ?: position.toFloat(), onValueChange = { dragging = it }, valueRange = 0f..duration.toFloat().coerceAtLeast(1f), onValueChangeFinished = { dragging?.let { model.seek(it.toLong()) }; dragging = null })
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text(clock(position)); Text(clock(duration)) }
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                    PressIconButton(model::toggleRepeat) { AppIcon(UiIcons.Repeat, tr("تکرار", "Repeat"), tint = if(repeat) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant) }
-                    PressIconButton({ model.seek(position - 10000) }) { AppIcon(UiIcons.Replay10, tr("۱۰ ثانیه عقب", "Back 10 seconds")) }
-                    PressFilledIconButton(model::togglePlay, Modifier.size(64.dp)) { AppIcon(if(playing) UiIcons.Pause else UiIcons.Play, tr("پخش یا مکث", "Play or pause"), Modifier.size(32.dp)) }
-                    PressIconButton({ model.seek(position + 10000) }) { AppIcon(UiIcons.Forward10, tr("۱۰ ثانیه جلو", "Forward 10 seconds")) }
-                    PressIconButton(model::toggleMute) { AppIcon(if(muted) UiIcons.Mute else UiIcons.Volume, tr("بی‌صدا", "Mute")) }
+    var dragging by remember(data.s("songId")) { mutableStateOf<Float?>(null) }
+    Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp), color = Color(0xFF01020A), contentColor = Color.White) {
+        Box {
+            BannerGradient(animate = playing, modifier = Modifier.matchParentSize())
+            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Foreign(data.s("title"), large = true)
+                Text(data.s("artist"), style = MaterialTheme.typography.bodySmall, color = Color.White)
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                    Column {
+                        WaveSeekBar(value = dragging ?: position.toFloat(), duration = duration.toFloat(), playing = playing,
+                            onValueChange = { dragging = it }, onValueChangeFinished = { dragging?.let { model.seek(it.toLong()) }; dragging = null })
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(clock(dragging?.toLong() ?: position), fontSize = 11.sp, color = Color.White)
+                            Text(clock(duration), fontSize = 11.sp, color = Color.White)
+                        }
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+                            PressIconButton(model::toggleRepeat, Modifier.size(48.dp).background(if(repeat) Color.White.copy(alpha = .18f) else Color.Transparent, CircleShape)) {
+                                AppIcon(UiIcons.Repeat, tr("تکرار", "Repeat"), Modifier.size(18.dp), tint = Color.White)
+                            }
+                            PressIconButton({ model.seek(position - 10000) }, Modifier.size(48.dp)) {
+                                AppIcon(UiIcons.Replay10, tr("۱۰ ثانیه عقب", "Back 10 seconds"), Modifier.size(18.dp), tint = Color.White)
+                            }
+                            PressIconButton(model::togglePlay, Modifier.size(48.dp).background(Color.White.copy(alpha = .18f), CircleShape)) {
+                                AppIcon(if(playing) UiIcons.PauseFilled else UiIcons.PlayFilled, tr("پخش یا مکث", "Play or pause"), Modifier.size(24.dp), tint = Color.White)
+                            }
+                            PressIconButton({ model.seek(position + 10000) }, Modifier.size(48.dp)) {
+                                AppIcon(UiIcons.Forward10, tr("۱۰ ثانیه جلو", "Forward 10 seconds"), Modifier.size(18.dp), tint = Color.White)
+                            }
+                            PressIconButton(model::toggleMute, Modifier.size(48.dp)) {
+                                AppIcon(if(muted) UiIcons.Mute else UiIcons.Volume, tr("بی‌صدا", "Mute"), Modifier.size(18.dp), tint = Color.White)
+                            }
+                        }
+                    }
                 }
             }
         }
