@@ -274,7 +274,7 @@ class AssetTests(unittest.TestCase):
         for name in ['Lyrics', 'Notes', 'Words', 'Phrases', 'Original', 'Lines', 'WordMode']:
             self.assertEqual('Regular Rounded', icons[name]['style'])
             self.assertEqual('Solid Rounded', icons[name + 'Filled']['style'])
-            self.assertIn('filledIcon = UiIcons.' + name + 'Filled', song)
+            self.assertIn('filledIcon = UiIcons.' + name + 'Filled', (ui / 'LessonTabs.kt').read_text())
         model = (ASSETS / 'main/java/com/hydro/reedance/data/AppModel.kt').read_text()
         command = model.split('fun playFromLine(')[1].split('fun pause()')[0]
         self.assertLess(command.index('player.seekTo('), command.index('player.play()'))
@@ -310,7 +310,7 @@ class AssetTests(unittest.TestCase):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'
         song = (ui / 'Song.kt').read_text()
         self.assertIn('singleLyric by rememberSaveable(songId)', song)
-        self.assertIn('LyricLayoutToggle(singleLyric)', song)
+        self.assertIn('LessonTabs(tab, setTab, mode', song)
         self.assertIn('val visibleLines = lines.take(access.limit("lyrics"))', song)
         self.assertIn('item(key = "single-lyric"', song)
         self.assertIn('TimedLyricBox(model, songId, visibleLines, renderLine)', song)
@@ -326,10 +326,22 @@ class AssetTests(unittest.TestCase):
         self.assertIn('Arrangement.spacedBy(2.dp, Alignment.CenterHorizontally)', lyric)
         song = (ui / 'Song.kt').read_text()
         self.assertIn('single = singleLyric', song)
-        self.assertIn('item(key = "tabs") { ExpandedPillTabs(', song)
+        self.assertIn('LessonTabs(tab, setTab, mode', song)
         tabs = (ui / 'Components.kt').read_text()
         self.assertIn('if(expanded) Modifier.weight(1f)', tabs)
         self.assertIn('if(expanded) Modifier else Modifier.horizontalScroll', tabs)
+
+    def test_connected_lesson_tabs_include_quiz_without_separate_button(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        song = (ui / 'Song.kt').read_text()
+        self.assertNotIn('item(key = "quiz")', song)
+        self.assertNotIn('item(key = "lyric-mode")', song)
+        tabs = (ui / 'LessonTabs.kt').read_text()
+        self.assertIn('if(index == 4) onQuiz() else onTab(index)', tabs)
+        self.assertIn('if(tab == 0) Canvas', tabs)
+        self.assertIn('cubicTo(', tabs)
+        self.assertIn('if(rtl) size.width - x else x', tabs)
+        self.assertIn('if(LocalReducedMotion.current) 0 else 260', tabs)
 
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))
