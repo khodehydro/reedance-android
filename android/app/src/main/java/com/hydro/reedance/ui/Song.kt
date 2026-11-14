@@ -47,7 +47,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                 Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                     PressIconButton(back) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
                     Column(Modifier.weight(1f)) {
-                        Text(song.s("title"), style = MaterialTheme.typography.titleMedium)
+                        SongTitle(song.s("title"), premium = access.premium, style = MaterialTheme.typography.titleMedium)
                         Text("${song.s("language").uppercase()} · ${song.s("level")} · ${song.s("duration")}", style = MaterialTheme.typography.labelSmall)
                     }
                     PressIconButton({ model.toggleBookmark("song", songId) }) {

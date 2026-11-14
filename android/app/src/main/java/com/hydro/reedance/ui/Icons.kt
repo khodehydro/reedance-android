@@ -31,6 +31,7 @@ object UiIcons {
     val Volume = R.drawable.uicon_volume
     val Mute = R.drawable.uicon_mute
     val Star = R.drawable.uicon_star
+    val CrownFilled = R.drawable.uicon_crown_filled
     val Crown = R.drawable.uicon_crown
     val Check = R.drawable.uicon_check
     val All = R.drawable.uicon_all

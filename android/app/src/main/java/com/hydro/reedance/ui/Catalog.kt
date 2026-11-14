@@ -118,11 +118,8 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
     Column(modifier.clickable(onClick = onClick), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Box {
             CoverImage(song.s("id"), song.s("title"), Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(20.dp)))
-            if(song.s("access") == "paid") Surface(Modifier.align(Alignment.TopEnd).padding(10.dp), shape = RoundedCornerShape(10.dp), color = Color.White.copy(alpha = .9f)) {
-                AppIcon(UiIcons.Crown, tr("پریمیوم", "Premium"), Modifier.padding(6.dp).size(18.dp), tint = Color(0xFFE6A800))
-            }
         }
-        Foreign(song.s("title"))
+        SongTitle(song.s("title"), premium = song.s("access") == "paid")
         Text(song.s("artist"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text("${when(song.s("language")) { "es" -> "🇪🇸"; "ko" -> "🇰🇷"; else -> "🇬🇧" }}  ${song.s("level")}  ·  ${song.s("duration")}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
     }

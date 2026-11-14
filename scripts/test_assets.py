@@ -232,6 +232,24 @@ class AssetTests(unittest.TestCase):
         self.assertIn('if(!home) item(key = "filters"', source)
         self.assertIn('if(home) latestSongs(it)', source)
 
+    def test_premium_crown_is_filled_inline_without_background(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        source = (ui / 'Components.kt').read_text()
+        title = source[source.index('@Composable fun SongTitle'):]
+        self.assertIn('UiIcons.CrownFilled', title)
+        self.assertIn('style.fontSize.toDp() * .9f', title)
+        self.assertIn('if(premium)', title)
+        self.assertNotIn('Surface(', title)
+        self.assertNotIn('.background(', title)
+        tile = (ui / 'Catalog.kt').read_text().split('@Composable private fun SongTile')[1]
+        self.assertNotIn('Alignment.TopEnd', tile)
+        self.assertIn('SongTitle(', tile)
+        import xml.etree.ElementTree as ET
+        normal = (ASSETS / 'main/res/drawable/uicon_crown.xml').read_bytes()
+        filled = (ASSETS / 'main/res/drawable/uicon_crown_filled.xml').read_bytes()
+        self.assertNotEqual(normal, filled)
+        ET.fromstring(filled)
+
     def test_home_latest_and_premium_learning_preview(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'
         catalog = (ui / 'Catalog.kt').read_text()
@@ -239,7 +257,7 @@ class AssetTests(unittest.TestCase):
         self.assertIn('when(if(home) 0 else access)', catalog)
         self.assertIn('if(home) latestSongs(it)', catalog)
         self.assertNotIn('UiIcons.Lock', catalog)
-        self.assertIn('if(song.s("access") == "paid") Surface', catalog)
+        self.assertIn('SongTitle(song.s("title"), premium = song.s("access") == "paid")', catalog)
         song = (ui / 'Song.kt').read_text()
         for section in ['lyrics', 'grammar', 'vocabulary']:
             self.assertIn('take(access.limit("' + section + '"))', song)

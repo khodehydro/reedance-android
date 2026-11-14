@@ -10,7 +10,9 @@
   The original hero banner and Starter card remain at the top of Home, before
   the latest-song grid. Only the filter controls are removed from Home.
 - Explore retains All / Free / Premium / Downloaded filters. No visible lock icon
-  is used. Only premium tiles carry a yellow crown; free tiles have no badge.
+  is used. Only premium titles carry a small yellow Solid Rounded crown beside
+  the song name, with no background or cover overlay. Its size follows the title
+  font scale; free titles have no badge.
 - LessonAccess separates educational preview policy from media availability.
   Unsubscribed premium limits: first 5 vocabulary entries, 3 lyric lines, 2 grammar
   notes and 2 entries per expressions/sentences section. Free or subscribed policy

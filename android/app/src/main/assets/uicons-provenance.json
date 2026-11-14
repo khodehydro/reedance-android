@@ -158,6 +158,12 @@
       "codepoint": "0xf28b",
       "drawable": "uicon_library_filled",
       "style": "Solid Rounded"
+    },
+    "CrownFilled": {
+      "glyph": "crown",
+      "codepoint": "0xf4ef",
+      "drawable": "uicon_crown_filled",
+      "style": "Solid Rounded"
     }
   }
 }

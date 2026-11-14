@@ -21,6 +21,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -151,5 +154,17 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
             AnimatedVisibility(answer, enter = if(LocalReducedMotion.current) EnterTransition.None else fadeIn(tween(260)) + expandVertically()) { Text(note.obj("check").tr("answer", fa)) }
         }
         save?.invoke()
+    }
+}
+
+// Match the title font scale, keep the crown adjacent to short titles, and reserve
+// room for it on long titles. Song names remain LTR in both interface languages.
+@Composable fun SongTitle(title: String, premium: Boolean, style: TextStyle = MaterialTheme.typography.bodyLarge) {
+    val crownSize = with(LocalDensity.current) { style.fontSize.toDp() * .9f }
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(title, Modifier.weight(1f, fill = false), style = style, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            if(premium) AppIcon(UiIcons.CrownFilled, tr("پریمیوم", "Premium"), Modifier.size(crownSize), tint = Color(0xFFE6A800))
+        }
     }
 }
