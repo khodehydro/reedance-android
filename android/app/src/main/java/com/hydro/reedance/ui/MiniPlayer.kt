@@ -26,21 +26,24 @@ import kotlinx.coroutines.withContext
     var shareDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     Surface(modifier = Modifier.padding(horizontal = 20.dp), shape = CircleShape,
-        color = Color(0xFF2D2D2D), contentColor = Color.White) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Row(Modifier.weight(1f).clip(CircleShape).clickable(onClick = openSong).heightIn(min = 48.dp).padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                MiniCover(song)
-                Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis, color = Color.White,
-                    style = MaterialTheme.typography.bodyMedium)
-            }
-            // Keep accessible touch targets; only the actual filled glyphs are smaller.
-            PressIconButton(toggle, Modifier.size(48.dp)) {
-                AppIcon(if(playing) UiIcons.PauseFilled else UiIcons.PlayFilled,
-                    if(playing) tr("مکث", "Pause") else tr("پخش", "Play"), Modifier.size(18.dp), tint = Color.White)
-            }
-            PressIconButton({ shareDialog = true }, Modifier.size(48.dp)) {
-                AppIcon(UiIcons.CoffeeFilled, tr("دعوت دوستان", "Invite friends"), Modifier.size(20.dp), tint = Color.White)
+        color = Color(0xFF03050E), contentColor = Color.White) {
+        Box {
+            BannerGradient(animate = playing, modifier = Modifier.matchParentSize(), palette = FluidPalette.Midnight)
+            Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.weight(1f).clip(CircleShape).clickable(onClick = openSong).heightIn(min = 48.dp).padding(horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    MiniCover(song)
+                    Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis, color = Color.White,
+                        style = MaterialTheme.typography.bodyMedium)
+                }
+                // Keep accessible touch targets; only the actual filled glyphs are smaller.
+                PressIconButton(toggle, Modifier.size(48.dp)) {
+                    AppIcon(if(playing) UiIcons.PauseFilled else UiIcons.PlayFilled,
+                        if(playing) tr("مکث", "Pause") else tr("پخش", "Play"), Modifier.size(18.dp), tint = Color.White)
+                }
+                PressIconButton({ shareDialog = true }, Modifier.size(48.dp)) {
+                    AppIcon(UiIcons.CoffeeFilled, tr("دعوت دوستان", "Invite friends"), Modifier.size(20.dp), tint = Color.White)
+                }
             }
         }
     }

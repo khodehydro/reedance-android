@@ -101,7 +101,12 @@ class AssetTests(unittest.TestCase):
         mini_toggle = model.split('fun toggleActivePlayback()')[1].split('fun preparePlayback()')[0]
         self.assertNotIn('prepareMedia()', mini_toggle)
         self.assertNotIn('lesson.value', mini_toggle)
-        self.assertIn('Color(0xFF2D2D2D)', mini)
+        self.assertIn('Color(0xFF03050E)', mini)
+        self.assertIn('BannerGradient(animate = playing, modifier = Modifier.matchParentSize(), palette = FluidPalette.Midnight)', mini)
+        gradient = (ui / 'BannerGradient.kt').read_text()
+        self.assertIn('MIDNIGHT_FLUID_SHADER', gradient)
+        self.assertIn('if(palette == FluidPalette.Midnight) .35f else 1f', gradient)
+        self.assertIn('if(palette == FluidPalette.Midnight) 66_000_000L', gradient)
         self.assertIn('contentColor = Color.White', mini)
         self.assertIn('UiIcons.PauseFilled else UiIcons.PlayFilled', mini)
         self.assertIn('Modifier.size(18.dp)', mini)

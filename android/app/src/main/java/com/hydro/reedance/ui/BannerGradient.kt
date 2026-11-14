@@ -19,7 +19,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.isActive
 import kotlin.math.sin
 
-internal enum class FluidPalette { Ocean, Aurora }
+internal enum class FluidPalette { Ocean, Aurora, Midnight }
 
 /** Fluid light ribbons over near-black pools, not moving circular color stops. */
 @Composable internal fun BannerGradient(animate: Boolean, modifier: Modifier = Modifier, palette: FluidPalette = FluidPalette.Ocean) {
@@ -30,14 +30,15 @@ internal enum class FluidPalette { Ocean, Aurora }
     val fluid = remember(palette) {
         if(Build.VERSION.SDK_INT >= 33) runCatching { FluidShader(palette) }.getOrNull() else null
     }
-    LaunchedEffect(animate, reduced, paused, lifecycle) {
+    LaunchedEffect(animate, reduced, paused, lifecycle, palette) {
         if(reduced) seconds = 0f
         if(animate && !reduced && !paused) lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            val frameInterval = if(palette == FluidPalette.Midnight) 66_000_000L else 32_000_000L
             var previous = 0L
-            // Cap redraw requests around 30fps; time is consumed only in drawing.
+            // Cap redraws around 15fps for the mini player, 30fps otherwise; time is draw-only.
             while(isActive) withFrameNanos { frame ->
                 if(previous == 0L) previous = frame
-                if(frame - previous >= 32_000_000L) {
+                if(frame - previous >= frameInterval) {
                     seconds += ((frame - previous) / 1_000_000_000f).coerceAtMost(.1f)
                     previous = frame
                 }
@@ -45,12 +46,13 @@ internal enum class FluidPalette { Ocean, Aurora }
         }
     }
     Canvas(modifier) {
-        val t = seconds
+        val t = seconds * if(palette == FluidPalette.Midnight) .35f else 1f
         if(Build.VERSION.SDK_INT >= 33 && fluid != null) {
             fluid.shader.setFloatUniform("resolution", size.width.coerceAtLeast(1f), size.height.coerceAtLeast(1f))
             fluid.shader.setFloatUniform("time", t)
             drawRect(fluid.brush)
-        } else if(palette == FluidPalette.Aurora) drawFluidFallback(t, true) else drawFluidFallback(t)
+        } else if(palette == FluidPalette.Midnight) drawFluidFallback(t, midnight = true)
+        else if(palette == FluidPalette.Aurora) drawFluidFallback(t, true) else drawFluidFallback(t)
         // Preserve the light text's contrast; the fluid itself remains unblurred text-wise.
         drawRect(Brush.verticalGradient(listOf(Color(0x33000410), Color.Transparent, Color(0x55000312))))
     }
@@ -58,7 +60,8 @@ internal enum class FluidPalette { Ocean, Aurora }
 
 @RequiresApi(33)
 private class FluidShader(palette: FluidPalette) {
-    val shader = if(palette == FluidPalette.Aurora) RuntimeShader(AURORA_FLUID_SHADER) else RuntimeShader(FLUID_SHADER)
+    val shader = if(palette == FluidPalette.Midnight) RuntimeShader(MIDNIGHT_FLUID_SHADER)
+        else if(palette == FluidPalette.Aurora) RuntimeShader(AURORA_FLUID_SHADER) else RuntimeShader(FLUID_SHADER)
     val brush = ShaderBrush(shader)
 }
 
@@ -115,10 +118,17 @@ internal val AURORA_FLUID_SHADER = FLUID_SHADER
     .replace("float3(0.0, 0.14, 0.30)", "float3(0.35, 0.05, 0.15)")
     .replace("float3(0.0, 0.56, 0.72)", "float3(0.98, 0.46, 0.40)")
 
+/** Low-luminance blue/violet treatment for the compact playback surface. */
+internal val MIDNIGHT_FLUID_SHADER = FLUID_SHADER
+    .replace("float3(0.002, 0.003, 0.014)", "float3(0.012, 0.018, 0.055)")
+    .replace("float3(0.015, 0.012, 0.65)", "float3(0.075, 0.025, 0.26)")
+    .replace("float3(0.0, 0.14, 0.30)", "float3(0.035, 0.045, 0.14)")
+    .replace("float3(0.0, 0.56, 0.72)", "float3(0.16, 0.20, 0.42)")
+
 /** API 26–32 / shader-failure fallback: soft nested ribbons, no bitmap/CPU noise loop. */
-private fun DrawScope.drawFluidFallback(t: Float, aurora: Boolean = false) {
-    drawRect(if(aurora) Color(0xFF180923) else Color(0xFF01020A))
-    drawRect(Brush.radialGradient(listOf(if(aurora) Color(0xFF7427A8) else Color(0xFF1010A8), Color.Transparent),
+private fun DrawScope.drawFluidFallback(t: Float, aurora: Boolean = false, midnight: Boolean = false) {
+    drawRect(if(midnight) Color(0xFF03050E) else if(aurora) Color(0xFF180923) else Color(0xFF01020A))
+    drawRect(Brush.radialGradient(listOf(if(midnight) Color(0xFF191044) else if(aurora) Color(0xFF7427A8) else Color(0xFF1010A8), Color.Transparent),
         center = Offset(size.width * .08f, size.height * .55f), radius = size.maxDimension * .8f))
     repeat(2) { ribbon ->
         val path = Path()
@@ -131,7 +141,8 @@ private fun DrawScope.drawFluidFallback(t: Float, aurora: Boolean = false) {
         }
         for(layer in 10 downTo 1) {
             val outer = layer / 10f
-            val color = if(aurora) { if(layer > 5) Color(0xFFAB3AA8) else Color(0xFFFF897C) }
+            val color = if(midnight) { if(layer > 5) Color(0xFF21144D) else Color(0xFF29336B) }
+                else if(aurora) { if(layer > 5) Color(0xFFAB3AA8) else Color(0xFFFF897C) }
                 else if(layer > 5) Color(0xFF0719BB) else Color(0xFF0094C4)
             drawPath(path, color.copy(alpha = .075f + (1f - outer) * .065f),
                 style = Stroke(width = size.minDimension * (.025f + outer * .23f)))
