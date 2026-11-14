@@ -101,7 +101,7 @@ private val songLanguages = listOf(
             }, label = "header-brand") { logo ->
             if(logo) Image(painterResource(R.drawable.reedance_header), null, Modifier.size(40.dp))
             else Text("Reedance", maxLines = 1, overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.titleLarge.copy(fontFamily = BrandFont, fontWeight = FontWeight.ExtraBold))
+                style = MaterialTheme.typography.titleLarge.copy(fontFamily = BrandFont, fontWeight = FontWeight.Black))
         }
     }
 }

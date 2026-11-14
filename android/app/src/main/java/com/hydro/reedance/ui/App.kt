@@ -80,7 +80,7 @@ import com.hydro.reedance.data.*
         }
     }
 }
-@Composable private fun MainShell(model: AppModel) {
+@Composable internal fun MainShell(model: AppModel) {
     var page by rememberSaveable { mutableStateOf("home") }
     var songId by rememberSaveable { mutableStateOf("midnight-avenue") }
     var songTab by rememberSaveable { mutableIntStateOf(0) }
@@ -134,11 +134,12 @@ import com.hydro.reedance.data.*
             FloatingNavigation(page, compactNavigation, ::navigate)
         }
     }) { padding ->
-        // Entrance motion uses only the current page render layer; no outgoing page is retained.
+        // Isolate destination identity so Home effects/state are not reused in another page.
         // The bottom bar floats over the scroll viewport. Its measured height is
         // trailing *content* space, not viewport padding, so rows pass underneath.
         Box(Modifier.padding(start = padding.calculateStartPadding(LocalLayoutDirection.current), end = padding.calculateEndPadding(LocalLayoutDirection.current), top = padding.calculateTopPadding(), bottom = if(independent) padding.calculateBottomPadding() else 0.dp).nestedScroll(scrollConnection)) {
          CompositionLocalProvider(LocalOverlayBottomInset provides if(independent) 0.dp else padding.calculateBottomPadding()) {
+         key(page) {
           pageStates.SaveableStateProvider(page) {
            PageEntrance(if(page == "song") "$page:$songId" else page) {
             when(page) {
@@ -151,6 +152,7 @@ import com.hydro.reedance.data.*
             }
            }
           }
+         }
          }
         }
     }

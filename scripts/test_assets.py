@@ -228,6 +228,31 @@ class AssetTests(unittest.TestCase):
         self.assertIn('if(dark) CharcoalDarkColors', source)
         self.assertIn('else lightColorScheme(primary = Blue, background = Paper, surface = Color.White', source)
 
+    def test_header_wordmark_uses_real_vazirmatn_black_and_navigation_avoids_fullscreen_alpha(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        theme = (ui / 'Theme.kt').read_text()
+        header = (ui / 'MainHeader.kt').read_text()
+        self.assertIn('BrandFont = FontFamily(Font(R.font.vazirmatn_black, FontWeight.Black))', theme)
+        self.assertIn('fontFamily = BrandFont, fontWeight = FontWeight.Black', header)
+        font = (ASSETS / 'main/res/font/vazirmatn_black.ttf').read_bytes()
+        tables = struct.unpack_from('>H', font, 4)[0]
+        weights = []
+        for i in range(tables):
+            tag, _, offset, _ = struct.unpack_from('>4sIII', font, 12 + 16 * i)
+            if tag == b'OS/2': weights.append(struct.unpack_from('>H', font, offset + 4)[0])
+        self.assertEqual([900], weights)
+        provenance = load(ASSETS / 'main/assets/fonts-provenance.json')['headerWordmark']
+        self.assertEqual(hashlib.sha256(font).hexdigest(), provenance['sha256'])
+        entry = (ui / 'EntryMotion.kt').read_text()
+        page = entry.split('@Composable internal fun Modifier.itemEntrance')[0]
+        self.assertIn('.offset {', page)
+        self.assertNotIn('.graphicsLayer {', page)
+        self.assertNotIn('alpha =', page)
+        self.assertIn('compositingStrategy = CompositingStrategy.ModulateAlpha', entry)
+        app = (ui / 'App.kt').read_text()
+        self.assertIn('key(page) {', app)
+        self.assertIn('pageStates.SaveableStateProvider(page)', app)
+
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ASSETS / 'debug/assets/demo_lesson.json'))
 

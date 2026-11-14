@@ -139,3 +139,27 @@ GPU deadlines and allocations; do not assume that faster animation duration or
 moving Compose rendering to Dispatchers.IO fixes missed frames. Debug APK/JIT
 behavior must not be presented as measured release performance. The production
 release gate remains unchanged.
+
+## Home navigation freeze report: defensive mitigation (not device-confirmed)
+
+After the entrance-animation rollout, the owner reported being unable to leave
+Home. No Logcat/ANR trace or native reproduction is available in this sandbox.
+Do not describe the GPU/render layer as a proven root cause.
+
+- Page entry no longer fades a full-window graphicsLayer containing Home's live
+  RuntimeShader/pager. It now animates a small placement-only offset, with no
+  full-screen translucent render target and no outgoing page retained.
+- Card alpha modulation explicitly uses ModulateAlpha, avoiding implicit offscreen
+  alpha-compositing buffers for the short per-card entrance.
+- `key(page)` isolates the destination subtree outside its saveable state provider,
+  so Home/Explore's shared composable call site cannot reuse the wrong page identity.
+  Menu navigation still updates state immediately; it never awaits an animation.
+- MainNavigationTest exercises the real shell through Home → Explore → Review →
+  Library → Profile → Home twice. It pauses continuous decorative timers for
+  deterministic test idling, but leaves finite page/item entrance animations enabled.
+  This does not prove navigation under real GPU load; test that on the reported device.
+
+46 host checks passed; native build and instrumentation could not run because
+Java/Android SDK are unavailable. If the freeze persists, collect Logcat/ANR stack,
+device model/API and a frame trace while tapping the menu, with animations both
+on and off. Keep reduced-motion behavior and the single-splash policy intact.

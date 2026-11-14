@@ -1,0 +1,10 @@
+{
+  "headerWordmark": {
+    "family": "Vazirmatn",
+    "weight": 900,
+    "resource": "vazirmatn_black.ttf",
+    "source": "https://github.com/rastikerdar/vazirmatn/blob/6e553e33489a8f9dfaccc76860a2e3f3c1e66de7/fonts/ttf/Vazirmatn-Black.ttf",
+    "sha256": "df4e257be9de1574d11ba2970c69228a7db24174913ff7f776bbf00a9aa5dc1b",
+    "license": "Vazirmatn-OFL.txt"
+  }
+}

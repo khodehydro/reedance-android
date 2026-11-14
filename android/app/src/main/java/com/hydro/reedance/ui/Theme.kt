@@ -10,7 +10,7 @@ import androidx.compose.ui.text.font.*
 import com.hydro.reedance.R
 import com.hydro.reedance.data.Settings
 val Blue = Color(0xFF2E70DF)
-val BrandFont = FontFamily(Font(R.font.manrope_bold, FontWeight.ExtraBold))
+val BrandFont = FontFamily(Font(R.font.vazirmatn_black, FontWeight.Black))
 val Deep = Color(0xFF102D5C)
 val Paper = Color(0xFFF6F9FE)
 val LocalOverlayBottomInset = staticCompositionLocalOf { 0.dp }
