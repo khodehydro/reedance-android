@@ -73,14 +73,7 @@ internal fun currentPersianMonth(now: Long = System.currentTimeMillis()): Persia
 @Composable private fun WelcomeBanner(openSong: (String) -> Unit, animate: Boolean) {
     Box(Modifier.fillMaxSize().clip(RoundedCornerShape(28.dp)).background(Brush.linearGradient(listOf(Blue, Deep)))) {
         BannerGradient(animate, Modifier.matchParentSize())
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(26.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text(tr("یادگیری با ریتم تو", "YOUR RHYTHM. YOUR WORDS."), color = Color(0xFFCADFFF), style = MaterialTheme.typography.labelMedium)
-            Text(tr("هر آهنگ،\nیک قدم جلوتر.", "Every song.\nOne step further."), color = Color.White, style = MaterialTheme.typography.headlineLarge)
-            Text(tr("گوش بده، کشف کن و زبان را زندگی کن.", "Listen closer. Discover more. Make the words yours."), color = Color(0xFFE1ECFF))
-            PressButton({ openSong("midnight-avenue") }, colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Blue)) {
-                Text(tr("شروع یادگیری", "Start learning")); AppIcon(UiIcons.Play, null)
-            }
-        }
+        BannerMessages(openSong, animate, Modifier.fillMaxSize().padding(26.dp))
     }
 }
 

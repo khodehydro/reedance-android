@@ -228,7 +228,7 @@ class AssetTests(unittest.TestCase):
         self.assertIn('item(key = "starter"', home)
         self.assertLess(home.index('item(key = "hero"'), home.index('item(key = "starter"'))
         self.assertIn('HomePager(model, openSong)', home)
-        self.assertIn('openSong("midnight-avenue")', (ASSETS / 'main/java/com/hydro/reedance/ui/HomePager.kt').read_text())
+        self.assertIn('openSong("midnight-avenue")', (ASSETS / 'main/java/com/hydro/reedance/ui/BannerMessages.kt').read_text())
         self.assertIn('PressTextButton(starter)', home)
         self.assertNotIn('PillTabs', home)
         self.assertIn('if(!home) item(key = "filters"', source)
@@ -379,6 +379,16 @@ class AssetTests(unittest.TestCase):
         self.assertIn('BannerGradient(animate, Modifier.matchParentSize())', pager)
         self.assertIn('animate = visible && pager.currentPage == 0', pager)
         self.assertIn('boundsInWindow()', pager)
+
+    def test_banner_progress_and_vertical_message_cycle_stay_inside(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        pager = (ui / 'HomePager.kt').read_text()
+        self.assertIn('BannerMessages(openSong, animate, Modifier.fillMaxSize().padding(26.dp))', pager)
+        messages = (ui / 'BannerMessages.kt').read_text()
+        for token in ['BANNER_MESSAGE_MILLIS = 6_000', 'repeatOnLifecycle(Lifecycle.State.STARTED)', 'animate && !reduced', 'progress.animateTo(1f', 'index = (index + 1) % bannerCopies.size', 'progress.snapTo(0f)', 'slideInVertically(tween(450)) { it }', 'slideOutVertically(tween(450)) { -it }', 'LinearProgressIndicator(progress = { progress.value }', 'Modifier.weight(1f)']:
+            self.assertIn(token, messages)
+        self.assertLess(messages.index('PressButton({ openSong'), messages.index('LinearProgressIndicator('))
+        self.assertIn('YOUR RHYTHM. YOUR WORDS.', messages)
 
     def test_headers_have_consistent_opaque_background(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'

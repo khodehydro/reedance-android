@@ -74,3 +74,26 @@ reference has been verified on Android in this environment.
 
 29 host checks and 45 Kotlin/KTS syntax checks pass after this follow-up. Native
 build/device visual, contrast and frame-time validation remain pending.
+
+## In-banner timed copy indicator
+
+The welcome banner now contains three bilingual copy sets. A slim rounded progress
+track is anchored below its fixed action button, INSIDE the banner's 26dp padding
+and rounded boundary, not under the pager. Each six-second fill advances the copy,
+then resets the bar. The old copy exits upward and the new copy enters from below
+with a 450ms transition, following the header brand's movement direction. The
+original banner copy is still the first message. Background fluid motion, calendar,
+Starter and song list are untouched.
+
+The text has its own bounded scroll viewport to avoid pushing the action/indicator
+out of the banner at large font sizes. The timer is isolated from the catalog and
+its progress lambda does not read animated values in Home composition. It pauses
+when the banner is offscreen, on the calendar page or below STARTED lifecycle;
+remaining fill resumes afterward. Reduced motion freezes the current message/bar
+and disables automatic cycling. Message index survives normal saveable restoration;
+partial fill is in-memory only and may restart when the lazy hero is disposed.
+
+30 host source/asset checks and 46 Kotlin/KTS syntax checks passed. Native build
+and device timing/layout validation remain unavailable here. Verify six-second
+cycles, bottom placement, RTL/LTR, huge fonts, swipe/background/return pause-resume,
+reduced motion and that the gradient animation remains independent of text changes.
