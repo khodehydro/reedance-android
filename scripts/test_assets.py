@@ -313,7 +313,7 @@ class AssetTests(unittest.TestCase):
         self.assertIn('LyricLayoutToggle(singleLyric)', song)
         self.assertIn('val visibleLines = lines.take(access.limit("lyrics"))', song)
         self.assertIn('item(key = "single-lyric"', song)
-        self.assertIn('timedLyricLine(visibleLines, if(activePlayback?.songId == songId) playbackPosition else 0L)', song)
+        self.assertIn('TimedLyricBox(model, songId, visibleLines, renderLine)', song)
         helper = (ui / 'LyricLayout.kt').read_text()
         self.assertIn('lines.lastOrNull { it.n("startMs") <= positionMs } ?: lines.firstOrNull()', helper)
         self.assertNotIn('delay(', helper)

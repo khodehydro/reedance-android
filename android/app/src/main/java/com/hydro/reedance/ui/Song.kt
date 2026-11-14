@@ -48,7 +48,6 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     val fa = LocalFa.current
     var mode by rememberSaveable { mutableIntStateOf(1) }
     var singleLyric by rememberSaveable(songId) { mutableStateOf(false) }
-    val playbackPosition by model.position.collectAsStateWithLifecycle()
     var selectedWord by remember { mutableStateOf<JsonObject?>(null) }
     val scroll = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -154,11 +153,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                         }
                         if(singleLyric) {
                             item(key = "single-lyric", contentType = "single-lyric") {
-                                val line = timedLyricLine(visibleLines, if(activePlayback?.songId == songId) playbackPosition else 0L)
-                                Box(Modifier.fillMaxWidth().heightIn(min = 148.dp)) {
-                                    if(line != null) renderLine(line)
-                                    else Panel { Text(tr("متن لیریک در دسترس نیست.", "No lyrics available.")) }
-                                }
+                                TimedLyricBox(model, songId, visibleLines, renderLine)
                             }
                         } else {
                             items(lines.take(access.limit("lyrics")), key = { "lyric-${it.s("id")}" }, contentType = { "lyric" }) { line -> renderLine(line) }
