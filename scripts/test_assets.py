@@ -137,7 +137,7 @@ class AssetTests(unittest.TestCase):
             self.assertEqual(6, png[25])  # RGBA: transparent outside circular edge
         source = (ASSETS / 'main/java/com/hydro/reedance/ui/Catalog.kt').read_text()
         self.assertIn('3 -> s.s("id") in installedIds', source)
-        self.assertIn('remember(catalog, targetLanguage, access, installedIds)', source)
+        self.assertIn('remember(catalog, targetLanguage, home, access, installedIds)', source)
         self.assertIn('.animateItem(', source)
         self.assertNotIn('"Playable"', source)
         for path in (ASSETS / 'main/java/com/hydro/reedance/ui').glob('*.kt'):
@@ -194,7 +194,7 @@ class AssetTests(unittest.TestCase):
         song = (ui / 'Song.kt').read_text()
         self.assertIn('rememberLazyListState()', song)
         self.assertIn('scroll.firstVisibleItemIndex > 0', song)
-        self.assertIn('items(lines, key =', song)
+        self.assertIn('items(lines.take(access.limit("lyrics")), key =', song)
         nav = (ui / 'FloatingNavigation.kt').read_text()
         self.assertIn('heightIn(min = slotHeight)', nav)
         self.assertIn('labelSmall.lineHeight.toDp()', nav)
@@ -219,6 +219,29 @@ class AssetTests(unittest.TestCase):
         self.assertIn('val targetLanguage: String = "en"', settings)
         self.assertIn('stringPreferencesKey("target_language")', settings)
         self.assertIn('ChoiceRow(listOf("English", "فارسی")', (ui / 'Profile.kt').read_text())
+
+    def test_home_latest_and_premium_learning_preview(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        catalog = (ui / 'Catalog.kt').read_text()
+        self.assertIn('if(!home) item(key = "filters"', catalog)
+        self.assertIn('when(if(home) 0 else access)', catalog)
+        self.assertIn('if(home) latestSongs(it)', catalog)
+        self.assertNotIn('UiIcons.Lock', catalog)
+        self.assertIn('if(song.s("access") == "paid") Surface', catalog)
+        song = (ui / 'Song.kt').read_text()
+        for section in ['lyrics', 'grammar', 'vocabulary']:
+            self.assertIn('take(access.limit("' + section + '"))', song)
+        self.assertIn('take(access.limit(type))', song)
+        self.assertIn('if(access.preview) item(key = "subscription")', song)
+        self.assertIn('if(!access.preview) items(data.a("vocabularyTables")', song)
+        premium = (ui / 'Premium.kt').read_text()
+        self.assertIn('Modifier.blur(7.dp)', premium)
+        self.assertNotIn('JsonObject', premium)  # never compose hidden lesson text/actions
+        policy = (ASSETS / 'main/java/com/hydro/reedance/domain/ContentAccess.kt').read_text()
+        self.assertIn('"vocabulary" -> 5', policy)
+        self.assertIn('"lyrics" -> 3', policy)
+        self.assertIn('else -> 2', policy)
+        self.assertIn('.take(40)', policy)
 
     def test_headers_have_consistent_opaque_background(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'

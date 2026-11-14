@@ -17,6 +17,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.gson.JsonObject
 import com.hydro.reedance.BuildConfig
 import com.hydro.reedance.data.*
+import com.hydro.reedance.domain.LessonAccess
 
 fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -28,6 +29,9 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     val playing by model.playing.collectAsStateWithLifecycle()
     val bookmarks by model.bookmarks.collectAsStateWithLifecycle()
     val song = catalog.find { it.s("id") == songId } ?: JsonObject()
+    val access = LessonAccess(premium = song.s("access") == "paid")
+    var subscriptionInfo by remember { mutableStateOf(false) }
+    val openQuiz = { if(access.preview) subscriptionInfo = true else quiz() }
     val fa = LocalFa.current
     var mode by rememberSaveable { mutableIntStateOf(1) }
     var selectedWord by remember { mutableStateOf<JsonObject?>(null) }
@@ -36,7 +40,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     val available = songId == "midnight-avenue" && lesson != null
     LaunchedEffect(available) { if(available) model.preparePlayback() }
     val lines = remember(lesson) { lesson?.a("lyrics").orEmpty() }
-    val wordsById = remember(lesson) { lesson?.a("vocabulary").orEmpty().associateBy { it.s("lexemeId") } }
+    val wordsById = remember(lesson, access) { lesson?.a("vocabulary").orEmpty().take(access.limit("vocabulary")).associateBy { it.s("lexemeId") } }
     Column(Modifier.fillMaxSize()) {
         HeaderSurface {
             Column {
@@ -76,12 +80,12 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                 item(key = "player", contentType = "player") { PlayerPanel(model) }
                 item(key = "credits") { Text(data.obj("credits").tr("notice", fa), style = MaterialTheme.typography.bodySmall) }
                 item(key = "tabs") { ChoiceRow(listOf(tr("لیریک", "Lyrics"), tr("نکته‌ها", "Notes"), tr("لغت‌ها", "Words"), tr("عبارت‌ها", "Phrases")), tab, setTab) }
-                item(key = "quiz") { PressOutlinedButton(quiz, Modifier.fillMaxWidth()) { AppIcon(UiIcons.Quiz, null); Text(tr("آزمون آهنگ", "Song quiz")) } }
+                item(key = "quiz") { PressOutlinedButton(openQuiz, Modifier.fillMaxWidth()) { AppIcon(UiIcons.Quiz, null); Text(tr("آزمون آهنگ", "Song quiz")) } }
                 when(tab) {
                     0 -> {
                         item(key = "lyric-mode") { ChoiceRow(listOf(tr("متن اصلی", "Original"), tr("ترجمهٔ خطی", "Line by line"), tr("کلمه‌به‌کلمه", "Word by word")), mode) { mode = it } }
                         item(key = "lyric-help") { Text(tr("روی زمان برای جابه‌جایی و روی واژه برای معنی بزن.", "Tap a timestamp to seek, or a word to explore it."), style = MaterialTheme.typography.bodySmall) }
-                        items(lines, key = { "lyric-${it.s("id")}" }, contentType = { "lyric" }) { line ->
+                        items(lines.take(access.limit("lyrics")), key = { "lyric-${it.s("id")}" }, contentType = { "lyric" }) { line ->
                             val active = activeLineId == line.s("id")
                             Panel(tone = if(active) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface) {
                                 PressTextButton({ model.seek(line.n("startMs")) }) { Text(clock(line.n("startMs"))) }
@@ -89,7 +93,8 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                                     FlowRow(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                                         line.a("tokens").forEach { token ->
                                             Column(Modifier.clickable {
-                                                selectedWord = wordsById[token.s("lexemeId")] ?: JsonObject().apply { addProperty("lemma", token.s("surface")); addProperty("translationFa", token.s("translationFa")); addProperty("translationEn", token.s("translationEn")) }
+                                                if(access.preview && token.s("lexemeId") !in wordsById) subscriptionInfo = true
+                                                else selectedWord = wordsById[token.s("lexemeId")] ?: JsonObject().apply { addProperty("lemma", token.s("surface")); addProperty("translationFa", token.s("translationFa")); addProperty("translationEn", token.s("translationEn")) }
                                             }.padding(horizontal = 3.dp, vertical = 8.dp)) {
                                                 Text(token.s("surface"), style = MaterialTheme.typography.titleMedium)
                                                 if(mode == 2) Text(token.tr("translation", fa), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
@@ -100,12 +105,15 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                                 if(mode == 1) Text(line.tr("translation", fa))
                             }
                         }
-                        item(key = "lyric-quiz") { Action(tr("آماده‌ای؟ خودت را امتحان کن", "Ready? Test what you learned"), Modifier.fillMaxWidth(), onClick = quiz) }
+                        if(lines.size > access.limit("lyrics")) item(key = "lyrics-preview") { PremiumPreview() }
+                        item(key = "lyric-quiz") { Action(tr("آماده‌ای؟ خودت را امتحان کن", "Ready? Test what you learned"), Modifier.fillMaxWidth(), onClick = openQuiz) }
                     }
-                    1 -> items(data.a("grammar"), key = { "grammar-${it.s("id")}" }, contentType = { "note" }) { note -> LearningNote(note, model::speak) { SaveAction(model, "grammar", note.s("id")) } }
+                    1 -> { items(data.a("grammar").take(access.limit("grammar")), key = { "grammar-${it.s("id")}" }, contentType = { "note" }) { note -> LearningNote(note, model::speak) { SaveAction(model, "grammar", note.s("id")) } }
+                        if(data.a("grammar").size > access.limit("grammar")) item(key = "grammar-preview") { PremiumPreview() }
+                    }
                     2 -> {
-                        items(data.a("vocabularyTables"), contentType = { "table" }) { Panel { LearningTable(it) } }
-                        items(data.a("vocabulary"), key = { "word-${it.s("lexemeId")}" }, contentType = { "word" }) { word -> Panel {
+                        if(!access.preview) items(data.a("vocabularyTables"), contentType = { "table" }) { Panel { LearningTable(it) } }
+                        items(data.a("vocabulary").take(access.limit("vocabulary")), key = { "word-${it.s("lexemeId")}" }, contentType = { "word" }) { word -> Panel {
                             Foreign(word.s("lemma"), large = true)
                             Text(word.tr("translation", fa))
                             Foreign(word.s("ipa")); if(fa) Text(word.s("faReading"))
@@ -115,19 +123,28 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                             PressTextButton({ model.speak(word.s("lemma")) }) { Text(tr("تلفظ", "Pronounce")) }
                             SaveAction(model, "vocabulary", word.s("lexemeId"))
                         } }
+                        if(data.a("vocabulary").size > access.limit("vocabulary") || (access.preview && data.a("vocabularyTables").isNotEmpty())) item(key = "words-preview") { PremiumPreview() }
                     }
                     3 -> listOf("idioms", "sentences").forEach { type ->
                         item(key = "$type-heading") { Text(if(type == "idioms") tr("اصطلاحات", "Expressions") else tr("جمله‌های کاربردی", "Useful sentences"), style = MaterialTheme.typography.titleLarge) }
-                        items(data.a(type), key = { "$type-${it.s("id")}" }, contentType = { "phrase" }) { item -> Panel {
+                        items(data.a(type).take(access.limit(type)), key = { "$type-${it.s("id")}" }, contentType = { "phrase" }) { item -> Panel {
                             Foreign(item.s("text"), large = true); Text(item.tr("translation", fa)); Text(item.tr("context", fa))
                             if(item.has("example")) Foreign(item.obj("example").s("text"))
                             SaveAction(model, type, item.s("id"))
                         } }
+                        if(data.a(type).size > access.limit(type)) item(key = "$type-preview") { PremiumPreview() }
                     }
                 }
             }
+            if(access.preview) item(key = "subscription") { SubscriptionOffer { subscriptionInfo = true } }
         }
     }
+    if(subscriptionInfo) AlertDialog(
+        onDismissRequest = { subscriptionInfo = false },
+        title = { Text(tr("اشتراک پریمیوم", "Premium subscription")) },
+        text = { Text(tr("خرید اشتراک هنوز به فروشگاه متصل نشده است؛ در این نسخه پرداختی انجام نمی‌شود.", "Subscription checkout is not connected yet. No payment is taken in this version.")) },
+        confirmButton = { PressTextButton({ subscriptionInfo = false }) { Text(tr("باشه", "OK")) } }
+    )
     selectedWord?.let { word -> ModalBottomSheet(onDismissRequest = { selectedWord = null }) {
         Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Foreign(word.s("lemma"), large = true); Foreign(word.s("ipa"))

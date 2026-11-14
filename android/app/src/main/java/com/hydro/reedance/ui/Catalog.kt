@@ -23,6 +23,7 @@ import androidx.compose.animation.core.tween
 import com.hydro.reedance.R
 import com.hydro.reedance.data.*
 import com.google.gson.JsonObject
+import com.hydro.reedance.domain.latestSongs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -56,40 +57,21 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
     val lesson by model.lesson.collectAsStateWithLifecycle()
     val installedIds = remember(lesson) { listOfNotNull(lesson?.s("songId")?.takeIf { it.isNotBlank() }).toSet() }
     val reduced = LocalReducedMotion.current
-    val filtered = remember(catalog, targetLanguage, access, installedIds) { catalog.filter { s ->
-        (s.s("language") == targetLanguage) && when(access) {
+    val filtered = remember(catalog, targetLanguage, home, access, installedIds) { catalog.filter { s ->
+        (s.s("language") == targetLanguage) && when(if(home) 0 else access) {
             1 -> s.s("access") == "free"; 2 -> s.s("access") == "paid"; 3 -> s.s("id") in installedIds; else -> true
         }
-    } }
+    }.let { if(home) latestSongs(it) else it } }
     LazyVerticalGrid(columns = GridCells.Fixed(2), state = grid, modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 20.dp + LocalOverlayBottomInset.current), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        if(home) {
-            item(key = "hero", span = { GridItemSpan(maxLineSpan) }) {
-                Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(Brush.linearGradient(listOf(Blue, Deep))).padding(26.dp)) {
-                    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        Text(tr("یادگیری با ریتم تو", "YOUR RHYTHM. YOUR WORDS."), color = Color(0xFFCADFFF), style = MaterialTheme.typography.labelMedium)
-                        Text(tr("هر آهنگ،\nیک قدم جلوتر.", "Every song.\nOne step further."), color = Color.White, style = MaterialTheme.typography.headlineLarge)
-                        Text(tr("گوش بده، کشف کن و زبان را زندگی کن.", "Listen closer. Discover more. Make the words yours."), color = Color(0xFFE1ECFF))
-                        PressButton({ openSong("midnight-avenue") }, colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Blue)) { Text(tr("شروع یادگیری", "Start learning")); AppIcon(UiIcons.Play, null) }
-                    }
-                }
-            }
-            item(key = "starter", span = { GridItemSpan(maxLineSpan) }) {
-                Panel(tone = MaterialTheme.colorScheme.secondaryContainer) {
-                    Text(tr("اولین قدمت را بردار", "A little start. A whole new language."), style = MaterialTheme.typography.titleLarge)
-                    Text(tr("از حروف و صداها تا اولین سطر؛ انگلیسی، اسپانیایی و کره‌ای.", "Letters, sounds and your very first line. English, Spanish and Korean."))
-                    PressTextButton(starter) { Text(tr("ورود به استارتر", "Open Starter")) }
-                }
-            }
-        }
         item(key = "heading", span = { GridItemSpan(maxLineSpan) }) {
-            Heading(if(home) tr("آهنگ بعدی تو", "Find your next song") else tr("کشف موسیقی", "Discover music"), tr("موسیقی را بشنو، کلمه‌ها را کشف کن.", "Good music. Words that stay with you."))
+            Heading(if(home) tr("آخرین آهنگ‌ها", "Latest songs") else tr("کشف موسیقی", "Discover music"), tr("موسیقی را بشنو، کلمه‌ها را کشف کن.", "Good music. Words that stay with you."))
         }
-        item(key = "filters", span = { GridItemSpan(maxLineSpan) }) {
+        if(!home) item(key = "filters", span = { GridItemSpan(maxLineSpan) }) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 PillTabs(listOf(
-                    PillOption(tr("همه", "All"), UiIcons.All), PillOption(tr("رایگان", "Free"), UiIcons.LockOpen),
-                    PillOption(tr("پولی", "Premium"), UiIcons.Crown), PillOption(tr("دانلودشده‌ها", "Downloaded"), UiIcons.Check)
+                    PillOption(tr("همه", "All"), UiIcons.All), PillOption(tr("رایگان", "Free"), UiIcons.Play),
+                    PillOption(tr("پریمیوم", "Premium"), UiIcons.Crown), PillOption(tr("دانلودشده‌ها", "Downloaded"), UiIcons.Check)
                 ), access) { access = it }
             }
         }
@@ -101,7 +83,16 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
             )) { openSong(song.s("id")) }
         }
         if(filtered.isEmpty()) item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
-            Panel { Text(tr("آهنگی پیدا نشد؛ فیلترها را تغییر بده.", "No songs found. Try another filter.")) }
+            Panel { Text(if(home) tr("هنوز آهنگی برای این زبان منتشر نشده است.", "No songs published for this language yet.") else tr("آهنگی پیدا نشد؛ فیلترها را تغییر بده.", "No songs found. Try another filter.")) }
+        }
+        if(!home) {
+            item(key = "starter", span = { GridItemSpan(maxLineSpan) }) {
+                Panel(tone = MaterialTheme.colorScheme.secondaryContainer) {
+                    Text(tr("اولین قدمت را بردار", "A little start. A whole new language."), style = MaterialTheme.typography.titleLarge)
+                    Text(tr("از حروف و صداها تا اولین سطر؛ انگلیسی، اسپانیایی و کره‌ای.", "Letters, sounds and your very first line. English, Spanish and Korean."))
+                    PressTextButton(starter) { Text(tr("ورود به استارتر", "Open Starter")) }
+                }
+            }
         }
         item(key = "notice", span = { GridItemSpan(maxLineSpan) }) {
             Text(tr("فقط Midnight Avenue دموی محلی دارد. بقیهٔ عنوان‌ها پیش‌نمایش کاتالوگ‌اند، نه محتوای قابل خرید یا دانلود.", "Only Midnight Avenue has a local demo. Other titles are catalog previews, not purchasable or downloadable content."), style = MaterialTheme.typography.bodySmall)
@@ -117,8 +108,8 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
     Column(modifier.clickable(onClick = onClick), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Box {
             CoverImage(song.s("id"), song.s("title"), Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(20.dp)))
-            Surface(Modifier.align(Alignment.TopEnd).padding(10.dp), shape = RoundedCornerShape(10.dp), color = Color.White.copy(alpha = .9f)) {
-                AppIcon(if(song.s("access") == "free") UiIcons.LockOpen else UiIcons.Lock, tr("ردهٔ دسترسی", "Access tier"), Modifier.padding(6.dp).size(18.dp), tint = Deep)
+            if(song.s("access") == "paid") Surface(Modifier.align(Alignment.TopEnd).padding(10.dp), shape = RoundedCornerShape(10.dp), color = Color.White.copy(alpha = .9f)) {
+                AppIcon(UiIcons.Crown, tr("پریمیوم", "Premium"), Modifier.padding(6.dp).size(18.dp), tint = Color(0xFFE6A800))
             }
         }
         Foreign(song.s("title"))
