@@ -7,7 +7,8 @@
   descending ISO-8601 `publishedAt`; entries without a valid date retain feed order
   after dated entries. Current six preview records have no dates, so their order
   is preserved rather than inventing publication dates or padding to 40 songs.
-  The old hero is removed; Starter remains accessible from Explore.
+  The original hero banner and Starter card remain at the top of Home, before
+  the latest-song grid. Only the filter controls are removed from Home.
 - Explore retains All / Free / Premium / Downloaded filters. No visible lock icon
   is used. Only premium tiles carry a yellow crown; free tiles have no badge.
 - LessonAccess separates educational preview policy from media availability.

@@ -220,6 +220,18 @@ class AssetTests(unittest.TestCase):
         self.assertIn('stringPreferencesKey("target_language")', settings)
         self.assertIn('ChoiceRow(listOf("English", "فارسی")', (ui / 'Profile.kt').read_text())
 
+    def test_home_keeps_original_banner_and_starter_above_latest_songs(self):
+        source = (ASSETS / 'main/java/com/hydro/reedance/ui/Catalog.kt').read_text()
+        home = source[source.index('        if(home) {'):source.index('        item(key = "heading"')]
+        self.assertIn('item(key = "hero"', home)
+        self.assertIn('item(key = "starter"', home)
+        self.assertLess(home.index('item(key = "hero"'), home.index('item(key = "starter"'))
+        self.assertIn('openSong("midnight-avenue")', home)
+        self.assertIn('PressTextButton(starter)', home)
+        self.assertNotIn('PillTabs', home)
+        self.assertIn('if(!home) item(key = "filters"', source)
+        self.assertIn('if(home) latestSongs(it)', source)
+
     def test_home_latest_and_premium_learning_preview(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'
         catalog = (ui / 'Catalog.kt').read_text()
