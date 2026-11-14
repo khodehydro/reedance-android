@@ -117,7 +117,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                 val data = lesson!!
                 item(key = "player", contentType = "player") { PlayerPanel(model, data) }
                 item(key = "credits") { Text(data.obj("credits").tr("notice", fa), style = MaterialTheme.typography.bodySmall) }
-                item(key = "tabs") { PillTabs(listOf(
+                item(key = "tabs") { ExpandedPillTabs(listOf(
                     PillOption(tr("لیریک", "Lyrics"), UiIcons.Lyrics, filledIcon = UiIcons.LyricsFilled),
                     PillOption(tr("نکته‌ها", "Notes"), UiIcons.Notes, filledIcon = UiIcons.NotesFilled),
                     PillOption(tr("لغت‌ها", "Words"), UiIcons.Words, filledIcon = UiIcons.WordsFilled),
@@ -140,7 +140,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                         val visibleLines = lines.take(access.limit("lyrics"))
                         val renderLine: @Composable (JsonObject) -> Unit = { line ->
                             val active = activeLineId == line.s("id")
-                            LyricLine(line, mode, active, playing = playing && active && activePlayback?.songId == songId,
+                            LyricLine(line, mode, active, single = singleLyric, playing = playing && active && activePlayback?.songId == songId,
                                 onPlay = {
                                     if(playing && active && activePlayback?.songId == songId) model.pause()
                                     else model.playFromLine(songId, line.n("startMs"))

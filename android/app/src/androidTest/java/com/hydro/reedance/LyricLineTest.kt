@@ -45,6 +45,20 @@ class LyricLineTest {
         compose.onNodeWithContentDescription("Play line: Merhaba dünya").assertIsDisplayed()
     }
 
+    @Test fun singleLineHasNoPlaybackButtonButKeepsTextAndTranslation() {
+        compose.setContent {
+            CompositionLocalProvider(LocalFa provides false, LocalReducedMotion provides true) {
+                ReedanceTheme(Settings(language = "en")) {
+                    LyricLine(line, 1, true, {}, {}, playing = true, single = true)
+                }
+            }
+        }
+        compose.onNodeWithContentDescription("Play line: Merhaba dünya").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Pause line: Merhaba dünya").assertDoesNotExist()
+        compose.onNodeWithText("Merhaba").assertIsDisplayed()
+        compose.onNodeWithText("Hello world").assertIsDisplayed()
+    }
+
     @Test fun persianTranslationAndForeignLineRemainVisibleInRtl() {
         compose.setContent {
             CompositionLocalProvider(LocalFa provides true, LocalReducedMotion provides true, LocalLayoutDirection provides LayoutDirection.Rtl) {

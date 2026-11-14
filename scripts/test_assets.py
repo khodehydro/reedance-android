@@ -318,6 +318,19 @@ class AssetTests(unittest.TestCase):
         self.assertIn('lines.lastOrNull { it.n("startMs") <= positionMs } ?: lines.firstOrNull()', helper)
         self.assertNotIn('delay(', helper)
 
+    def test_single_lyrics_centered_without_play_and_song_tabs_fill_width(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        lyric = (ui / 'LyricLine.kt').read_text()
+        self.assertIn('if(!single) PressIconButton', lyric)
+        self.assertIn('if(single) TextAlign.Center', lyric)
+        self.assertIn('Arrangement.spacedBy(2.dp, Alignment.CenterHorizontally)', lyric)
+        song = (ui / 'Song.kt').read_text()
+        self.assertIn('single = singleLyric', song)
+        self.assertIn('item(key = "tabs") { ExpandedPillTabs(', song)
+        tabs = (ui / 'Components.kt').read_text()
+        self.assertIn('if(expanded) Modifier.weight(1f)', tabs)
+        self.assertIn('if(expanded) Modifier else Modifier.horizontalScroll', tabs)
+
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))
 

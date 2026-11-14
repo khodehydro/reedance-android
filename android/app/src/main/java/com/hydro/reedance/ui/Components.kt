@@ -59,10 +59,16 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
     PillTabs(items.mapIndexed { index, label -> PillOption(label, icons[index].first, filledIcon = icons[index].second) }, selected, onSelect)
 }
 
-@Composable fun PillTabs(items: List<PillOption>, selected: Int, onSelect: (Int) -> Unit) {
+@Composable fun PillTabs(items: List<PillOption>, selected: Int, onSelect: (Int) -> Unit) =
+    PillTabRow(items, selected, false, onSelect)
+
+@Composable fun ExpandedPillTabs(items: List<PillOption>, selected: Int, onSelect: (Int) -> Unit) =
+    PillTabRow(items, selected, true, onSelect)
+
+@Composable private fun PillTabRow(items: List<PillOption>, selected: Int, expanded: Boolean, onSelect: (Int) -> Unit) {
     val reduced = LocalReducedMotion.current
     val duration = if(reduced) 0 else 150
-    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).selectableGroup().padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(Modifier.fillMaxWidth().then(if(expanded) Modifier else Modifier.horizontalScroll(rememberScrollState())).selectableGroup().padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         items.forEachIndexed { index, option ->
             val active = selected == index
             val background by animateColorAsState(if(active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface, tween(duration), label = "pill-color")
@@ -71,11 +77,16 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
             Surface(shape = if(option.flag != null) CircleShape else RoundedCornerShape(50), color = background, contentColor = foreground,
                 shadowElevation = if(active) 3.dp else 0.dp,
                 border = BorderStroke(1.dp, if(active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f)),
-                modifier = Modifier.graphicsLayer { scaleX = scale; scaleY = scale }
+                modifier = (if(expanded) Modifier.weight(1f) else Modifier).graphicsLayer { scaleX = if(expanded) 1f else scale; scaleY = scale }
                     .selectable(active, role = Role.Tab, onClick = { if(!active) onSelect(index) })
                     .semantics { contentDescription = option.description }) {
                 if(option.flag != null) {
                     Image(painterResource(option.flag), null, Modifier.size(48.dp).padding(if(active) 3.dp else 1.dp).clip(CircleShape), contentScale = ContentScale.Crop)
+                } else if(expanded) Column(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(horizontal = 4.dp, vertical = 10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterVertically)) {
+                    (if(active) option.filledIcon ?: option.icon else option.icon)?.let { AppIcon(it, null, Modifier.size(17.dp)) }
+                    Text(option.label, style = MaterialTheme.typography.labelLarge, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        fontWeight = if(active) FontWeight.Bold else FontWeight.Normal)
                 } else Row(Modifier.heightIn(min = 48.dp).padding(horizontal = 16.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
                     (if(active) option.filledIcon ?: option.icon else option.icon)?.let { AppIcon(it, null, Modifier.size(17.dp)) }
                     Text(option.label, style = MaterialTheme.typography.labelLarge, fontWeight = if(active) FontWeight.Bold else FontWeight.Normal)
