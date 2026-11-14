@@ -11,7 +11,7 @@ import com.google.gson.*
 import com.hydro.reedance.data.*
 import com.hydro.reedance.domain.*
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 private fun formattedAnswer(q: JsonObject, answer: List<String>, fa: Boolean): String = when(q.s("type")) {
     "choice" -> q.a("options").find { it.s("id") == answer.firstOrNull() }?.s(if(fa) "fa" else "en") ?: "—"
@@ -42,14 +42,23 @@ private fun reviewQuestion(word: JsonObject, vocabulary: List<JsonObject>, index
         }
     })
 }
+private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val questions: List<JsonObject>)
 @Composable fun QuizScreen(model: AppModel, review: Boolean, done: () -> Unit, openReview: () -> Unit) {
     val lesson by model.lesson.collectAsStateWithLifecycle()
-    val cards by model.reviews.collectAsStateWithLifecycle()
     val data = lesson
     if(data == null) { Column(Modifier.padding(24.dp)) { Text(tr("ابتدا بستهٔ دمو را نصب کن.", "Install the demo lesson first.")); PressTextButton(done) { Text(tr("بازگشت", "Back")) } }; return }
-    val vocabulary = data.a("vocabulary")
-    val dueCards = remember { cards.filter { it.dueAt <= System.currentTimeMillis() }.associateBy { it.lexemeId } }
-    val questions = remember { if(review) vocabulary.filter { it.s("lexemeId") in dueCards }.mapIndexed { i,w -> reviewQuestion(w, vocabulary, i) } else data.a("questions") }
+    val session by produceState<QuizSessionData?>(null, data, review) {
+        val due = if(review) model.dueReviewCards() else emptyList()
+        value = withContext(Dispatchers.Default) {
+            val words = data.a("vocabulary")
+            val dueMap = due.associateBy { it.lexemeId }
+            QuizSessionData(dueMap, if(review) words.filter { it.s("lexemeId") in dueMap }.mapIndexed { i, word -> reviewQuestion(word, words, i) } else data.a("questions"))
+        }
+    }
+    val prepared = session
+    if(prepared == null) { Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) { CircularProgressIndicator() }; return }
+    val dueCards = prepared.dueCards
+    val questions = prepared.questions
     var index by remember { mutableIntStateOf(0) }
     var answer by remember(index) { mutableStateOf<List<String>>(emptyList()) }
     var checked by remember(index) { mutableStateOf<Grade?>(null) }
@@ -116,10 +125,18 @@ private fun reviewQuestion(word: JsonObject, vocabulary: List<JsonObject>, index
                     }
                     if(q.s("speech").isNotEmpty()) PressTextButton({ model.speak(q.s("speech"), data.s("locale")) }) { Text(tr("شنیدن جمله با صدای دستگاه", "Hear sentence with device voice")) }
                     if(checked == null) Action(tr("بررسی پاسخ", "Check answer"), enabled = complete(q, answer) && !busy) {
-                        val result = grade(q, answer, data.s("locale"))
-                        checked = result
-                        if(review) q.strings("relatedLexemeIds").forEach { dueCards[it]?.let { card -> model.review(card, result.correct) } }
-                        else model.record(q, answer, result)
+                        if(!busy && checked == null) {
+                            busy = true
+                            val submitted = answer.toList()
+                            scope.launch {
+                                try {
+                                    val result = withContext(Dispatchers.Default) { grade(q, submitted, data.s("locale")) }
+                                    checked = result
+                                    if(review) q.strings("relatedLexemeIds").forEach { dueCards[it]?.let { card -> model.review(card, result.correct) } }
+                                    else model.record(q, submitted, result)
+                                } finally { busy = false }
+                            }
+                        }
                     } else {
                         Text(if(checked!!.correct) tr("✓ آفرین، درست بود", "✓ You got it") else tr("نیاز به مرور؛ اشکالی ندارد", "Needs review — keep going"), style = MaterialTheme.typography.titleMedium)
                         Text(q.tr("explanation", fa))

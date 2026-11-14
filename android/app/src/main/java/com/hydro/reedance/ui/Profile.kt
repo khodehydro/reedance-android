@@ -15,7 +15,7 @@ import com.hydro.reedance.data.*
 @Composable fun ProfileScreen(model: AppModel, library: () -> Unit) {
     val settings by model.settings.collectAsStateWithLifecycle()
     val lesson by model.lesson.collectAsStateWithLifecycle()
-    val results by model.results.collectAsStateWithLifecycle()
+    val resultCount by model.resultCount.collectAsStateWithLifecycle()
     val reviews by model.reviews.collectAsStateWithLifecycle()
     val steps by model.steps.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -27,7 +27,7 @@ import com.hydro.reedance.data.*
             AppIcon(UiIcons.User, null, Modifier.size(36.dp), tint = MaterialTheme.colorScheme.primary)
             Text(tr("سلام، همراه مهمان", "Hello, guest"), style = MaterialTheme.typography.titleLarge)
             Text(tr("حساب یا همگام‌سازی ابری فعال نیست. پیشرفت فقط روی این دستگاه ذخیره می‌شود.", "No account or cloud sync. Your progress stays on this device."))
-            Text(tr("${reviews.size} واژه · ${steps.size} قدم استارتر · ${results.size} پاسخ ثبت‌شده", "${reviews.size} words · ${steps.size} starter steps · ${results.size} answers"))
+            Text(tr("${reviews.size} واژه · ${steps.size} قدم استارتر · $resultCount پاسخ ثبت‌شده", "${reviews.size} words · ${steps.size} starter steps · $resultCount answers"))
             PressTextButton(library) { Text(tr("کتابخانهٔ من", "My library")) }
         }
         Panel {

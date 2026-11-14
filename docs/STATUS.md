@@ -19,7 +19,7 @@
 
 ## اجرا و بررسی انجام‌شده در این محیط
 
-- `scripts/test_assets.py`: **۱۵ تست پاس شد**.
+- `scripts/test_assets.py`: **۱۷ تست پاس شد**.
 - parse نحوی تمام فایل‌های Kotlin/Kotlin DSL با tree-sitter: بدون خطای نحوی. این **type-check یا کامپایل Kotlin نیست**.
 - بررسی ZIP معتبر بودن Gradle Wrapper، XMLهای Android و whitespace/diff.
 - تلاش برای `:app:testDebugUnitTest :app:assembleDebug` در ابتدای اجرا با خطای نبود `JAVA_HOME/java` متوقف شد؛ **APK ساخته نشده است**.
@@ -42,3 +42,5 @@
 پیگیری ناوبری و فیلتر: پرچم دایره‌ای، ورود/خروج/جابه‌جایی متحرک کارت، دانلودشده‌های واقعی، آیکن Solid برای تب فعال، منوی کپسولی جمع‌شونده و نوار سیستم شفاف اضافه شد. جزئیات رفتار و محدودیت آزمون دستگاه در UI_REFRESH.md آمده است.
 
 بازخورد لمس سراسری بدون ripple، کنترل‌های Material با interactionSource مشترک، حذف بک‌پلیت تب فعال، محتوای زیر منو با trailing inset اندازه‌گیری‌شده و اسپلش آبی با آیکن safe-zone اضافه شد. تست‌های دستگاه/کامپایل همچنان اجرا نشده‌اند.
+
+بازنگری کوروتین/کارایی در COROUTINES_PERFORMANCE.md ثبت شده: repository main-safe، startup موازی، اتصال lazy پلیر و TTS، progress وابسته به مشاهده/پخش، checkpoint پنج‌ثانیه‌ای با writer سریال، کاهش recompose لیریک و ساخت/تصحیح آزمون در Default. چهار تست JVM جدید checkpoint نوشته شده اما اجرا نشده‌اند؛ فقط ۱۷ تست میزبان و بررسی نحوی/منابع انجام شده است.

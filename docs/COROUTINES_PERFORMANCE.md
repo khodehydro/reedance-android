@@ -1,0 +1,43 @@
+# Coroutine / responsiveness pass
+
+## What moved, and what must NOT move
+
+| Work | Execution/lifetime |
+|---|---|
+| Asset text/file reads, cancellable audio copy + incremental SHA, private file removal | LocalContentRepository suspend API, Dispatchers.IO |
+| JSON parsing, quiz generation/grading, result serialization, active lyric derivation | Dispatchers.Default / flowOn(Default) |
+| Startup catalog/starter/installed-demo reads | Structured async children in coroutineScope; awaited before removing the single splash |
+| Room queries / transactions | Suspend DAO + Room executors; serialized writes inside IO transactions |
+| Preferences | DataStore's suspend edit/Flow (DataStore already owns background disk I/O) |
+| Bitmap decode | Existing IO produceState + bounded shared LRU |
+| MediaController commands, callbacks, progress samples, Compose state/rendering | MAIN looper, required by Media3 / Compose; no blocking future.get |
+| TTS readiness | Lazy engine, CompletableDeferred.await with timeout; voice lookup/speech binder calls on IO, serialized and cached by locale |
+
+Putting Compose rendering or Media3 methods on Dispatchers.IO is incorrect; wrapping every tiny catalog lookup in launch would add overhead. Six-song filtering remains memoized on UI; heavy lesson work and disk operations have explicit main-safe boundaries.
+
+## Removed avoidable work
+
+- No MediaSessionService connection or TextToSpeech engine boot on an ordinary cold Home launch. A prepared lesson connects Media3 when the song is opened; a pronunciation request initializes TTS on demand. Player setup uses a suspending future completion listener; get() is invoked ONLY by the completed-future callback on main. One mutex prevents duplicate connects; ViewModel teardown releases even a late future result. Entering Quiz cancels pending play commands, so late preparation cannot start playback in the quiz.
+- Removed the unconditional 700ms poll/write loop. UI progress samples every 500ms ONLY while playing AND position is observed. Hidden/paused screens do not keep it ticking (active-lyric flow has a 5s subscription grace period).
+- Durable playback is separately checkpointed every 5s while playing, plus pause/seek/onStop. A pure PlaybackCheckpoint gate avoids unchanged/tiny repeated writes; one conflated IO channel serializes pending saves. No timer writes while paused. On abrupt process/device death, up to about five seconds of most-recent playback position may be lost, rather than continuously writing to disk. Save errors are surfaced; this is not a durability guarantee on process kill.
+- Song root observes distinct active lyric IDs, not every millisecond/progress tick. Only PlayerPanel observes progress. Lyric arrays and lexeme lookup map are memoized by lesson, removing repeated allocation/scans at each tick.
+- Profile reads SELECT COUNT(*) Flow, not every historical answer/JSON blob. Bookmark/review/starter Room emissions use distinctUntilChanged. These three small streams stay eager intentionally: mutation/review behavior must not depend on UI subscription timing.
+- Review quiz builds a session once off-main using a fresh suspend DAO snapshot of due cards, not an initially-empty hot-flow snapshot. Grading is a structured cancellable coroutine; repeated check taps are blocked while it runs. Responses are persisted after grading without blocking rendering.
+- Bookmark/step mutations read current DB state inside a serialized transaction, rather than a potentially stale UI Flow cache. Wrong-word inserts and the quiz answer commit together. Repeated stale flashcard grades are ignored.
+- File install/delete/restore serialized by a repository mutex. Audio copy checks ensureActive per 64KiB chunk and does not allocate/read the entire WAV. Only the short final move/database-pointer commit and staging cleanup are NonCancellable. This remains a LOCAL DEBUG DEMO, not the production rdpack installer.
+- CancellationException is rethrown, not displayed as an error or swallowed by runCatching. Database is a single application-context instance; no synchronous database close/executor join on the main thread at ViewModel teardown.
+
+## Verification / remaining boundaries
+
+17 host asset/schema/source guard tests passed. Added four pure JVM PlaybackCheckpoint unit tests; they have NOT been run in this sandbox. Kotlin syntax/XML/resource checks are not compilation. No JDK/Android SDK is installed here, so no APK build or measured speed/FPS claim is made.
+
+On Android Studio / device:
+
+```powershell
+cd android
+.\gradlew.bat :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+```
+
+Use CPU Profiler/System Trace to compare cold startup, first Home→Explore, first song opening, resumed/background audio and long scrolls. Observe Main thread slices, frame time/jank and database I/O, not just visual impressions. Test on a slower physical phone; debug JIT/instrumentation can be slower than an optimized shipping build. The release gate remains closed pending the production security/installer work.
+
+Acceptance scenarios: play/pause/seek/repeat/mute; open quiz while connection is pending; pause from media notification; background playback/checkpoint after onStop; reinstall/delete without losing progress; rapid bookmark/step taps; grading/due queues; canceled install; corrupt local lesson; offline/no-TTS-engine and engine initialization timeout. Profile cold vs warm TTS separately. Playback continuity on Android lifecycle/process death and cancellation races still require device/instrumented tests.

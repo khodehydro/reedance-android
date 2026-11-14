@@ -1,6 +1,7 @@
 package com.hydro.reedance.data
 
 import androidx.room.*
+import android.content.Context
 import kotlinx.coroutines.flow.Flow
 
 @Entity(primaryKeys = ["songId", "itemType", "itemId"])
@@ -15,17 +16,21 @@ data class QuizResult(val songId: String, val questionId: String, val versionCod
 @Entity data class SeenManifest(@PrimaryKey val songId: String, val highestVersionCode: Int, val packageSha256: String)
 @Dao interface LearningDao {
     @Query("SELECT * FROM Bookmark ORDER BY createdAt DESC") fun bookmarks(): Flow<List<Bookmark>>
+    @Query("SELECT * FROM Bookmark WHERE songId = :song AND itemType = :type AND itemId = :id") suspend fun bookmark(song: String, type: String, id: String): Bookmark?
     @Upsert suspend fun saveBookmark(value: Bookmark)
     @Delete suspend fun deleteBookmark(value: Bookmark)
     @Query("SELECT * FROM ReviewCard ORDER BY dueAt") fun reviews(): Flow<List<ReviewCard>>
     @Upsert suspend fun saveReview(value: ReviewCard)
     @Query("SELECT * FROM ReviewCard WHERE lexemeId = :id") suspend fun review(id: String): ReviewCard?
     @Query("SELECT * FROM StarterProgress") fun starter(): Flow<List<StarterProgress>>
+    @Query("SELECT EXISTS(SELECT 1 FROM StarterProgress WHERE targetLanguage = :lang AND stepId = :step)") suspend fun hasStep(lang: String, step: Int): Boolean
     @Upsert suspend fun saveStep(value: StarterProgress)
     @Query("DELETE FROM StarterProgress WHERE targetLanguage = :lang AND stepId = :step") suspend fun deleteStep(lang: String, step: Int)
     @Upsert suspend fun savePlayback(value: SongPlayback)
     @Query("SELECT * FROM SongPlayback WHERE songId = :id") suspend fun playback(id: String): SongPlayback?
     @Insert suspend fun saveResult(value: QuizResult)
+    @Query("SELECT COUNT(*) FROM QuizResult") fun resultCount(): Flow<Int>
+    @Query("SELECT * FROM ReviewCard WHERE dueAt <= :now ORDER BY dueAt") suspend fun dueReviews(now: Long): List<ReviewCard>
     @Query("SELECT * FROM QuizResult ORDER BY gradedAt DESC") fun results(): Flow<List<QuizResult>>
     @Query("SELECT * FROM InstalledPackage WHERE songId = :id") suspend fun installed(id: String): InstalledPackage?
     @Upsert suspend fun saveInstalled(value: InstalledPackage)
@@ -34,4 +39,12 @@ data class QuizResult(val songId: String, val questionId: String, val versionCod
     @Upsert suspend fun saveSeen(value: SeenManifest)
 }
 @Database(entities = [Bookmark::class, ReviewCard::class, StarterProgress::class, SongPlayback::class, QuizResult::class, InstalledPackage::class, SeenManifest::class], version = 1, exportSchema = false)
-abstract class LearningDatabase: RoomDatabase() { abstract fun learning(): LearningDao }
+abstract class LearningDatabase: RoomDatabase() {
+    abstract fun learning(): LearningDao
+    companion object {
+        @Volatile private var instance: LearningDatabase? = null
+        fun get(context: Context): LearningDatabase = instance ?: synchronized(this) {
+            instance ?: Room.databaseBuilder(context.applicationContext, LearningDatabase::class.java, "learning.db").build().also { instance = it }
+        }
+    }
+}

@@ -23,7 +23,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     val catalog by model.catalog.collectAsStateWithLifecycle()
     val lesson by model.lesson.collectAsStateWithLifecycle()
     val busy by model.busy.collectAsStateWithLifecycle()
-    val position by model.position.collectAsStateWithLifecycle()
+    val activeLineId by model.activeLineId.collectAsStateWithLifecycle()
     val playing by model.playing.collectAsStateWithLifecycle()
     val bookmarks by model.bookmarks.collectAsStateWithLifecycle()
     val song = catalog.find { it.s("id") == songId } ?: JsonObject()
@@ -33,6 +33,9 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     val scroll = rememberScrollState()
     val collapsed by remember { derivedStateOf { scroll.value > 300 } }
     val available = songId == "midnight-avenue" && lesson != null
+    LaunchedEffect(available) { if(available) model.preparePlayback() }
+    val lines = remember(lesson) { lesson?.a("lyrics").orEmpty() }
+    val wordsById = remember(lesson) { lesson?.a("vocabulary").orEmpty().associateBy { it.s("lexemeId") } }
     Column(Modifier.fillMaxSize()) {
         Surface(shadowElevation = if(collapsed) 4.dp else 0.dp) {
             Column {
@@ -76,16 +79,15 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                     0 -> {
                         ChoiceRow(listOf(tr("متن اصلی", "Original"), tr("ترجمهٔ خطی", "Line by line"), tr("کلمه‌به‌کلمه", "Word by word")), mode) { mode = it }
                         Text(tr("روی زمان برای جابه‌جایی و روی واژه برای معنی بزن.", "Tap a timestamp to seek, or a word to explore it."), style = MaterialTheme.typography.bodySmall)
-                        data.a("lyrics").forEachIndexed { i, line ->
-                            val next = data.a("lyrics").getOrNull(i+1)?.n("startMs") ?: 64000
-                            val active = position >= line.n("startMs") && position < next
+                        lines.forEach { line ->
+                            val active = activeLineId == line.s("id")
                             Panel(tone = if(active) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface) {
                                 PressTextButton({ model.seek(line.n("startMs")) }) { Text(clock(line.n("startMs"))) }
                                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                                     FlowRow(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                                         line.a("tokens").forEach { token ->
                                             Column(Modifier.clickable {
-                                                selectedWord = data.a("vocabulary").find { it.s("lexemeId") == token.s("lexemeId") } ?: JsonObject().apply { addProperty("lemma", token.s("surface")); addProperty("translationFa", token.s("translationFa")); addProperty("translationEn", token.s("translationEn")) }
+                                                selectedWord = wordsById[token.s("lexemeId")] ?: JsonObject().apply { addProperty("lemma", token.s("surface")); addProperty("translationFa", token.s("translationFa")); addProperty("translationEn", token.s("translationEn")) }
                                             }.padding(horizontal = 3.dp, vertical = 8.dp)) {
                                                 Text(token.s("surface"), style = MaterialTheme.typography.titleMedium)
                                                 if(mode == 2) Text(token.tr("translation", fa), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
