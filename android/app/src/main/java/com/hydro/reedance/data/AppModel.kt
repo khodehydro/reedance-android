@@ -307,10 +307,11 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
     private fun mutation(block: suspend () -> Unit) = operation("ذخیره پیشرفت ناموفق / Progress save failed") {
         mutationMutex.withLock { withContext(Dispatchers.IO) { database.withTransaction { block() } } }
     }
-    fun toggleBookmark(type: String, id: String) { mutation {
-        val old = dao.bookmark(lesson.value?.s("songId") ?: return@mutation, type, id)
+    fun toggleBookmark(type: String, id: String, songId: String? = lesson.value?.s("songId")) { mutation {
+        val song = songId ?: return@mutation
+        val old = dao.bookmark(song, type, id)
         if(old != null) dao.deleteBookmark(old) else {
-            dao.saveBookmark(Bookmark(lesson.value?.s("songId") ?: return@mutation, type, id))
+            dao.saveBookmark(Bookmark(song, type, id))
             if(type == "vocabulary" && dao.review(id) == null) dao.saveReview(ReviewCard(id))
         }
     } }

@@ -34,7 +34,7 @@ import com.google.gson.*
 import com.hydro.reedance.data.*
 
 @Composable fun Panel(modifier: Modifier = Modifier, tone: Color = MaterialTheme.colorScheme.surface, content: @Composable ColumnScope.() -> Unit) {
-    Surface(modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp), color = tone, border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .35f))) {
+    Surface(modifier.fillMaxWidth().itemEntrance(), shape = RoundedCornerShape(22.dp), color = tone, border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .35f))) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp), content = content)
     }
 }

@@ -1,9 +1,7 @@
 package com.hydro.reedance.ui
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -48,7 +46,7 @@ import kotlin.math.sin
         onValueChangeFinished = onValueChangeFinished, valueRange = 0f..maximum,
         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).semantics { contentDescription = description },
         colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = Color.White, inactiveTrackColor = Color.White.copy(alpha = .45f)),
-        thumb = { Box(Modifier.size(10.dp).background(Color.White, CircleShape)) },
+        thumb = { Spacer(Modifier.size(0.dp)) },
         track = { state ->
             Canvas(Modifier.fillMaxWidth().height(24.dp)) {
                 val end = size.width * (state.value / maximum).coerceIn(0f, 1f)
@@ -62,7 +60,7 @@ import kotlin.math.sin
                     val steps = (end / 2.dp.toPx()).toInt().coerceAtLeast(1)
                     for(step in 0..steps) {
                         val x = end * step / steps
-                        // Taper both ends so the wave meets the straight track / thumb cleanly.
+                        // Taper both ends so the wave meets the straight track cleanly.
                         val taper = minOf(x / wavelength, (end - x) / wavelength, 1f).coerceAtLeast(0f)
                         val y = center + sin(x / wavelength * 2f * PI.toFloat() - phase) * amplitude * taper
                         if(step == 0) path.moveTo(x, y) else path.lineTo(x, y)

@@ -206,6 +206,12 @@
       "codepoint": "0xfbaf",
       "drawable": "uicon_share_filled",
       "style": "Solid Rounded"
+    },
+    "BookmarkFilled": {
+      "glyph": "bookmark",
+      "codepoint": "0xf289",
+      "drawable": "uicon_bookmark_filled",
+      "style": "Solid Rounded"
     }
   }
 }

@@ -1,6 +1,10 @@
 package com.hydro.reedance.ui
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextOverflow
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -44,6 +48,12 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     var mode by rememberSaveable { mutableIntStateOf(1) }
     var selectedWord by remember { mutableStateOf<JsonObject?>(null) }
     val scroll = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    val collapseThreshold = with(LocalDensity.current) { 140.dp.roundToPx() }
+    val compactController by remember(scroll, collapseThreshold) { derivedStateOf {
+        scroll.firstVisibleItemIndex > 0 || scroll.firstVisibleItemScrollOffset > collapseThreshold
+    } }
+    val motionDuration = if(LocalReducedMotion.current) 0 else 180
     val available = lesson?.s("songId") == songId
     val entryState = songEntryState(available, loading, loadError)
     LaunchedEffect(songId, reload) {
@@ -66,11 +76,15 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                     Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                         SongArtwork(songId, song.s("title"), coverPath, Modifier.size(40.dp).clip(CircleShape))
                     }
-                    PressIconButton({ model.toggleBookmark("song", songId) }) {
-                        AppIcon(UiIcons.Bookmark, tr("ذخیره", "Save"), tint = if(bookmarks.any { it.itemType == "song" && it.itemId == songId }) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                    BookmarkButton(bookmarks.any { it.songId == songId && it.itemType == "song" && it.itemId == songId }) {
+                        model.toggleBookmark("song", songId, songId)
                     }
                 }
-
+                AnimatedVisibility(available && compactController,
+                    enter = fadeIn(tween(motionDuration)) + expandVertically(tween(motionDuration)),
+                    exit = fadeOut(tween(motionDuration)) + shrinkVertically(tween(motionDuration))) {
+                    lesson?.let { data -> CompactSongController(model, data, { scope.launch { scroll.animateScrollToItem(0) } }) }
+                }
             }
         }
         LazyColumn(state = scroll, modifier = Modifier.weight(1f), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
@@ -186,9 +200,10 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
 }
 @Composable fun SaveAction(model: AppModel, type: String, id: String) {
     val bookmarks by model.bookmarks.collectAsStateWithLifecycle()
-    val saved = bookmarks.any { it.itemType == type && it.itemId == id }
+    val lesson by model.lesson.collectAsStateWithLifecycle()
+    val saved = bookmarks.any { it.songId == lesson?.s("songId") && it.itemType == type && it.itemId == id }
     PressTextButton({ model.toggleBookmark(type, id) }) {
-        AppIcon(UiIcons.Bookmark, null, tint = if(saved) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+        AnimatedBookmarkIcon(saved)
         Text(if(saved) tr("نشان‌شده", "Saved") else tr("نشان کردن", "Save for later"))
     }
 }
@@ -199,7 +214,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     val repeat by model.repeat.collectAsStateWithLifecycle()
     val muted by model.muted.collectAsStateWithLifecycle()
     var dragging by remember(data.s("songId")) { mutableStateOf<Float?>(null) }
-    Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp), color = Color(0xFF01020A), contentColor = Color.White) {
+    Surface(Modifier.fillMaxWidth().itemEntrance(), shape = RoundedCornerShape(22.dp), color = Color(0xFF01020A), contentColor = Color.White) {
         Box {
             BannerGradient(animate = playing, modifier = Modifier.matchParentSize())
             Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -231,6 +246,30 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+/** Pinned compact controls appear as the full controller scrolls out of view. */
+@Composable private fun CompactSongController(model: AppModel, data: JsonObject, expand: () -> Unit) {
+    val playing by model.playing.collectAsStateWithLifecycle()
+    val position by model.position.collectAsStateWithLifecycle()
+    Surface(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), shape = RoundedCornerShape(18.dp),
+        color = Color(0xFF01020A), contentColor = Color.White) {
+        Box {
+            BannerGradient(animate = playing, modifier = Modifier.matchParentSize())
+            Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f).clickable(onClick = expand).padding(horizontal = 8.dp)) {
+                    Text(data.s("title"), maxLines = 1, overflow = TextOverflow.Ellipsis, color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                    Text(clock(position), fontSize = 11.sp, color = Color.White)
+                }
+                PressIconButton({ model.seek(position - 10000) }) {
+                    AppIcon(UiIcons.Replay10, tr("۱۰ ثانیه عقب", "Back 10 seconds"), Modifier.size(18.dp), tint = Color.White)
+                }
+                PressIconButton(model::togglePlay) {
+                    AppIcon(if(playing) UiIcons.PauseFilled else UiIcons.PlayFilled, tr("پخش یا مکث", "Play or pause"), Modifier.size(20.dp), tint = Color.White)
                 }
             }
         }

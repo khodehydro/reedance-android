@@ -34,6 +34,24 @@ class WaveSeekBarTest {
         compose.runOnIdle { assertEquals(75f, position, .1f) }
     }
 
+    @Test fun progressBoundaryHasNoCircularThumb() {
+        compose.setContent {
+            CompositionLocalProvider(LocalFa provides false, LocalReducedMotion provides true) {
+                Box(Modifier.width(300.dp).background(Color.Black).testTag("thumb-free")) {
+                    WaveSeekBar(50f, 100f, false, {}, {})
+                }
+            }
+        }
+        val pixels = compose.onNodeWithTag("thumb-free").captureToImage().toPixelMap()
+        val x = pixels.width / 2
+        val center = pixels.height / 2
+        // Slider is 48dp tall. At the progress boundary only the 2dp track should remain.
+        val clearance = (pixels.height * 3f / 48f).toInt().coerceAtLeast(1)
+        for(y in 0 until pixels.height) if(kotlin.math.abs(y - center) > clearance) {
+            assertTrue("No round marker above/below the track", pixels[x, y].red < .2f)
+        }
+    }
+
     @Test fun onlyPlayedTrackMoves() {
         compose.mainClock.autoAdvance = false
         compose.setContent {

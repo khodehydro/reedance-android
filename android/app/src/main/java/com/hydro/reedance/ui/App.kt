@@ -49,8 +49,8 @@ import com.hydro.reedance.data.*
             HeartOverlay { Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                 when {
                     !ready -> Box(Modifier.fillMaxSize()) // Covered by the single system splash.
-                    settings.language.isEmpty() -> Setup(model)
-                    !settings.permissionsSetup -> PermissionSetup(model)
+                    settings.language.isEmpty() -> PageEntrance("setup") { Setup(model) }
+                    !settings.permissionsSetup -> PageEntrance("permissions") { PermissionSetup(model) }
                     destination != null -> destination()
                     else -> MainShell(model)
                 }
@@ -134,12 +134,13 @@ import com.hydro.reedance.data.*
             FloatingNavigation(page, compactNavigation, ::navigate)
         }
     }) { padding ->
-        // Immediate destination switch: never compose/layout two whole pages during a fade.
+        // Entrance motion uses only the current page render layer; no outgoing page is retained.
         // The bottom bar floats over the scroll viewport. Its measured height is
         // trailing *content* space, not viewport padding, so rows pass underneath.
         Box(Modifier.padding(start = padding.calculateStartPadding(LocalLayoutDirection.current), end = padding.calculateEndPadding(LocalLayoutDirection.current), top = padding.calculateTopPadding(), bottom = if(independent) padding.calculateBottomPadding() else 0.dp).nestedScroll(scrollConnection)) {
          CompositionLocalProvider(LocalOverlayBottomInset provides if(independent) 0.dp else padding.calculateBottomPadding()) {
           pageStates.SaveableStateProvider(page) {
+           PageEntrance(if(page == "song") "$page:$songId" else page) {
             when(page) {
                 "home", "explore" -> CatalogScreen(model, page == "home", { songId = it; navigate("song") }, { context.startActivity(android.content.Intent(context, com.hydro.reedance.StarterActivity::class.java)) }, { navigate("explore") })
                 "song" -> SongScreen(model, songId, songTab, { songTab = it }, { navigate("home") }, { reviewQuiz = false; navigate("quiz") })
@@ -148,6 +149,7 @@ import com.hydro.reedance.data.*
                 "library" -> LibraryScreen(model) { songId = "midnight-avenue"; navigate("song") }
                 "profile" -> ProfileScreen(model) { navigate("library") }
             }
+           }
           }
          }
         }

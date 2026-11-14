@@ -47,7 +47,7 @@ private val courseFlags = listOf("en" to R.drawable.flag_gb_circle, "es" to R.dr
                 start = padding.calculateStartPadding(androidx.compose.ui.platform.LocalLayoutDirection.current),
                 end = padding.calculateEndPadding(androidx.compose.ui.platform.LocalLayoutDirection.current),
                 top = padding.calculateTopPadding()
-            )) { StarterScreen(model, selected.first) }
+            )) { PageEntrance("starter:${selected.first}") { StarterScreen(model, selected.first) } }
         }
     }
     if(choosing) ReedanceBottomSheet(onDismissRequest = { choosing = false }) {

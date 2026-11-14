@@ -19,7 +19,7 @@ solid_codes = dict(re.findall(r'\.fi-sr-([a-z0-9-]+):before\{content:"\\([0-9a-f
 solid_font = TTFont(next((pkg/'css').glob('uicons-solid-rounded-*.woff2')))
 solid_glyphs, solid_cmap = solid_font.getGlyphSet(), solid_font.getBestCmap()
 manifest = {}
-for name, cssname in list(names.items()) + [(n+'Filled', names[n]) for n in ['Home','Explore','Review','Library','Crown','Play','Pause','Coffee','Share']]:
+for name, cssname in list(names.items()) + [(n+'Filled', names[n]) for n in ['Home','Explore','Review','Library','Crown','Play','Pause','Coffee','Share','Bookmark']]:
     filled = name.endswith('Filled')
     codepoints, glyphs, cmap = (solid_codes, solid_glyphs, solid_cmap) if filled else (dict(re.findall(r'\.fi-rr-([a-z0-9-]+):before\{content:"\\([0-9a-f]+)"\}', css)), font.getGlyphSet(), font.getBestCmap())
     code = int(codepoints[cssname],16)

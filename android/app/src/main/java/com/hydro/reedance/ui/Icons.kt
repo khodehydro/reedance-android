@@ -27,6 +27,7 @@ object UiIcons {
     val Pause = R.drawable.uicon_pause
     val Lock = R.drawable.uicon_lock
     val LockOpen = R.drawable.uicon_lock_open
+    val BookmarkFilled = R.drawable.uicon_bookmark_filled
     val Bookmark = R.drawable.uicon_bookmark
     val Quiz = R.drawable.uicon_quiz
     val Repeat = R.drawable.uicon_repeat

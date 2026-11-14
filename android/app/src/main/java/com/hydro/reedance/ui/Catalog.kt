@@ -149,7 +149,7 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
     }
 }
 @Composable private fun SongTile(song: JsonObject, modifier: Modifier, onClick: () -> Unit) {
-    Column(modifier.clickable(onClick = onClick), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(modifier.itemEntrance().clickable(onClick = onClick), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Box {
             CoverImage(if(song.s("distributionRef") == "gulum-ii") "pending-gulum-ii" else song.s("id"), song.s("title"), Modifier.fillMaxWidth().aspectRatio(1f))
         }

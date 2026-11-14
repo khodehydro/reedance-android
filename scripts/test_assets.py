@@ -171,6 +171,37 @@ class AssetTests(unittest.TestCase):
         self.assertIn('contentDescription = description', wave)
         self.assertIn('repeatOnLifecycle(Lifecycle.State.STARTED)', wave)
 
+    def test_thumb_free_seek_compact_controller_and_entry_motion(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        wave = (ui / 'WaveSeekBar.kt').read_text()
+        self.assertIn('thumb = { Spacer(Modifier.size(0.dp)) }', wave)
+        self.assertNotIn('background(Color.White, CircleShape)', wave)
+        self.assertIn('Slider(value = value.coerceIn', wave)
+        song = (ui / 'Song.kt').read_text()
+        self.assertIn('scroll.firstVisibleItemIndex > 0', song)
+        self.assertIn('AnimatedVisibility(available && compactController', song)
+        self.assertIn('CompactSongController(model, data', song)
+        self.assertIn('scroll.animateScrollToItem(0)', song)
+        self.assertIn('BookmarkButton(', song)
+        self.assertIn('model.toggleBookmark("song", songId, songId)', song)
+        bookmark = (ui / 'BookmarkMotion.kt').read_text()
+        self.assertIn('UiIcons.BookmarkFilled else UiIcons.Bookmark', bookmark)
+        self.assertIn('AnimatedContent(saved', bookmark)
+        self.assertIn('PressIconButton(onClick', bookmark)
+        self.assertIn('selected = saved; stateDescription = state', bookmark)
+        entry = (ui / 'EntryMotion.kt').read_text()
+        self.assertIn('remember(destination)', entry)
+        self.assertIn('graphicsLayer', entry)
+        self.assertIn('rememberSaveable', entry)
+        self.assertIn('if(reduced) progress.snapTo(1f)', entry)
+        self.assertNotIn('AnimatedContent', entry)
+        self.assertIn('PageEntrance(if(page == "song")', (ui / 'App.kt').read_text())
+        self.assertIn('.itemEntrance()', (ui / 'Components.kt').read_text())
+        self.assertIn('modifier.itemEntrance()', (ui / 'Catalog.kt').read_text())
+        self.assertIn('PageEntrance("starter:', (ui / 'StarterDestination.kt').read_text())
+        icons = load(ASSETS / 'main/assets/uicons-provenance.json')['icons']
+        self.assertEqual('Solid Rounded', icons['BookmarkFilled']['style'])
+
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ASSETS / 'debug/assets/demo_lesson.json'))
 
@@ -442,7 +473,7 @@ class AssetTests(unittest.TestCase):
             self.assertIn(token, hearts)
         app = (ui / 'App.kt').read_text()
         self.assertIn('HeartOverlay {', app)
-        self.assertIn('!settings.permissionsSetup -> PermissionSetup(model)', app)
+        self.assertIn('!settings.permissionsSetup -> PageEntrance("permissions") { PermissionSetup(model) }', app)
         manifest = (ASSETS / 'main/AndroidManifest.xml').read_text()
         self.assertIn('android.permission.POST_NOTIFICATIONS', manifest)
         for permission in ['WRITE_EXTERNAL_STORAGE', 'READ_EXTERNAL_STORAGE', 'MANAGE_EXTERNAL_STORAGE', 'SCHEDULE_EXACT_ALARM']:
