@@ -32,6 +32,10 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
     private val database = LearningDatabase.get(app)
     val dao = database.learning()
     private val content = LocalContentRepository(app, dao)
+    private val libraryContent = LibraryContentLoader(dao, content)
+    internal fun cachedLibraryItem(mark: Bookmark) = libraryContent.cached(mark)
+    internal suspend fun libraryItem(mark: Bookmark) = libraryContent.load(mark)
+
     val installedIds = dao.installedIds().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     private val activity = ActivityRepository(app)
     val activityDays = activity.days.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
@@ -63,7 +67,7 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
         songs.filter { it.s("language") == prefs.targetLanguage }.map { it.s("id") }.toSet()
     }
     val bookmarks = combine(dao.bookmarks(), languageSongIds) { rows, ids -> rows.filter { it.songId in ids } }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+        .flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
     val reviews = combine(dao.reviews(), languageSongIds) { rows, ids -> rows.filter { it.songId in ids } }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
     val resultCount = combine(dao.results(), languageSongIds) { rows, ids -> rows.count { it.songId in ids } }

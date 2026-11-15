@@ -100,3 +100,24 @@ mode, avoiding reuse of a previous asynchronously prepared session.
 These checks do **not** prove semantic correctness of authored translations or
 that a sentence naturally illustrates a word. That requires content review and
 correction in the Windows exporter. Keep valid legacy package content unchanged.
+
+## Large saved libraries
+
+The UI keeps stable-keyed lazy rows and only composes visible/nearby cards. Tab
+filtering/sorting and language filtering run on Dispatchers.Default. Source-song
+metadata uses an ID map, not a full catalog scan per card.
+
+LibraryContentLoader builds a per-song item index off the UI thread, shared across
+cards through a Mutex. It retains at most four indexed packages, resolving each
+bookmark by (type, ID) without scanning its lesson array. Cache reuse checks the
+installed version/hash/path; missing/uninstalled packages invalidate that entry.
+The library observes the visible range and preloads a small rolling window (up to
+24 bookmark references / four songs), cancelling obsolete prefetch on scroll or
+filter changes. It does not eagerly decode every saved item. Cold cards use a
+quiet placeholder; cached cards reuse indexed content immediately.
+
+5,000-bookmark ordering and concurrent-load/package-update instrumentation test
+cases have been added. They are not measured device-performance results: native
+tests are unavailable here. Room still emits the lightweight bookmark metadata
+list (not a paging source); device frame/memory tests are needed before claiming
+smoothness for arbitrarily large libraries or many very large packages.

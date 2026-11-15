@@ -11,6 +11,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hydro.reedance.data.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable fun ReviewScreen(model: AppModel, quiz: () -> Unit) {
     val reviews by model.reviews.collectAsStateWithLifecycle()
@@ -71,7 +75,13 @@ import kotlinx.coroutines.launch
     val catalog by model.catalog.collectAsStateWithLifecycle()
     var selected by androidx.compose.runtime.saveable.rememberSaveable(settings.targetLanguage) { mutableIntStateOf(0) }
     val types = listOf("song", "vocabulary", "grammar", "idioms", "sentences")
-    val entries = remember(bookmarks, selected) { libraryBookmarks(bookmarks, types[selected]) }
+    val requestKey = settings.targetLanguage to selected
+    val preparedEntries by produceState<Pair<Pair<String, Int>, List<Bookmark>>?>(null, bookmarks, requestKey) {
+        value = requestKey to withContext(Dispatchers.Default) { libraryBookmarks(bookmarks, types[selected]) }
+    }
+    val preparingEntries = preparedEntries?.first != requestKey
+    val entries = preparedEntries?.takeIf { it.first == requestKey }?.second.orEmpty()
+    val catalogById = remember(catalog) { catalog.associateBy { it.s("id") } }
     Column(Modifier.fillMaxSize().padding(top = 24.dp)) {
         Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Heading(tr("کتابخانهٔ تو", "Your little collection"), tr("نشان‌شده‌ها؛ از جدید به قدیم.", "Your saved items, newest first."))
@@ -85,14 +95,35 @@ import kotlinx.coroutines.launch
             Text(tr("${entries.size} مورد نشان‌شده", "${entries.size} saved items"), style = MaterialTheme.typography.labelMedium)
         }
         androidx.compose.runtime.key(settings.targetLanguage, selected) {
-            androidx.compose.foundation.lazy.LazyColumn(Modifier.weight(1f),
+            val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+            LaunchedEffect(listState, entries) {
+                snapshotFlow {
+                    val visible = listState.layoutInfo.visibleItemsInfo
+                    val start = (visible.firstOrNull()?.index ?: 0).coerceAtLeast(0)
+                    val end = visible.lastOrNull()?.index ?: 0
+                    start to end
+                }.distinctUntilChanged().collectLatest { (start, end) ->
+                    // A small rolling window, never the complete saved library.
+                    val from = (start - 2).coerceIn(0, entries.size)
+                    val until = (end + 9).coerceIn(from, minOf(entries.size, from + 24))
+                    entries.subList(from, until)
+                        .filter { it.itemType != "song" }.distinctBy { it.songId }.take(4).forEach { mark ->
+                            try { model.libraryItem(mark) }
+                            catch(cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch(_: Exception) { /* The visible card supplies the unavailable state. */ }
+                        }
+                }
+            }
+            androidx.compose.foundation.lazy.LazyColumn(Modifier.weight(1f), state = listState,
                 contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 20.dp + LocalOverlayBottomInset.current),
                 verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                if(entries.isEmpty()) item(key = "empty") {
+                if(preparingEntries) item(key = "preparing") {
+                    LinearProgressIndicator(Modifier.fillMaxWidth())
+                }
+                else if(entries.isEmpty()) item(key = "empty") {
                     Panel { Text(tr("در این بخش هنوز موردی نشان نکرده‌ای.", "No saved items in this tab yet.")) }
                 }
                 items(entries, key = { "${it.songId}:${it.itemType}:${it.itemId}" }, contentType = { it.itemType }) { mark ->
-                    LibraryBookmarkCard(model, mark, catalog.find { it.s("id") == mark.songId }, song)
+                    LibraryBookmarkCard(model, mark, catalogById[mark.songId], song)
                 }
             }
         }

@@ -15,19 +15,20 @@ internal fun libraryBookmarks(rows: List<Bookmark>, type: String): List<Bookmark
 
 /** Resolve only visible bookmark cards from their own source package, never the currently playing song. */
 @Composable internal fun LibraryBookmarkCard(model: AppModel, mark: Bookmark, catalogSong: JsonObject?, openSong: (String) -> Unit) {
-    var loading by remember(mark.songId) { mutableStateOf(true) }
-    val data by produceState<JsonObject?>(null, mark.songId) {
-        loading = true
+    val initial = remember(mark.songId, mark.itemType, mark.itemId) { model.cachedLibraryItem(mark) }
+    var loading by remember(mark.songId) { mutableStateOf(initial == null && mark.itemType != "song") }
+    val data by produceState<LibraryItemContent?>(initial, mark.songId, mark.itemType, mark.itemId, catalogSong) {
+        loading = value == null && mark.itemType != "song"
         try {
-            value = if(mark.itemType == "song") null else model.lessonForReview(mark.songId)
+            value = if(mark.itemType == "song") null else model.libraryItem(mark)
         } catch(cancelled: CancellationException) { throw cancelled } catch(_: Exception) { value = null } finally { loading = false }
     }
-    val lesson = data?.takeIf { it.s("songId") == mark.songId }
-    val item = lesson?.a(mark.itemType)?.find { it.s(if(mark.itemType == "vocabulary") "lexemeId" else "id") == mark.itemId }
-    val source = catalogSong?.s("title") ?: lesson?.s("title") ?: mark.songId
+    val item = data?.item
+    val source = catalogSong?.s("title") ?: data?.title ?: mark.songId
     val remove: @Composable () -> Unit = {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(source, Modifier.weight(1f), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if(mark.itemType != "song") Text(source, Modifier.weight(1f), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            else Spacer(Modifier.weight(1f))
             ItemBookmarkButton(true) { model.removeBookmark(mark) }
         }
     }
@@ -36,11 +37,23 @@ internal fun libraryBookmarks(rows: List<Bookmark>, type: String): List<Bookmark
     } else Panel {
         when {
             mark.itemType == "song" -> {
-                Foreign(source, large = true)
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Box(Modifier.weight(1f)) { Foreign(source, large = true) }
+                    PressOutlinedButton({ openSong(mark.songId) }, shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            AppIcon(UiIcons.PlayFilled, tr("باز کردن آهنگ", "Open song"), Modifier.size(18.dp))
+                            Text(tr("باز کردن", "Open"))
+                        }
+                    }
+                }
                 catalogSong?.s("artist")?.takeIf { it.isNotBlank() }?.let { Foreign(it) }
-                Action(tr("باز کردن آهنگ", "Open song"), onClick = { openSong(mark.songId) })
             }
-            loading -> { LinearProgressIndicator(Modifier.fillMaxWidth()) }
+            loading -> {
+                Column(Modifier.fillMaxWidth().heightIn(min = 160.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Surface(Modifier.fillMaxWidth(.6f).height(24.dp), color = MaterialTheme.colorScheme.surfaceContainerHighest, shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)) {}
+                    Surface(Modifier.fillMaxWidth().height(72.dp), color = MaterialTheme.colorScheme.surfaceContainerLow, shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)) {}
+                }
+            }
             item == null -> {
                 Text(mark.itemId)
                 PersianText("برای دیدن این مورد، بستهٔ آهنگ را نصب کن. نشان و پیشرفتت حفظ شده‌اند.")

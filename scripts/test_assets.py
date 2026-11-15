@@ -369,7 +369,7 @@ class AssetTests(unittest.TestCase):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'
         library = (ui / 'Library.kt').read_text()
         self.assertIn('model.lessonForReview(it.songId)', library)
-        self.assertIn('model.lessonForReview(mark.songId)', (ui / 'LibraryBookmarkCard.kt').read_text())
+        self.assertIn('model.libraryItem(mark)', (ui / 'LibraryBookmarkCard.kt').read_text())
         self.assertIn('model.removeBookmark(mark)', (ui / 'LibraryBookmarkCard.kt').read_text())
         for name in ['Song.kt', 'Starter.kt', 'Quiz.kt', 'Components.kt']:
             self.assertNotIn('model.speak', (ui / name).read_text())
@@ -565,6 +565,20 @@ class AssetTests(unittest.TestCase):
         model = (ASSETS / 'main/java/com/hydro/reedance/data/AppModel.kt').read_text().split('fun removeBookmark(')[1].split('private fun learningMutation')[0]
         self.assertIn('dao.deleteBookmark(it)', model)
         self.assertNotIn('saveBookmark', model)
+
+    def test_large_library_uses_bounded_index_cache_and_rolling_prefetch(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        card = (ui / 'LibraryBookmarkCard.kt').read_text()
+        self.assertIn('model.cachedLibraryItem(mark)', card)
+        self.assertNotIn('lesson?.a(mark.itemType)?.find', card)
+        self.assertIn('AppIcon(UiIcons.PlayFilled, tr("باز کردن آهنگ", "Open song")', card)
+        self.assertIn('if(mark.itemType != "song") Text(source', card)
+        library = (ui / 'Library.kt').read_text()
+        for token in ['withContext(Dispatchers.Default)', 'entries.subList(from, until)', '.distinctBy { it.songId }.take(4)', 'collectLatest', 'catalogById[mark.songId]']:
+            self.assertIn(token, library)
+        loader = (ASSETS / 'main/java/com/hydro/reedance/data/LibraryContentLoader.kt').read_text()
+        for token in ['size > 4', 'lock.withLock', 'cached?.revision == revision', 'row.signedPayloadSha256', 'row.activeVersionCode', 'withContext(Dispatchers.Default)', 'items[mark.itemType to mark.itemId]']:
+            self.assertIn(token, loader)
 
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))
