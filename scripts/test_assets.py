@@ -383,14 +383,24 @@ class AssetTests(unittest.TestCase):
         self.assertIn('PracticeChoices(q, answer.singleOrNull(), checked, busy) { submit(listOf(it)) }', quiz)
         self.assertIn('if(!busy && checked == null && complete(q, submitted))', quiz)
         self.assertIn('if(q.s("type") != "choice") Action', quiz)
-        self.assertIn('if(!checked!!.correct) Action', quiz)
+        self.assertIn('if(!checked!!.correct || q.s("type") == "match") Action', quiz)
         effect = quiz.split('LaunchedEffect(index, checked, data, review)')[1].split('    Column')[0]
-        self.assertIn('if(result.correct && index < questions.size)', effect)
+        self.assertIn('if(result.correct && index < questions.size && questions[index].s("type") != "match")', effect)
         self.assertIn('delay(850)', effect)
         self.assertIn('index++', effect)
         choices = (ui / 'PracticeChoices.kt').read_text()
         for token in ['id == question.s("correctId")', 'id == selected && !correct', 'Color(0xFF176B3A)', 'Color(0xFFA82232)', 'disabledContainerColor = background', 'disabledContentColor = foreground', 'enabled = result == null && !busy', 'stateDescription = state']:
             self.assertIn(token, choices)
+
+    def test_match_practice_uses_two_columns_measured_connections_and_solution(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        quiz = (ui / 'Quiz.kt').read_text()
+        self.assertIn('"match" -> MatchBoard(', quiz)
+        self.assertIn('MatchBoard(q, correctAnswer(q), true, false, onAnswer = {}, solution = true)', quiz)
+        board = (ui / 'MatchBoard.kt').read_text()
+        for token in ['Column(Modifier.weight(1f)', 'boundsInParent()', 'cubicTo(mid, y1, mid, y2, x2, y2)', 'if(pending != null) commit(', 'enabled && !checked && !solution', 'MatchGreen', 'MatchRed', 'stateDescription = state', 'answer.getOrNull(index) == meaning -> ""']:
+            self.assertIn(token, board)
+        self.assertNotIn('PressFilterChip', board)
 
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))

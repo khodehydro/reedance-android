@@ -71,7 +71,7 @@ private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val qu
     // This effect is cancelled when leaving the screen or changing the question/session.
     LaunchedEffect(index, checked, data, review) {
         val result = checked ?: return@LaunchedEffect
-        if(result.correct && index < questions.size) {
+        if(result.correct && index < questions.size && questions[index].s("type") != "match") {
             delay(850) // Keep success visible, including when decorative motion is disabled.
             grades = grades + Triple(questions[index], answer.toList(), result)
             index++
@@ -87,7 +87,8 @@ private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val qu
                 Text(tr("پاسخ تو", "Your answer"), style = MaterialTheme.typography.labelMedium)
                 Text(formattedAnswer(q, userAnswer, fa))
                 Text(tr("پاسخ درست", "Correct answer"), style = MaterialTheme.typography.labelMedium)
-                Text(formattedAnswer(q, correctAnswer(q), fa))
+                if(q.s("type") == "match") MatchBoard(q, correctAnswer(q), true, false, onAnswer = {}, solution = true)
+                else Text(formattedAnswer(q, correctAnswer(q), fa))
                 Text(q.tr("explanation", fa))
             } }
             Action(tr("بازگشت", "Back"), onClick = done)
@@ -124,23 +125,8 @@ private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val qu
                             order.forEach { id -> PressOutlinedButton({ answer = answer + id }, enabled = checked == null && !busy && id !in answer) { Text(q.a("chunks").first { it.s("id") == id }.s("text")) } }
                             PressTextButton({ answer = emptyList() }, enabled = checked == null && !busy) { Text(tr("از نو بچین", "Reset order")) }
                         }
-                        "match" -> {
-                            val pairs = q.a("pairs")
-                            pairs.forEachIndexed { i, pair ->
-                                Foreign(pair.s("text"))
-                                val order = q.strings("meaningOrder").ifEmpty { pairs.map { it.s("id") }.reversed() }
-                                order.forEach { id ->
-                                    val meaning = pairs.first { it.s("id") == id }
-                                    val selected = answer.getOrNull(i) == id
-                                    PressFilterChip(selected, {
-                                        val next = MutableList(pairs.size) { answer.getOrNull(it) ?: "" }
-                                        next.indices.filter { it != i && next[it] == id }.forEach { next[it] = "" }
-                                        next[i] = id; answer = next
-                                    }, label = { Text(meaning.s(if(fa) "fa" else "en")) }, enabled = checked == null && !busy)
-                                }
-                                HorizontalDivider()
-                            }
-                        }
+                        "match" -> MatchBoard(q, answer, checked != null, !busy, onAnswer = { answer = it })
+
                     }
                     if(checked == null) {
                         if(q.s("type") != "choice") Action(tr("بررسی پاسخ", "Check answer"), enabled = complete(q, answer) && !busy) {
@@ -149,7 +135,11 @@ private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val qu
                     } else {
                         Text(if(checked!!.correct) tr("✓ آفرین، درست بود", "✓ You got it") else tr("نیاز به مرور؛ اشکالی ندارد", "Needs review — keep going"), style = MaterialTheme.typography.titleMedium)
                         Text(q.tr("explanation", fa))
-                        if(!checked!!.correct) Action(tr("ادامه", "Continue"), enabled = !busy) {
+                        if(q.s("type") == "match") {
+                            Text(tr("پاسخ صحیح", "Correct matches"), style = MaterialTheme.typography.titleMedium)
+                            MatchBoard(q, correctAnswer(q), true, false, onAnswer = {}, solution = true)
+                        }
+                        if(!checked!!.correct || q.s("type") == "match") Action(tr("ادامه", "Continue"), enabled = !busy) {
                             if(!busy) { busy = true; scope.launch {
                                 if(!reduced) delay(220)
                                 grades = grades + Triple(q, answer.toList(), checked!!)
