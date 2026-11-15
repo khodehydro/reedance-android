@@ -33,11 +33,7 @@ import com.hydro.reedance.data.*
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Box(Modifier.weight(1f)) { Foreign(word.s("lemma"), large = true) }
-            if(part.isNotBlank()) Surface(shape = RoundedCornerShape(10.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHighest, contentColor = MaterialTheme.colorScheme.onSurfaceVariant) {
-                PersianText(part, Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                    style = MaterialTheme.typography.labelMedium, fillWidth = false)
-            }
+            if(part.isNotBlank()) PartOfSpeechBadge(part)
         }
         word.tr("translation", fa).takeIf { it.isNotBlank() }?.let { meaning ->
             LearningSection("معنی", accent = true) {

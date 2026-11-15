@@ -670,6 +670,26 @@ class AssetTests(unittest.TestCase):
         self.assertIn('model.savePackPassword(password)', controls)
         self.assertIn('PasswordVisualTransformation()', controls)
 
+    def test_word_class_badges_have_distinct_accessible_theme_palettes(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        source = (ui / 'PartOfSpeechBadge.kt').read_text()
+        self.assertIn('PartOfSpeechBadge(part)', (ui / 'LearningCards.kt').read_text())
+        self.assertIn('PersianText(label', source)
+        self.assertIn('luminance() < .5f', source)
+        import re
+        palettes = re.findall(r'if\(dark\) (0x[0-9A-F]+) to (0x[0-9A-F]+) else (0x[0-9A-F]+) to (0x[0-9A-F]+)', source)
+        self.assertEqual(9, len(palettes))
+        self.assertEqual(9, len({row[2] for row in palettes}))
+        def luminance(hex_color):
+            value = int(hex_color, 16)
+            channels = [(value >> shift & 255) / 255 for shift in (16, 8, 0)]
+            linear = [c / 12.92 if c <= .04045 else ((c + .055) / 1.055) ** 2.4 for c in channels]
+            return sum(a*b for a, b in zip(linear, (.2126, .7152, .0722)))
+        for row in palettes:
+            for bg, fg in (row[:2], row[2:]):
+                low, high = sorted((luminance(bg), luminance(fg)))
+                self.assertGreaterEqual((high + .05) / (low + .05), 4.5)
+
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))
 
