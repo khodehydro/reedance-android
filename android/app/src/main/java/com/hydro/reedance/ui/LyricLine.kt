@@ -31,12 +31,12 @@ import com.hydro.reedance.data.*
                         line.a("tokens").forEach { token ->
                             Column(Modifier.clickable { onToken(token) }.padding(horizontal = 3.dp, vertical = 8.dp), horizontalAlignment = if(single) Alignment.CenterHorizontally else Alignment.Start) {
                                 Text(token.s("surface"), style = MaterialTheme.typography.titleMedium)
-                                if(mode == 2) Text(token.tr("translation", fa), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                                if(mode == 2) Text(token.tr("translation", fa), style = MaterialTheme.typography.labelSmall.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Rtl), color = MaterialTheme.colorScheme.primary)
                             }
                         }
                     }
                     if(mode == 1) CompositionLocalProvider(LocalLayoutDirection provides interfaceDirection) {
-                        Text(line.tr("translation", fa), Modifier.fillMaxWidth(), textAlign = if(single) TextAlign.Center else if(fa) TextAlign.Right else TextAlign.Left)
+                        Text(line.tr("translation", fa), Modifier.fillMaxWidth(), style = LocalTextStyle.current.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Rtl), textAlign = if(single) TextAlign.Center else if(fa) TextAlign.Right else TextAlign.Left)
                     }
                 }
             }

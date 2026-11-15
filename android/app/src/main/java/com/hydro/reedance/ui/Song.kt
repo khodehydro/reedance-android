@@ -154,11 +154,11 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                         if(!access.preview) items(data.a("vocabularyTables"), contentType = { "table" }) { Panel { LearningTable(it) } }
                         items(data.a("vocabulary").take(access.limit("vocabulary")), key = { "word-${it.s("lexemeId")}" }, contentType = { "word" }) { word -> Panel {
                             Foreign(word.s("lemma"), large = true)
-                            Text(word.tr("translation", fa))
+                            PersianText(word.tr("translation", fa))
                             WrittenPronunciation(word)
-                            Text(word.tr("part", fa), style = MaterialTheme.typography.labelMedium)
+                            PersianText(word.tr("part", fa), style = MaterialTheme.typography.labelMedium)
                             Foreign(word.obj("example").s("text"))
-                            Text(word.obj("example").tr("translation", fa))
+                            PersianText(word.obj("example").tr("translation", fa))
                             SaveAction(model, "vocabulary", word.s("lexemeId"))
                         } }
                         if(data.a("vocabulary").size > access.limit("vocabulary") || (access.preview && data.a("vocabularyTables").isNotEmpty())) item(key = "words-preview") { PremiumPreview() }
@@ -166,7 +166,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                     3 -> listOf("idioms", "sentences").forEach { type ->
                         item(key = "$type-heading") { Text(if(type == "idioms") tr("اصطلاحات", "Expressions") else tr("جمله‌های کاربردی", "Useful sentences"), style = MaterialTheme.typography.titleLarge) }
                         items(data.a(type).take(access.limit(type)), key = { "$type-${it.s("id")}" }, contentType = { "phrase" }) { item -> Panel {
-                            Foreign(item.s("text"), large = true); Text(item.tr("translation", fa)); Text(item.tr("context", fa))
+                            Foreign(item.s("text"), large = true); PersianText(item.tr("translation", fa)); PersianText(item.tr("context", fa))
                             if(item.has("example")) Foreign(item.obj("example").s("text"))
                             SaveAction(model, type, item.s("id"))
                         } }
@@ -186,8 +186,8 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     selectedWord?.let { word -> ReedanceBottomSheet(onDismissRequest = { selectedWord = null }) {
         Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Foreign(word.s("lemma"), large = true); WrittenPronunciation(word)
-            Text(word.tr("translation", fa), style = MaterialTheme.typography.titleLarge)
-            Foreign(word.obj("example").s("text")); Text(word.obj("example").tr("translation", fa))
+            PersianText(word.tr("translation", fa), style = MaterialTheme.typography.titleLarge)
+            Foreign(word.obj("example").s("text")); PersianText(word.obj("example").tr("translation", fa))
             if(word.s("lexemeId").isNotEmpty()) SaveAction(model, "vocabulary", word.s("lexemeId"))
             Spacer(Modifier.height(24.dp))
         }

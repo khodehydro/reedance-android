@@ -84,14 +84,16 @@ private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val qu
             Heading(if(questions.isEmpty()) tr("فعلاً مروری نداری", "All caught up") else tr("یک قدم جلوتر!", "One step further!"), tr("پیشرفتت روی همین دستگاه ذخیره شد.", "Your progress is saved on this device."))
             Text("${grades.count { it.third.correct }} / ${questions.size}", style = MaterialTheme.typography.headlineLarge)
             grades.forEach { (q,userAnswer,g) -> Panel {
-                Text(q.tr("prompt", fa), style = MaterialTheme.typography.titleMedium)
+                PersianText(q.tr("prompt", fa), style = MaterialTheme.typography.titleMedium)
                 Text(if(g.correct) tr("✓ درست", "✓ Correct") else tr("نیاز به مرور", "Needs review"))
                 Text(tr("پاسخ تو", "Your answer"), style = MaterialTheme.typography.labelMedium)
-                Text(formattedAnswer(q, userAnswer, fa))
+                if(q.s("type") == "choice" || q.s("type") == "match") PersianText(formattedAnswer(q, userAnswer, fa))
+                else Foreign(formattedAnswer(q, userAnswer, fa))
                 Text(tr("پاسخ درست", "Correct answer"), style = MaterialTheme.typography.labelMedium)
                 if(q.s("type") == "match") MatchBoard(q, correctAnswer(q), true, false, onAnswer = {}, solution = true)
-                else Text(formattedAnswer(q, correctAnswer(q), fa))
-                Text(q.tr("explanation", fa))
+                else if(q.s("type") == "choice") PersianText(formattedAnswer(q, correctAnswer(q), fa))
+                else Foreign(formattedAnswer(q, correctAnswer(q), fa))
+                PersianText(q.tr("explanation", fa))
             } }
             Action(tr("بازگشت", "Back"), onClick = done)
             if(!review) PressOutlinedButton(openReview) { Text(tr("مرور واژه‌ها در لایتنر", "Review words in Leitner")) }
@@ -115,17 +117,17 @@ private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val qu
             LinearProgressIndicator(progress = { index.toFloat()/questions.size }, modifier = Modifier.fillMaxWidth())
             Deck(index) {
                 Panel {
-                    Text(q.tr("skill", fa), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                    Text(q.tr("prompt", fa), style = MaterialTheme.typography.titleLarge)
+                    PersianText(q.tr("skill", fa), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    PersianText(q.tr("prompt", fa), style = MaterialTheme.typography.titleLarge)
                     if(q.s("context").isNotEmpty()) Foreign(q.s("context"))
                     if(q.s("type") == "typing") {
                         typingSentenceMeaning(q, data, fa).takeIf { it.isNotBlank() }?.let {
-                            Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            PersianText(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                     when(q.s("type")) {
                         "choice" -> PracticeChoices(q, answer.singleOrNull(), checked, busy) { submit(listOf(it)) }
-                        "typing" -> OutlinedTextField(answer.firstOrNull() ?: "", { answer = listOf(it) }, Modifier.fillMaxWidth(), enabled = checked == null && !busy, label = { Text(tr("پاسخ", "Answer")) }, shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp), singleLine = true)
+                        "typing" -> PracticeTypingField(answer.firstOrNull().orEmpty(), checked == null && !busy) { answer = listOf(it) }
                         "order" -> SentenceOrder(q, answer, checked, busy) { answer = it }
                         "match" -> MatchBoard(q, answer, checked != null, !busy, onAnswer = { answer = it })
 
@@ -136,7 +138,7 @@ private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val qu
                         }
                     } else {
                         Text(if(checked!!.correct) tr("✓ آفرین، درست بود", "✓ You got it") else tr("نیاز به مرور؛ اشکالی ندارد", "Needs review — keep going"), style = MaterialTheme.typography.titleMedium)
-                        Text(q.tr("explanation", fa))
+                        PersianText(q.tr("explanation", fa))
                         if(q.s("type") == "match" && !checked!!.correct) {
                             Text(tr("پاسخ صحیح", "Correct matches"), style = MaterialTheme.typography.titleMedium)
                             MatchBoard(q, correctAnswer(q), true, false, onAnswer = {}, solution = true)

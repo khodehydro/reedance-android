@@ -62,3 +62,17 @@ are retained for compatibility but not selected for teaching in this app.
 Matching equivalence and grading always use the displayed Persian meanings, not
 hidden English translations. An English-UI instrumentation regression asserts
 English navigation labels alongside Persian learning content.
+
+### Bidirectional layout
+
+Persian teaching paragraphs explicitly use an RTL paragraph base and right
+alignment regardless of interface language, including prompts that start with a
+Latin word. Original song sentences use explicit LTR paragraphs and left
+alignment; typing fields for the currently supported LTR target languages do as
+well. Lyric translations retain centered alignment in single-line mode.
+
+Tables preserve column order across UI locales. Each cell respects an explicit
+exported `dir` (`rtl`/`ltr`); otherwise Persian-script content is right-aligned and
+original-language cells are left-aligned. UI/navigation labels retain UI-locale
+behavior. Device checks should cover mixed Persian/Latin/numbers/parentheses,
+English and Persian interface, wrapped table cells and large text sizes.

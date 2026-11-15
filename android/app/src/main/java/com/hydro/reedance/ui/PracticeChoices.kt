@@ -33,7 +33,7 @@ import com.hydro.reedance.domain.Grade
             enabled = result == null && !busy,
             colors = ButtonDefaults.outlinedButtonColors(containerColor = background, contentColor = foreground,
                 disabledContainerColor = background, disabledContentColor = foreground)) {
-            Text((if(correct) "✓ " else if(wrong) "✕ " else if(selected == id) "● " else "○ ") + option.s(if(fa) "fa" else "en"))
+            PersianText((if(correct) "✓ " else if(wrong) "✕ " else if(selected == id) "● " else "○ ") + option.s(if(fa) "fa" else "en"))
         }
     }
 }

@@ -140,7 +140,7 @@ private val MatchRed = Color(0xFFA82232)
         Box(Modifier.heightIn(min = 72.dp).padding(12.dp), contentAlignment = Alignment.Center) {
             Text((if(checked && link == MatchGreen) "✓ " else if(checked && link == MatchRed) "✕ " else "") + text,
                 textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium.copy(
-                    textDirection = if(rtl) TextDirection.ContentOrRtl else TextDirection.ContentOrLtr))
+                    textDirection = if(rtl) TextDirection.Rtl else TextDirection.Ltr))
         }
     }
 }

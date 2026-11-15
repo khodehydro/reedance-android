@@ -423,7 +423,7 @@ class AssetTests(unittest.TestCase):
         self.assertIn('"order" -> SentenceOrder(q, answer, checked, busy)', quiz)
         self.assertNotIn('Reset order', quiz)
         self.assertIn('typingSentenceMeaning(q, data, fa)', quiz)
-        self.assertIn('RoundedCornerShape(18.dp), singleLine = true', quiz)
+        self.assertIn('RoundedCornerShape(18.dp), singleLine = true', (ui / 'LearningText.kt').read_text())
         self.assertIn('q.s("type") in listOf("order", "typing")', quiz)
         sentence = (ui / 'SentencePractice.kt').read_text()
         self.assertIn('answer.filterIndexed { i, _ -> i != index }', sentence)
@@ -453,6 +453,21 @@ class AssetTests(unittest.TestCase):
         learning = (ASSETS / 'main/java/com/hydro/reedance/domain/Learning.kt').read_text()
         self.assertIn('meaningLanguage: String = LearningLanguage.meaningKey', learning)
         self.assertIn('val interfaceDirection = LayoutDirection.Rtl', (ui / 'LyricLine.kt').read_text())
+
+    def test_learning_paragraph_direction_does_not_follow_interface_locale(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        helper = (ui / 'LearningText.kt').read_text()
+        for token in ['fun PersianText(', 'modifier.fillMaxWidth()', 'textDirection = TextDirection.Rtl, textAlign = TextAlign.Right', '"rtl" -> true', '"ltr" -> false', 'textDirection = TextDirection.Ltr, textAlign = TextAlign.Left']:
+            self.assertIn(token, helper)
+        components = (ui / 'Components.kt').read_text()
+        self.assertIn('PersianText(note.tr("body", fa)', components)
+        self.assertIn('LearningCell(cell.cell(fa)', components)
+        self.assertIn('textDirection = TextDirection.Ltr, textAlign =', components)
+        quiz = (ui / 'Quiz.kt').read_text()
+        self.assertIn('PersianText(q.tr("prompt", fa)', quiz)
+        self.assertIn('PersianText(q.tr("explanation", fa)', quiz)
+        self.assertIn('"typing" -> PracticeTypingField(', quiz)
+        self.assertIn('PersianText((if(correct)', (ui / 'PracticeChoices.kt').read_text())
 
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))

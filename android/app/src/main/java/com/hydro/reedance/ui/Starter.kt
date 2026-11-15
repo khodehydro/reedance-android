@@ -36,13 +36,13 @@ import com.hydro.reedance.data.*
                 item(key = "alphabet-heading") { Heading(course.tr("alphabet", fa), course.tr("alphabetTip", fa)) }
                 items(course.a("alphabetGroups"), contentType = { "alphabet" }) { group ->
                     Panel {
-                        Text(group.tr("name", fa), style = MaterialTheme.typography.titleLarge)
+                        PersianText(group.tr("name", fa), style = MaterialTheme.typography.titleLarge)
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             group.a("letters").forEach { letter ->
                                 Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)) { Column(Modifier.padding(12.dp)) {
                                     Text(letter.s("glyph"), style = MaterialTheme.typography.titleLarge)
                                     Text(letter.s("name"), style = MaterialTheme.typography.bodySmall)
-                                    if(fa) Text(letter.s("faHint"), style = MaterialTheme.typography.bodySmall)
+                                    if(fa) PersianText(letter.s("faHint"), style = MaterialTheme.typography.bodySmall, fillWidth = false)
                                 } }
                             }
                         }
@@ -51,30 +51,33 @@ import com.hydro.reedance.data.*
             }
             1 -> items(course.a("sounds"), contentType = { "sound" }) { sound -> Panel {
                 Foreign(sound.s("symbol"), large = true); Foreign(sound.s("example")); Foreign(sound.s("reading"))
-                if(fa) Text(sound.s("faReading"))
-                Text(sound.tr("tip", fa))
+                if(fa) PersianText(sound.s("faReading"))
+                PersianText(sound.tr("tip", fa))
             } }
             2 -> items(course.a("grammar"), contentType = { "grammar" }) { note -> LearningNote(note) }
             3 -> {
-                item(key = "words-intro") { Text(course.tr("wordsIntro", fa)) }
+                item(key = "words-intro") { PersianText(course.tr("wordsIntro", fa)) }
                 items(course.a("words"), contentType = { "word" }) { word -> Panel {
                     Foreign(word.s("text").ifEmpty { word.s("word") }, large = true)
-                    Text(word.tr("translation", fa).ifEmpty { word.s(if(fa) "fa" else "en") })
-                    Foreign(word.s("reading")); if(fa) Text(word.s("faReading"))
-                    if(word.s("article").isNotEmpty()) Text("${word.s("article")} · ${word.tr("gender", fa)} · ${word.s("plural")}")
-                    Text(word.tr("part", fa), style = MaterialTheme.typography.labelMedium)
+                    PersianText(word.tr("translation", fa).ifEmpty { word.s(if(fa) "fa" else "en") })
+                    Foreign(word.s("reading")); if(fa) PersianText(word.s("faReading"))
+                    if(word.s("article").isNotEmpty()) {
+                        Foreign(listOf(word.s("article"), word.s("plural")).filter { it.isNotBlank() }.joinToString(" · "))
+                        PersianText(word.tr("gender", fa))
+                    }
+                    PersianText(word.tr("part", fa), style = MaterialTheme.typography.labelMedium)
                     Foreign(word.s("example"))
-                    Text(word.tr("example", fa))
+                    PersianText(word.tr("example", fa))
                 } }
                 items(course.a("vocabularyTables"), contentType = { "table" }) { Panel { LearningTable(it) } }
             }
             4 -> item(key = "practice") { Panel {
                 val practice = course.obj("practice")
                 Foreign(practice.s("line"), large = true)
-                if(fa) Text(practice.s("faReading"))
-                Text(practice.tr("translation", fa))
-                practice.a("pieces").forEach { part -> Foreign(part.s("text")); Text(part.s(if(fa) "fa" else "en")); HorizontalDivider() }
-                Text(practice.tr("tip", fa))
+                if(fa) PersianText(practice.s("faReading"))
+                PersianText(practice.tr("translation", fa))
+                practice.a("pieces").forEach { part -> Foreign(part.s("text")); PersianText(part.s(if(fa) "fa" else "en")); HorizontalDivider() }
+                PersianText(practice.tr("tip", fa))
             } }
         }
         item(key = "completion") { Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {

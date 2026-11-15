@@ -42,8 +42,8 @@ import kotlinx.coroutines.launch
                     WrittenPronunciation(word)
                     if(!reveal) Action(tr("برگرداندن کارت", "Reveal meaning")) { reveal = true }
                     else {
-                        Text(word.tr("translation", fa), style = MaterialTheme.typography.titleLarge)
-                        Foreign(word.obj("example").s("text")); Text(word.obj("example").tr("translation", fa))
+                        PersianText(word.tr("translation", fa), style = MaterialTheme.typography.titleLarge)
+                        Foreign(word.obj("example").s("text")); PersianText(word.obj("example").tr("translation", fa))
                         Action(tr("یادم بود", "Remembered"), enabled = !busy) {
                             if(!busy) { busy = true; scope.launch { model.review(card, true); if(!reduced) delay(220); busy = false } }
                         }
@@ -79,8 +79,8 @@ import kotlinx.coroutines.launch
             Deck(index) { Panel(tone = MaterialTheme.colorScheme.secondaryContainer) {
                 Text(tr("عبارت نشان‌شده", "SAVED LINE"), style = MaterialTheme.typography.labelMedium)
                 Foreign(current.s("text"), large = true)
-                if(reveal) Text(current.tr("translation", fa)) else PressTextButton({ reveal = true }) { Text(tr("نمایش معنی", "Reveal meaning")) }
-                Text(current.tr("context", fa))
+                if(reveal) PersianText(current.tr("translation", fa)) else PressTextButton({ reveal = true }) { Text(tr("نمایش معنی", "Reveal meaning")) }
+                PersianText(current.tr("context", fa))
             } }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 PressOutlinedButton({ index-- }, enabled = index > 0) { Text(tr("قبلی", "Previous")) }

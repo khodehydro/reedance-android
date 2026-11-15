@@ -44,7 +44,7 @@ import com.hydro.reedance.data.*
 } }
 @Composable fun Foreign(text: String, modifier: Modifier = Modifier, large: Boolean = false) {
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-        Text(text, modifier.fillMaxWidth(), style = (if(large) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyLarge).copy(textDirection = TextDirection.Ltr))
+        Text(text, modifier.fillMaxWidth(), style = (if(large) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyLarge).copy(textDirection = TextDirection.Ltr, textAlign = androidx.compose.ui.text.style.TextAlign.Left))
     }
 }
 @Composable fun Action(text: String, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -> Unit) {
@@ -127,22 +127,23 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
 @Composable fun LearningTable(table: JsonObject) {
     val fa = LearningLanguage.persian
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(table.tr("title", fa), style = MaterialTheme.typography.titleSmall)
-        table.tr("intro", fa).takeIf { it.isNotEmpty() }?.let { Text(it) }
+        PersianText(table.tr("title", fa), style = MaterialTheme.typography.titleSmall)
+        table.tr("intro", fa).takeIf { it.isNotEmpty() }?.let { PersianText(it) }
         val columns = table.getAsJsonArray("columns") ?: JsonArray()
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Column(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).clip(RoundedCornerShape(12.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))) {
             Row(Modifier.background(MaterialTheme.colorScheme.secondaryContainer)) {
-                columns.forEach { Text(it.cell(fa), Modifier.width(152.dp).padding(12.dp), style = MaterialTheme.typography.titleSmall) }
+                columns.forEach { LearningCell(it.cell(fa), "", MaterialTheme.typography.titleSmall) }
             }
             table.getAsJsonArray("rows")?.forEach { row ->
                 HorizontalDivider()
                 Row { row.asJsonArray.forEach { cell ->
-                    val dir = if(cell.isJsonObject && cell.asJsonObject.s("dir") == "rtl") LayoutDirection.Rtl else if(cell.isJsonPrimitive) LayoutDirection.Ltr else LocalLayoutDirection.current
-                    CompositionLocalProvider(LocalLayoutDirection provides dir) { Text(cell.cell(fa), Modifier.width(152.dp).padding(12.dp)) }
+                    LearningCell(cell.cell(fa), if(cell.isJsonObject) cell.asJsonObject.s("dir") else "", MaterialTheme.typography.bodyMedium)
                 } }
             }
         }
-        table.tr("footer", fa).takeIf { it.isNotEmpty() }?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+        }
+        table.tr("footer", fa).takeIf { it.isNotEmpty() }?.let { PersianText(it, style = MaterialTheme.typography.bodySmall) }
     }
 }
 @Composable fun LearningNote(note: JsonObject, save: (@Composable () -> Unit)? = null) {
@@ -152,22 +153,22 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
         "mint" -> Color(0xFFDEEFE7); "amber" -> Color(0xFFFFEBCB); "coral" -> Color(0xFFFFE0D8); "rose" -> Color(0xFFF8DFE8); "apricot" -> Color(0xFFFFE6CF); else -> Color(0xFFE3EEFF)
     }
     Panel(tone = androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.surface, color, .18f)) {
-        Text(note.tr("tag", fa), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelMedium)
-        Text(note.tr("title", fa), style = MaterialTheme.typography.titleLarge)
-        Text(note.tr("body", fa).ifEmpty { note.tr("tip", fa) })
+        PersianText(note.tr("tag", fa), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelMedium)
+        PersianText(note.tr("title", fa), style = MaterialTheme.typography.titleLarge)
+        PersianText(note.tr("body", fa).ifEmpty { note.tr("tip", fa) })
         WrittenPronunciation(note)
         val ex = note.get("example")
         val text = if(ex?.isJsonObject == true) ex.asJsonObject.s("text") else if(ex?.isJsonPrimitive == true) ex.asString else ""
         if(text.isNotEmpty()) {
             Foreign(text)
-            Text(if(ex?.isJsonObject == true) ex.asJsonObject.tr("translation", fa) else note.tr("translation", fa))
+            PersianText(if(ex?.isJsonObject == true) ex.asJsonObject.tr("translation", fa) else note.tr("translation", fa))
         }
         note.a("tables").forEach { LearningTable(it) }
-        note.tr("takeaway", fa).takeIf { it.isNotEmpty() }?.let { Text(it, style = MaterialTheme.typography.titleSmall) }
+        note.tr("takeaway", fa).takeIf { it.isNotEmpty() }?.let { PersianText(it, style = MaterialTheme.typography.titleSmall) }
         if(note.has("check")) {
-            Text(note.obj("check").tr("prompt", fa))
+            PersianText(note.obj("check").tr("prompt", fa))
             PressTextButton({ answer = !answer }) { Text(tr("دیدن پاسخ", "Reveal answer")) }
-            AnimatedVisibility(answer, enter = if(LocalReducedMotion.current) EnterTransition.None else fadeIn(tween(260)) + expandVertically()) { Text(note.obj("check").tr("answer", fa)) }
+            AnimatedVisibility(answer, enter = if(LocalReducedMotion.current) EnterTransition.None else fadeIn(tween(260)) + expandVertically()) { PersianText(note.obj("check").tr("answer", fa)) }
         }
         save?.invoke()
     }

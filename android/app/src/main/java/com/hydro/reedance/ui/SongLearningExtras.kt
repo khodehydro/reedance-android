@@ -17,7 +17,7 @@ import com.hydro.reedance.data.*
     val readings = listOf(item.s("ipa"), item.s("reading"), if(fa) item.s("faReading") else "")
         .filter { it.isNotBlank() }.distinct()
     readings.forEach { reading ->
-        if(reading == item.s("faReading")) Text(reading, Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Right)
+        if(reading == item.s("faReading")) PersianText(reading)
         else Foreign(reading)
     }
 }
