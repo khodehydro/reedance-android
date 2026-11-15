@@ -623,6 +623,15 @@ class AssetTests(unittest.TestCase):
         self.assertNotIn('AnimatedVisibility', library)
         self.assertIn('Modifier.fillMaxSize().nestedScroll(scrollConnection)', library)
 
+    def test_active_library_tab_strip_is_above_transparent_inactive_strip(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        source = (ui / 'CollapsingPillTabs.kt').read_text()
+        self.assertIn('modifier.zIndex(if(interactive) 1f else 0f)', source)
+        self.assertIn('enabled = interactive', source)
+        self.assertIn('if(interactive) Modifier else Modifier.clearAndSetSemantics', source)
+        regression = (ASSETS / 'androidTest/java/com/hydro/reedance/CollapsingLibraryTabsTest.kt').read_text()
+        self.assertGreaterEqual(regression.count('performTouchInput { click(center) }'), 4)
+
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))
 

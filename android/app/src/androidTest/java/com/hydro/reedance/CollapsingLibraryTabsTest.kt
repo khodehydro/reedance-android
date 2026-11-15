@@ -33,6 +33,11 @@ class CollapsingLibraryTabsTest {
         }
         val expandedSlot = compose.onNodeWithTag("library-tab-slot").fetchSemanticsNode().boundsInRoot
         val expandedWidth = compose.onNodeWithContentDescription("Words").fetchSemanticsNode().boundsInRoot.width
+        // Semantic performClick bypasses hit testing and missed the transparent overlay regression.
+        compose.onNodeWithContentDescription("Notes").performTouchInput { click(center) }
+        compose.onNodeWithContentDescription("Notes").assertIsSelected()
+        compose.onNodeWithContentDescription("Words").performTouchInput { click(center) }
+        compose.onNodeWithContentDescription("Words").assertIsSelected()
         compose.runOnIdle { compact = true }
         compose.waitForIdle()
         compose.onNodeWithText("Words").assertDoesNotExist()
@@ -46,10 +51,13 @@ class CollapsingLibraryTabsTest {
         val notesBounds = compose.onNodeWithContentDescription("Notes").fetchSemanticsNode().boundsInRoot
         val root = compose.onRoot().fetchSemanticsNode().boundsInRoot
         assertEquals(root.center.x, (wordsBounds.left + notesBounds.right) / 2f, 2f)
-        compose.onNodeWithContentDescription("Notes").performClick().assertIsSelected()
+        compose.onNodeWithContentDescription("Notes").performTouchInput { click(center) }
+        compose.onNodeWithContentDescription("Notes").assertIsSelected()
         compose.runOnIdle { compact = false }
         compose.waitForIdle()
         compose.onNodeWithText("Notes").assertIsDisplayed()
         compose.onNodeWithContentDescription("Notes").assertIsSelected()
+        compose.onNodeWithContentDescription("Words").performTouchInput { click(center) }
+        compose.onNodeWithContentDescription("Words").assertIsSelected()
     }
 }

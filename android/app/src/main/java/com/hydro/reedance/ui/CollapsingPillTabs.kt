@@ -13,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -43,7 +44,7 @@ import androidx.compose.ui.unit.dp
 @Composable private fun LibraryTabStrip(items: List<PillOption>, selected: Int, iconsOnly: Boolean,
     interactive: Boolean, modifier: Modifier, onSelect: (Int) -> Unit) {
     val semantics = if(interactive) Modifier else Modifier.clearAndSetSemantics { }
-    Row(modifier.then(semantics).horizontalScroll(rememberScrollState(), enabled = interactive).selectableGroup(),
+    Row(modifier.zIndex(if(interactive) 1f else 0f).then(semantics).horizontalScroll(rememberScrollState(), enabled = interactive).selectableGroup(),
         horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
         items.forEachIndexed { index, item ->
             val active = selected == index
