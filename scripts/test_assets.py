@@ -491,6 +491,21 @@ class AssetTests(unittest.TestCase):
         self.assertIn('PressOutlinedButton({ onAnswer(false) }', source)
         self.assertIn('ReviewAnswerButtons(enabled = !busy)', (ui / 'Library.kt').read_text())
 
+    def test_review_generation_uses_real_blanks_safe_fallbacks_and_question_checks(self):
+        domain = ASSETS / 'main/java/com/hydro/reedance/domain'
+        source = (domain / 'ReviewQuestions.kt').read_text()
+        for token in ['fun reviewQuestion(', 'occurrences.singleOrNull()', 'sentence.replaceRange(cloze.range, "____")', 'val choice = index % 2 == 0 && distractors.isNotEmpty()', 'واژهٔ مربوط به این معنی را بنویس.', 'fun usablePracticeQuestion(', 'options.size >= 2', 'validIds(pairs)', 'validIds(chunks)']:
+            self.assertIn(token, source)
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        quiz = (ui / 'Quiz.kt').read_text()
+        self.assertNotIn('private fun reviewQuestion', quiz)
+        self.assertIn('filter { usablePracticeQuestion(it) }', quiz)
+        self.assertIn('prepared.skipped > 0', quiz)
+        colors = (ui / 'ReviewAnswerButtons.kt').read_text()
+        self.assertIn('surface.luminance()', colors)
+        self.assertIn('containerColor = green, contentColor = greenInk', colors)
+        self.assertIn('containerColor = red, contentColor = redInk', colors)
+
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))
 

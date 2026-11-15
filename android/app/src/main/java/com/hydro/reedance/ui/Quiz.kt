@@ -25,26 +25,7 @@ private fun correctAnswer(q: JsonObject): List<String> = when(q.s("type")) {
     "match" -> q.a("pairs").map { it.s("id") }
     else -> listOf(q.strings("accepted").firstOrNull() ?: "")
 }
-private fun reviewQuestion(word: JsonObject, vocabulary: List<JsonObject>, index: Int): JsonObject = JsonObject().apply {
-    addProperty("id", "review-${word.s("lexemeId")}")
-    addProperty("type", if(index % 2 == 0) "choice" else "typing")
-    addProperty("promptFa", if(index % 2 == 0) "معنی ${word.s("lemma")} چیست؟" else "واژهٔ جاافتاده را بنویس.")
-    addProperty("promptEn", if(index % 2 == 0) "What does ${word.s("lemma")} mean?" else "Type the missing word.")
-    addProperty("translationFa", word.obj("example").s("translationFa"))
-    addProperty("translationEn", word.obj("example").s("translationEn"))
-    addProperty("context", word.obj("example").s("text").replace(Regex("\\b${Regex.escape(word.s("lemma"))}\\b", RegexOption.IGNORE_CASE), "____"))
-    addProperty("explanationFa", "${word.s("lemma")} : ${word.s("translationFa")}")
-    addProperty("explanationEn", "${word.s("lemma")} : ${word.s("translationEn")}")
-    addProperty("correctId", word.s("lexemeId"))
-    add("relatedLexemeIds", JsonArray().apply { add(word.s("lexemeId")) })
-    add("accepted", JsonArray().apply { add(word.s("lemma")) })
-    add("options", JsonArray().apply {
-        (listOf(word) + vocabulary.filter { it.s("lexemeId") != word.s("lexemeId") }.take(3)).shuffled(java.util.Random(index.toLong())).forEach { v ->
-            add(JsonObject().apply { addProperty("id", v.s("lexemeId")); addProperty("fa", v.s("translationFa")); addProperty("en", v.s("translationEn")) })
-        }
-    })
-}
-private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val questions: List<JsonObject>)
+private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val questions: List<JsonObject>, val skipped: Int, val source: JsonObject, val reviewMode: Boolean)
 @Composable fun QuizScreen(model: AppModel, review: Boolean, done: () -> Unit, openReview: () -> Unit) {
     val lesson by model.lesson.collectAsStateWithLifecycle()
     val settings by model.settings.collectAsStateWithLifecycle()
@@ -55,10 +36,13 @@ private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val qu
         value = withContext(Dispatchers.Default) {
             val words = data.a("vocabulary")
             val dueMap = due.associateBy { it.lexemeId }
-            QuizSessionData(dueMap, if(review) words.filter { it.s("lexemeId") in dueMap }.mapIndexed { i, word -> reviewQuestion(word, words, i) } else data.a("questions"))
+            val source = if(review) words.filter { it.s("lexemeId") in dueMap }.distinctBy { it.s("lexemeId") }
+                .mapIndexed { i, word -> reviewQuestion(word, words, i) } else data.a("questions")
+            val questions = source.filterNotNull().filter { usablePracticeQuestion(it) }.distinctBy { it.s("id") }
+            QuizSessionData(dueMap, questions, source.size - questions.size, data, review)
         }
     }
-    val prepared = session
+    val prepared = session?.takeIf { it.source === data && it.reviewMode == review }
     if(prepared == null) { Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) { CircularProgressIndicator() }; return }
     val dueCards = prepared.dueCards
     val questions = prepared.questions
@@ -80,8 +64,10 @@ private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val qu
         }
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+        if(prepared.skipped > 0) PersianText("${prepared.skipped} سؤال ناقص یا ناسازگار از این تمرین کنار گذاشته شد؛ پیشرفت آن‌ها تغییر نکرد.",
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         if(index >= questions.size) {
-            Heading(if(questions.isEmpty()) tr("فعلاً مروری نداری", "All caught up") else tr("یک قدم جلوتر!", "One step further!"), tr("پیشرفتت روی همین دستگاه ذخیره شد.", "Your progress is saved on this device."))
+            Heading(if(questions.isEmpty() && prepared.skipped > 0) tr("سؤال معتبری در دسترس نیست", "No valid questions available") else if(questions.isEmpty()) tr("فعلاً مروری نداری", "All caught up") else tr("یک قدم جلوتر!", "One step further!"), tr("پیشرفتت روی همین دستگاه ذخیره شد.", "Your progress is saved on this device."))
             Text("${grades.count { it.third.correct }} / ${questions.size}", style = MaterialTheme.typography.headlineLarge)
             grades.forEach { (q,userAnswer,g) -> Panel {
                 PersianText(q.tr("prompt", fa), style = MaterialTheme.typography.titleMedium)

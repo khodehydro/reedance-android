@@ -76,3 +76,26 @@ exported `dir` (`rtl`/`ltr`); otherwise Persian-script content is right-aligned 
 original-language cells are left-aligned. UI/navigation labels retain UI-locale
 behavior. Device checks should cover mixed Persian/Latin/numbers/parentheses,
 English and Persian interface, wrapped table cells and large text sizes.
+
+## Review-question quality guards
+
+Review questions are generated in `domain/ReviewQuestions.kt`, not inside the UI.
+Cloze generation uses Unicode-aware word boundaries (the old over-escaped `\\b`
+pattern did not remove the lemma). A cloze is created only when the lemma occurs
+exactly once as a complete word/phrase and a full Persian sentence translation is
+available. The accepted answer is the actual removed text. Inflected, absent or
+repeated lemmas fall back to recall from the Persian meaning, never a prompt that
+claims a complete sentence contains a blank. No morphology is guessed.
+
+Choice distractors must have distinct Persian meanings and different lemmas; a
+single-option question falls back to recall. Missing vocabulary fields cause the
+question to be omitted. Generated and authored questions pass a structural guard:
+unique IDs, usable Persian prompts/meanings, a unique valid choice answer,
+consistent order/matching permutations, and a real single blank for cloze input.
+Malformed/ambiguous questions are skipped with a visible count and do not receive
+learning mutations. Session results are tied to their source lesson and review
+mode, avoiding reuse of a previous asynchronously prepared session.
+
+These checks do **not** prove semantic correctness of authored translations or
+that a sentence naturally illustrates a word. That requires content review and
+correction in the Windows exporter. Keep valid legacy package content unchanged.
