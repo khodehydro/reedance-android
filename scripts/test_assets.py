@@ -583,7 +583,7 @@ class AssetTests(unittest.TestCase):
     def test_library_header_and_tabs_collapse_on_user_scroll_without_consuming_it(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'
         library = (ui / 'Library.kt').read_text().split('@Composable fun LibraryScreen')[1]
-        for token in ['compact by remember(requestKey)', 'NestedScrollSource.UserInput', 'compact = distance < 0f', 'return Offset.Zero', '.nestedScroll(scrollConnection)', 'CollapsingPillTabs(listOf(', '), selected, compact)', 'stickyHeader(key = "library-tabs")']:
+        for token in ['compact by remember(requestKey)', 'LibraryScrollConnection(threshold)', '.nestedScroll(scrollConnection)', 'CollapsingPillTabs(listOf(', '), selected, compact)', 'stickyHeader(key = "library-tabs")']:
             self.assertIn(token, library)
         tabs = (ui / 'CollapsingPillTabs.kt').read_text()
         self.assertIn('height(56.dp)', tabs)
@@ -631,6 +631,19 @@ class AssetTests(unittest.TestCase):
         self.assertIn('if(interactive) Modifier else Modifier.clearAndSetSemantics', source)
         regression = (ASSETS / 'androidTest/java/com/hydro/reedance/CollapsingLibraryTabsTest.kt').read_text()
         self.assertGreaterEqual(regression.count('performTouchInput { click(center) }'), 4)
+
+    def test_library_collapse_requires_consumed_scroll_not_overscroll(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        source = (ui / 'LibraryScrollConnection.kt').read_text()
+        self.assertIn('val dy = consumed.y', source)
+        self.assertIn('if(dy == 0f)', source)
+        self.assertIn('distance += dy', source)
+        self.assertNotIn('onPreScroll', source)
+        self.assertNotIn('distance += available.y', source)
+        self.assertIn('return Offset.Zero', source)
+        library = (ui / 'Library.kt').read_text()
+        self.assertIn('listState.canScrollForward || listState.canScrollBackward', library)
+        self.assertIn('if(!scrollable) scrollConnection.reset()', library)
 
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))

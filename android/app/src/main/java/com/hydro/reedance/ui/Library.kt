@@ -83,24 +83,7 @@ import kotlinx.coroutines.flow.collectLatest
     var compact by remember(requestKey) { mutableStateOf(false) }
     val threshold = with(LocalDensity.current) { 40.dp.toPx() }
     val scrollConnection = remember(requestKey, threshold) {
-        object : NestedScrollConnection {
-            var distance = 0f
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                if(source == NestedScrollSource.UserInput && available.y != 0f) {
-                    if(distance * available.y < 0f) distance = 0f
-                    distance += available.y
-                    if(kotlin.math.abs(distance) >= threshold) {
-                        compact = distance < 0f
-                        distance = 0f
-                    }
-                }
-                return Offset.Zero
-            }
-            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
-                if(source == NestedScrollSource.UserInput && available.y > 0f) compact = false
-                return Offset.Zero
-            }
-        }
+        LibraryScrollConnection(threshold) { compact = it }
     }
     val preparedEntries by produceState<Pair<Pair<String, Int>, List<Bookmark>>?>(null, bookmarks, requestKey) {
         value = requestKey to withContext(Dispatchers.Default) { libraryBookmarks(bookmarks, types[selected]) }
@@ -110,6 +93,12 @@ import kotlinx.coroutines.flow.collectLatest
     val catalogById = remember(catalog) { catalog.associateBy { it.s("id") } }
     androidx.compose.runtime.key(settings.targetLanguage, selected) {
         val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+        LaunchedEffect(listState, scrollConnection) {
+            snapshotFlow { listState.canScrollForward || listState.canScrollBackward }
+                .distinctUntilChanged().collectLatest { scrollable ->
+                    if(!scrollable) scrollConnection.reset()
+                }
+        }
         LaunchedEffect(listState, entries) {
             snapshotFlow {
                 val visible = listState.layoutInfo.visibleItemsInfo.filter { it.index >= 2 }
