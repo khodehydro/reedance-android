@@ -716,6 +716,8 @@
         "context": {
           "$ref": "#/$defs/text"
         },
+        "translationFa": { "$ref": "#/$defs/text" },
+        "translationEn": { "$ref": "#/$defs/text" },
         "lineId": {
           "$ref": "#/$defs/id"
         },

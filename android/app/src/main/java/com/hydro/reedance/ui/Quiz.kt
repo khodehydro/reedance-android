@@ -30,6 +30,8 @@ private fun reviewQuestion(word: JsonObject, vocabulary: List<JsonObject>, index
     addProperty("type", if(index % 2 == 0) "choice" else "typing")
     addProperty("promptFa", if(index % 2 == 0) "معنی ${word.s("lemma")} چیست؟" else "واژهٔ جاافتاده را بنویس.")
     addProperty("promptEn", if(index % 2 == 0) "What does ${word.s("lemma")} mean?" else "Type the missing word.")
+    addProperty("translationFa", word.obj("example").s("translationFa"))
+    addProperty("translationEn", word.obj("example").s("translationEn"))
     addProperty("context", word.obj("example").s("text").replace(Regex("\\b${Regex.escape(word.s("lemma"))}\\b", RegexOption.IGNORE_CASE), "____"))
     addProperty("explanationFa", "${word.s("lemma")} : ${word.s("translationFa")}")
     addProperty("explanationEn", "${word.s("lemma")} : ${word.s("translationEn")}")
@@ -116,15 +118,15 @@ private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val qu
                     Text(q.tr("skill", fa), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                     Text(q.tr("prompt", fa), style = MaterialTheme.typography.titleLarge)
                     if(q.s("context").isNotEmpty()) Foreign(q.s("context"))
+                    if(q.s("type") == "typing") {
+                        typingSentenceMeaning(q, data, fa).takeIf { it.isNotBlank() }?.let {
+                            Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
                     when(q.s("type")) {
                         "choice" -> PracticeChoices(q, answer.singleOrNull(), checked, busy) { submit(listOf(it)) }
-                        "typing" -> OutlinedTextField(answer.firstOrNull() ?: "", { answer = listOf(it) }, Modifier.fillMaxWidth(), enabled = checked == null && !busy, label = { Text(tr("پاسخ", "Answer")) }, singleLine = true)
-                        "order" -> {
-                            Foreign(answer.joinToString(" ") { id -> q.a("chunks").find { it.s("id") == id }?.s("text") ?: "" }, large = true)
-                            val order = q.strings("presentationOrder").ifEmpty { q.a("chunks").map { it.s("id") }.reversed() }
-                            order.forEach { id -> PressOutlinedButton({ answer = answer + id }, enabled = checked == null && !busy && id !in answer) { Text(q.a("chunks").first { it.s("id") == id }.s("text")) } }
-                            PressTextButton({ answer = emptyList() }, enabled = checked == null && !busy) { Text(tr("از نو بچین", "Reset order")) }
-                        }
+                        "typing" -> OutlinedTextField(answer.firstOrNull() ?: "", { answer = listOf(it) }, Modifier.fillMaxWidth(), enabled = checked == null && !busy, label = { Text(tr("پاسخ", "Answer")) }, shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp), singleLine = true)
+                        "order" -> SentenceOrder(q, answer, checked, busy) { answer = it }
                         "match" -> MatchBoard(q, answer, checked != null, !busy, onAnswer = { answer = it })
 
                     }
@@ -138,6 +140,10 @@ private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val qu
                         if(q.s("type") == "match" && !checked!!.correct) {
                             Text(tr("پاسخ صحیح", "Correct matches"), style = MaterialTheme.typography.titleMedium)
                             MatchBoard(q, correctAnswer(q), true, false, onAnswer = {}, solution = true)
+                        }
+                        if(!checked!!.correct && q.s("type") in listOf("order", "typing")) {
+                            Text(tr("پاسخ صحیح", "Correct answer"), style = MaterialTheme.typography.labelLarge)
+                            Foreign(formattedAnswer(q, correctAnswer(q), fa), large = true)
                         }
                         if(!checked!!.correct) Action(tr("ادامه", "Continue"), enabled = !busy) {
                             if(!busy) { busy = true; scope.launch {

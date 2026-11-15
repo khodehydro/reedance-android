@@ -39,3 +39,14 @@ Native build/instrumentation require Java/Android tooling and were not runnable
 in this sandbox. Before release test v1 upgrade, language switching and restart,
 multiple songs per language, cross-song duplicate IDs, saved phrases/removal,
 review quiz attribution and light/dark compact controls on a device.
+
+## Practice sentence translations
+
+Question objects may supply optional `translationFa` / `translationEn` containing
+the **full sentence meaning** for fill-in-the-blank exercises. These fields are
+now explicitly documented in the canonical and Android schemas. Older packages
+remain valid. When absent, Android looks for an exact corresponding full sentence
+in the lesson's lyrics, phrases or vocabulary examples (using accepted blank
+answers to find the sentence). It does not guess a translation or use the answer
+explanation as a pre-answer hint. Review-generated questions copy the original
+vocabulary example's translations.

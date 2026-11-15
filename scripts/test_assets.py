@@ -417,6 +417,29 @@ class AssetTests(unittest.TestCase):
         self.assertIn('matchCorrectness(question, values, if(fa) "fa" else "en")', (ui / 'MatchBoard.kt').read_text())
         self.assertIn('grade(q, submitted, data.s("locale"), if(fa) "fa" else "en")', (ui / 'Quiz.kt').read_text())
 
+    def test_sentence_parts_return_individually_and_typing_has_translated_context(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        quiz = (ui / 'Quiz.kt').read_text()
+        self.assertIn('"order" -> SentenceOrder(q, answer, checked, busy)', quiz)
+        self.assertNotIn('Reset order', quiz)
+        self.assertIn('typingSentenceMeaning(q, data, fa)', quiz)
+        self.assertIn('RoundedCornerShape(18.dp), singleLine = true', quiz)
+        self.assertIn('q.s("type") in listOf("order", "typing")', quiz)
+        sentence = (ui / 'SentencePractice.kt').read_text()
+        self.assertIn('answer.filterIndexed { i, _ -> i != index }', sentence)
+        self.assertIn('order.filter { it !in answer }', sentence)
+        self.assertIn('Color(0xFF176B3A)', sentence)
+        self.assertIn('Color(0xFFA82232)', sentence)
+        self.assertIn('disabledContentColor = foreground', sentence)
+        self.assertIn('val editable = result == null && !busy', sentence)
+        self.assertIn('question.tr("translation", fa)', sentence)
+        self.assertNotIn('tr("explanation"', sentence)
+        schema = load(ROOT / 'contracts/v1/lesson.schema.json')
+        # These are optional so older signed/exported packages remain compatible.
+        question = schema['$defs']['questionBase']
+        self.assertIn('translationFa', question['properties'])
+        self.assertNotIn('translationFa', question['required'])
+
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))
 

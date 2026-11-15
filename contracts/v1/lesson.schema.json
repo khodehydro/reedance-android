@@ -225,6 +225,8 @@
         "explanationFa": { "$ref": "#/$defs/text" },
         "explanationEn": { "$ref": "#/$defs/text" },
         "context": { "$ref": "#/$defs/text" },
+        "translationFa": { "$ref": "#/$defs/text" },
+        "translationEn": { "$ref": "#/$defs/text" },
         "lineId": { "$ref": "#/$defs/id" },
         "speech": { "$ref": "#/$defs/text" },
         "relatedLexemeIds": { "type": "array", "maxItems": 20, "uniqueItems": true, "items": { "$ref": "#/$defs/lexemeId" } }
