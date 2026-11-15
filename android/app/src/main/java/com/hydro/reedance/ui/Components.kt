@@ -175,7 +175,7 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
         note.tr("takeaway", fa).takeIf { it.isNotEmpty() }?.let { PersianText(it, style = MaterialTheme.typography.titleSmall) }
         if(note.has("check")) {
             PersianText(note.obj("check").tr("prompt", fa))
-            PressTextButton({ answer = !answer }) { Text(tr("دیدن پاسخ", "Reveal answer")) }
+            RevealButton(answer, { answer = !answer })
             AnimatedVisibility(answer, enter = if(LocalReducedMotion.current) EnterTransition.None else fadeIn(tween(260)) + expandVertically()) { PersianText(note.obj("check").tr("answer", fa)) }
         }
         save?.invoke()

@@ -40,8 +40,8 @@ import kotlinx.coroutines.launch
                     Text(tr("کارت واژه · خانهٔ ${card.stage}", "WORD CARD · STAGE ${card.stage}"), style = MaterialTheme.typography.labelMedium)
                     Foreign(word.s("lemma"), large = true)
                     WrittenPronunciation(word)
-                    if(!reveal) Action(tr("برگرداندن کارت", "Reveal meaning")) { reveal = true }
-                    else {
+                    RevealButton(reveal, { reveal = !reveal }, meaning = true)
+                    if(reveal) {
                         PersianText(word.tr("translation", fa), style = MaterialTheme.typography.titleLarge)
                         Foreign(word.obj("example").s("text")); PersianText(word.obj("example").tr("translation", fa))
                         ReviewAnswerButtons(enabled = !busy) { remembered ->
@@ -85,7 +85,8 @@ import kotlinx.coroutines.launch
             Deck(index) { Panel(tone = MaterialTheme.colorScheme.secondaryContainer) {
                 Text(tr("عبارت نشان‌شده", "SAVED LINE"), style = MaterialTheme.typography.labelMedium)
                 Foreign(current.s("text"), large = true)
-                if(reveal) PersianText(current.tr("translation", fa)) else PressTextButton({ reveal = true }) { Text(tr("نمایش معنی", "Reveal meaning")) }
+                RevealButton(reveal, { reveal = !reveal }, meaning = true)
+                if(reveal) PersianText(current.tr("translation", fa))
                 PersianText(current.tr("context", fa))
             } }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

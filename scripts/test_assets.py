@@ -506,6 +506,19 @@ class AssetTests(unittest.TestCase):
         self.assertIn('containerColor = green, contentColor = greenInk', colors)
         self.assertIn('containerColor = red, contentColor = redInk', colors)
 
+    def test_reveal_controls_use_official_eye_icons_and_dynamic_labels(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        source = (ui / 'RevealButton.kt').read_text()
+        self.assertIn('if(revealed) UiIcons.EyeClosed else UiIcons.Eye', source)
+        self.assertIn('Hide answer', source)
+        self.assertIn('Hide meaning', source)
+        self.assertIn('stateDescription = state', source)
+        self.assertIn('RevealButton(answer, { answer = !answer })', (ui / 'Components.kt').read_text())
+        self.assertEqual(2, (ui / 'Library.kt').read_text().count('RevealButton(reveal, { reveal = !reveal }, meaning = true)'))
+        icons = load(ASSETS / 'main/assets/uicons-provenance.json')['icons']
+        self.assertEqual('eye', icons['Eye']['glyph'])
+        self.assertEqual('eye-crossed', icons['EyeClosed']['glyph'])
+
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))
 

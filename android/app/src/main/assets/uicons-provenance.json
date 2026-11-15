@@ -213,6 +213,18 @@
       "drawable": "uicon_dark",
       "style": "Regular Rounded"
     },
+    "Eye": {
+      "glyph": "eye",
+      "codepoint": "0xf5f8",
+      "drawable": "uicon_eye",
+      "style": "Regular Rounded"
+    },
+    "EyeClosed": {
+      "glyph": "eye-crossed",
+      "codepoint": "0xf5f5",
+      "drawable": "uicon_eye_closed",
+      "style": "Regular Rounded"
+    },
     "HomeFilled": {
       "glyph": "home",
       "codepoint": "0xf7ad",
