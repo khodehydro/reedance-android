@@ -44,10 +44,16 @@ import kotlinx.coroutines.launch
                     else {
                         PersianText(word.tr("translation", fa), style = MaterialTheme.typography.titleLarge)
                         Foreign(word.obj("example").s("text")); PersianText(word.obj("example").tr("translation", fa))
-                        Action(tr("یادم بود", "Remembered"), enabled = !busy) {
-                            if(!busy) { busy = true; scope.launch { model.review(card, true); if(!reduced) delay(220); busy = false } }
+                        ReviewAnswerButtons(enabled = !busy) { remembered ->
+                            if(!busy) {
+                                busy = true
+                                scope.launch {
+                                    model.review(card, remembered)
+                                    if(!reduced) delay(220)
+                                    busy = false
+                                }
+                            }
                         }
-                        PressOutlinedButton({ if(!busy) { busy = true; scope.launch { model.review(card, false); if(!reduced) delay(220); busy = false } } }, enabled = !busy) { Text(tr("دوباره مرور کنم", "Review again")) }
                     }
                 }
             }

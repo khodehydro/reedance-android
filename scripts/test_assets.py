@@ -480,6 +480,17 @@ class AssetTests(unittest.TestCase):
         self.assertIn('PhraseLearningContent(item)', song)
         self.assertIn('SaveAction(model, "vocabulary", word.s("lexemeId"))', song)
 
+    def test_review_answer_buttons_share_shape_and_equal_row_geometry(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        source = (ui / 'ReviewAnswerButtons.kt').read_text()
+        self.assertIn('Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)', source)
+        self.assertIn('val shape = RoundedCornerShape(14.dp)', source)
+        self.assertEqual(2, source.count('enabled = enabled, shape = shape'))
+        self.assertEqual(2, source.count('Modifier.weight(1f).fillMaxHeight().heightIn(min = 48.dp)'))
+        self.assertIn('PressButton({ onAnswer(true) }', source)
+        self.assertIn('PressOutlinedButton({ onAnswer(false) }', source)
+        self.assertIn('ReviewAnswerButtons(enabled = !busy)', (ui / 'Library.kt').read_text())
+
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))
 
