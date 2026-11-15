@@ -1,5 +1,7 @@
 package com.hydro.reedance.ui
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -22,10 +24,11 @@ import com.hydro.reedance.data.ActivePlayback
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-@Composable fun MiniPlayer(song: ActivePlayback, playing: Boolean, toggle: () -> Unit, openSong: () -> Unit) {
+@Composable fun MiniPlayer(song: ActivePlayback, playing: Boolean, toggle: () -> Unit, openSong: () -> Unit, compact: Boolean = false) {
+    val inset by animateDpAsState(if(compact) 52.dp else 20.dp, tween(190), label = "mini-player-width")
     var shareDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
-    Surface(modifier = Modifier.padding(horizontal = 20.dp), shape = CircleShape,
+    Surface(modifier = Modifier.padding(horizontal = inset), shape = CircleShape,
         color = MaterialTheme.colorScheme.surfaceContainerLowest, contentColor = MaterialTheme.colorScheme.onSurface) {
         Box {
             Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {

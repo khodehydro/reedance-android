@@ -48,7 +48,7 @@ internal val CharcoalDarkColors = darkColorScheme(
 @Composable fun tr(fa: String, en: String) = if(LocalFa.current) fa else en
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable fun ReedanceTheme(settings: Settings, content: @Composable () -> Unit) {
-    val dark = when(settings.theme) { "dark" -> true; "light" -> false; else -> isSystemInDarkTheme() }
+    val dark = settings.theme == "dark"
     val colors = if(dark) CharcoalDarkColors
         else lightColorScheme(primary = Blue, background = Paper, surface = Color.White, onSurface = Color(0xFF172945), secondaryContainer = Color(0xFFEDF4FF))
     val backgroundMotion = remember { BackgroundMotion() }

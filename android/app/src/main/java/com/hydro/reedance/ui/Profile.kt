@@ -7,7 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalUriHandler
+import com.hydro.reedance.BuildConfig
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hydro.reedance.data.*
@@ -15,44 +15,28 @@ import com.hydro.reedance.data.*
 @Composable fun ProfileScreen(model: AppModel, library: () -> Unit) {
     val settings by model.settings.collectAsStateWithLifecycle()
     val lesson by model.lesson.collectAsStateWithLifecycle()
-    val resultCount by model.resultCount.collectAsStateWithLifecycle()
-    val reviews by model.reviews.collectAsStateWithLifecycle()
-    val steps by model.steps.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val uri = LocalUriHandler.current
+    var membershipInfo by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 24.dp + LocalOverlayBottomInset.current), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         Heading(tr("فضای من", "My space"), tr("ریتم یادگیری خودت را پیدا کن.", "Make this little space your own."))
-        Panel {
-            AppIcon(UiIcons.User, null, Modifier.size(36.dp), tint = MaterialTheme.colorScheme.primary)
-            Text(tr("سلام، همراه مهمان", "Hello, guest"), style = MaterialTheme.typography.titleLarge)
-            Text(tr("حساب یا همگام‌سازی ابری فعال نیست. پیشرفت فقط روی این دستگاه ذخیره می‌شود.", "No account or cloud sync. Your progress stays on this device."))
-            Text(tr("${reviews.size} واژه · ${steps.count { it.targetLanguage == settings.targetLanguage }} قدم استارتر · $resultCount پاسخ ثبت‌شده", "${reviews.size} words · ${steps.count { it.targetLanguage == settings.targetLanguage }} starter steps · $resultCount answers"))
-            PressTextButton(library) { Text(tr("کتابخانهٔ من", "My library")) }
-        }
+        ProfileMembershipCard { membershipInfo = true }
+        ProfileStarterCard { context.startActivity(Intent(context, com.hydro.reedance.StarterActivity::class.java)) }
         Panel {
             Text(tr("تنظیمات برنامه", "Make yourself at home"), style = MaterialTheme.typography.titleLarge)
             Text(tr("زبان رابط", "App language"))
             ChoiceRow(listOf("English", "فارسی"), if(settings.language == "en") 0 else 1, List(2) { UiIcons.Globe to UiIcons.GlobeFilled }) { model.language(if(it == 0) "en" else "fa") }
             ReminderControls(model)
             Text(tr("ظاهر", "Appearance"))
-            ChoiceRow(listOf(tr("دستگاه", "System"), tr("روشن", "Light"), tr("تاریک", "Dark")), listOf("system", "light", "dark").indexOf(settings.theme), listOf(UiIcons.System to UiIcons.SystemFilled, UiIcons.Light to UiIcons.LightFilled, UiIcons.Dark to UiIcons.DarkFilled)) { model.theme(listOf("system", "light", "dark")[it]) }
+            ChoiceRow(listOf(tr("روشن", "Light"), tr("تاریک", "Dark")), if(settings.theme == "dark") 1 else 0, listOf(UiIcons.Light to UiIcons.LightFilled, UiIcons.Dark to UiIcons.DarkFilled)) { model.theme(if(it == 1) "dark" else "light") }
             Text(tr("اندازهٔ نوشته", "Text size"))
             ChoiceRow(listOf(tr("کوچک", "Small"), tr("معمولی", "Default"), tr("بزرگ", "Large")), settings.textSize, List(3) { UiIcons.WordMode to UiIcons.WordModeFilled }, model::textSize)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(tr("حرکت کمتر", "Reduce motion"), Modifier.weight(1f))
-                PressSwitch(settings.reduceMotion, model::motion)
-            }
-            Text(tr("تنظیم حرکت دستگاه نیز رعایت می‌شود.", "Your device animation setting is also respected."), style = MaterialTheme.typography.bodySmall)
+
         }
         Panel { PackControls(model) }
         Panel {
             Text(tr("فضای آفلاین", "Offline storage"), style = MaterialTheme.typography.titleLarge)
             Text(if(lesson == null) tr("بسته‌ای نصب نیست.", "No package installed.") else lesson!!.s("title"))
             Text(tr("با حذف آهنگ، نشان‌ها و پیشرفت پاک نمی‌شوند.", "Removing a song keeps your bookmarks and progress."), style = MaterialTheme.typography.bodySmall)
-        }
-        Panel {
-            Text(tr("طرح اشتراک", "Membership"), style = MaterialTheme.typography.titleLarge)
-            Text(tr("هنوز فعال نیست؛ خرید یا پرداختی انجام نمی‌شود.", "Not available yet. No purchase or payment is offered."))
         }
         Panel {
             Text(tr("به تجربه‌ات امتیاز بده", "How does it feel?"), style = MaterialTheme.typography.titleLarge)
@@ -66,9 +50,13 @@ import com.hydro.reedance.data.*
         }
         Panel {
             Text(tr("دربارهٔ ری‌دنس", "About Reedance"), style = MaterialTheme.typography.titleLarge)
-            Text(tr("Reedance · Kotlin و Jetpack Compose", "Reedance · Kotlin & Jetpack Compose"))
+            Text(tr("نسخه: ${BuildConfig.VERSION_NAME}", "Version: ${BuildConfig.VERSION_NAME}"))
+            Text(tr("تاریخ ساخت: ${BuildConfig.BUILD_DATE}", "Build date: ${BuildConfig.BUILD_DATE}"))
             DeveloperCredit()
-            PressTextButton({ uri.openUri("https://github.com/khodehydro/reedance-android") }) { Text(tr("کد منبع", "Source code")) }
         }
     }
+    if(membershipInfo) AlertDialog(onDismissRequest = { membershipInfo = false },
+        title = { Text(tr("اشتراک پریمیوم", "Premium membership")) },
+        text = { Text(tr("خرید اشتراک هنوز فعال نشده است؛ در این نسخه پرداختی انجام نمی‌شود.", "Membership checkout is not available yet. No payment is taken in this version.")) },
+        confirmButton = { PressTextButton({ membershipInfo = false }) { Text(tr("باشه", "OK")) } })
 }

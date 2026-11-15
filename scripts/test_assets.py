@@ -528,6 +528,28 @@ class AssetTests(unittest.TestCase):
         self.assertIn('LearningCell(it.cell(fa)', table)
         self.assertIn('LearningCell(cell.cell(fa)', table)
 
+    def test_profile_membership_starter_light_default_and_compact_player(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        profile = (ui / 'Profile.kt').read_text()
+        for text in ['Hello, guest', 'Reduce motion', 'Source code', 'Kotlin & Jetpack Compose', 'tr("دستگاه", "System")']:
+            self.assertNotIn(text, profile)
+        self.assertLess(profile.index('ProfileMembershipCard'), profile.index('ProfileStarterCard'))
+        self.assertLess(profile.index('ProfileStarterCard'), profile.index('ReminderControls(model)'))
+        self.assertIn('BuildConfig.VERSION_NAME', profile)
+        self.assertIn('BuildConfig.BUILD_DATE', profile)
+        cards = (ui / 'ProfileCards.kt').read_text()
+        self.assertIn('UiIcons.CrownFilled', cards)
+        self.assertIn('Color(0xFFFFDF80)', cards)
+        self.assertIn('checkout is not available yet', cards)
+        settings = (ASSETS / 'main/java/com/hydro/reedance/data/Settings.kt').read_text()
+        self.assertIn('val theme: String = "light"', settings)
+        self.assertIn('if(it[theme] == "dark") "dark" else "light"', settings)
+        self.assertIn('val dark = settings.theme == "dark"', (ui / 'Theme.kt').read_text())
+        self.assertIn('LocalReducedMotion provides false', (ui / 'App.kt').read_text())
+        self.assertIn('compact = compactNavigation', (ui / 'App.kt').read_text())
+        for file in ['MiniPlayer.kt', 'FloatingNavigation.kt']:
+            self.assertIn('if(compact) 52.dp else 20.dp', (ui / file).read_text())
+
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))
 
@@ -733,15 +755,14 @@ class AssetTests(unittest.TestCase):
         self.assertIn('stringPreferencesKey("target_language")', settings)
         self.assertIn('ChoiceRow(listOf("English", "فارسی")', (ui / 'Profile.kt').read_text())
 
-    def test_home_keeps_original_banner_and_starter_above_latest_songs(self):
+    def test_home_keeps_original_banner_and_starter_moves_to_profile(self):
         source = (ASSETS / 'main/java/com/hydro/reedance/ui/Catalog.kt').read_text()
         home = source[source.index('        if(home) {'):source.index('        item(key = "heading"')]
         self.assertIn('item(key = "hero"', home)
-        self.assertIn('item(key = "starter"', home)
-        self.assertLess(home.index('item(key = "hero"'), home.index('item(key = "starter"'))
+        self.assertNotIn('item(key = "starter"', home)
         self.assertIn('HomePager(model, explore)', home)
         self.assertIn('PressButton(explore,', (ASSETS / 'main/java/com/hydro/reedance/ui/BannerMessages.kt').read_text())
-        self.assertIn('PressButton(starter,', home)
+        self.assertIn('PressButton(starter,', (ASSETS / 'main/java/com/hydro/reedance/ui/ProfileCards.kt').read_text())
         self.assertNotIn('PillTabs', home)
         self.assertIn('if(!home) item(key = "filters"', source)
         self.assertIn('if(home) latestSongs(it)', source)
@@ -904,7 +925,7 @@ class AssetTests(unittest.TestCase):
 
     def test_supplied_starter_artwork_in_home_and_course(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'
-        self.assertIn('StarterArtwork(Modifier.size(104.dp))', (ui / 'Catalog.kt').read_text())
+        self.assertIn('StarterArtwork(Modifier.size(88.dp))', (ui / 'ProfileCards.kt').read_text())
         self.assertIn('StarterArtwork(Modifier.size(96.dp))', (ui / 'Starter.kt').read_text())
         artwork = (ui / 'StarterArtwork.kt').read_text()
         self.assertIn('R.drawable.reedance_starter', artwork)
@@ -930,7 +951,7 @@ class AssetTests(unittest.TestCase):
         app = (ui / 'App.kt').read_text()
         self.assertIn('com.hydro.reedance.StarterActivity::class.java', app)
         self.assertIn('{ navigate("explore") })', app)
-        catalog = (ui / 'Catalog.kt').read_text()
+        catalog = (ui / 'ProfileCards.kt').read_text()
         self.assertIn('PressButton(starter, Modifier.fillMaxWidth().heightIn(min = 52.dp)', catalog)
         self.assertNotIn('PressTextButton(starter)', catalog)
 

@@ -1,6 +1,5 @@
 package com.hydro.reedance.ui
 
-import android.provider.Settings as AndroidSettings
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -29,9 +28,8 @@ import com.hydro.reedance.data.*
     val ready by model.ready.collectAsStateWithLifecycle()
     val density = LocalDensity.current
     val context = LocalContext.current
-    val systemReduced = AndroidSettings.Global.getFloat(context.contentResolver, AndroidSettings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
     val fa = settings.language != "en"
-    CompositionLocalProvider(LocalFa provides fa, LocalReducedMotion provides (settings.reduceMotion || systemReduced), LocalLayoutDirection provides if(fa) LayoutDirection.Rtl else LayoutDirection.Ltr,
+    CompositionLocalProvider(LocalFa provides fa, LocalReducedMotion provides false, LocalLayoutDirection provides if(fa) LayoutDirection.Rtl else LayoutDirection.Ltr,
         LocalDensity provides Density(density.density, density.fontScale * listOf(.9f, 1f, 1.15f)[settings.textSize.coerceIn(0,2)])) {
         ReedanceTheme(settings) {
             val lightBars = MaterialTheme.colorScheme.background.luminance() > .5f
@@ -129,7 +127,7 @@ import com.hydro.reedance.data.*
     }, bottomBar = {
         if(!independent) Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             if(started) activePlayback?.let { active ->
-                MiniPlayer(active, playing, model::toggleActivePlayback, { songId = active.songId; navigate("song") })
+                MiniPlayer(active, playing, model::toggleActivePlayback, { songId = active.songId; navigate("song") }, compact = compactNavigation)
             }
             FloatingNavigation(page, compactNavigation, ::navigate)
         }
