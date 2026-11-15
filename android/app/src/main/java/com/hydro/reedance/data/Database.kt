@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Entity(primaryKeys = ["songId", "itemType", "itemId"])
 data class Bookmark(val songId: String, val itemType: String, val itemId: String, val createdAt: Long = System.currentTimeMillis())
-@Entity data class ReviewCard(@PrimaryKey val lexemeId: String, val stage: Int = 1, val dueAt: Long = System.currentTimeMillis(), val savedAt: Long = System.currentTimeMillis())
+@Entity(primaryKeys = ["songId", "lexemeId"]) data class ReviewCard(val lexemeId: String, val stage: Int = 1, val dueAt: Long = System.currentTimeMillis(), val savedAt: Long = System.currentTimeMillis(), val songId: String = "")
 @Entity(primaryKeys = ["targetLanguage", "stepId"])
 data class StarterProgress(val targetLanguage: String, val stepId: Int, val completedAt: Long = System.currentTimeMillis())
 @Entity data class SongPlayback(@PrimaryKey val songId: String, val positionMs: Long)
@@ -21,7 +21,7 @@ data class QuizResult(val songId: String, val questionId: String, val versionCod
     @Delete suspend fun deleteBookmark(value: Bookmark)
     @Query("SELECT * FROM ReviewCard ORDER BY dueAt") fun reviews(): Flow<List<ReviewCard>>
     @Upsert suspend fun saveReview(value: ReviewCard)
-    @Query("SELECT * FROM ReviewCard WHERE lexemeId = :id") suspend fun review(id: String): ReviewCard?
+    @Query("SELECT * FROM ReviewCard WHERE lexemeId = :id AND songId = :song") suspend fun review(id: String, song: String): ReviewCard?
     @Query("SELECT * FROM StarterProgress") fun starter(): Flow<List<StarterProgress>>
     @Query("SELECT EXISTS(SELECT 1 FROM StarterProgress WHERE targetLanguage = :lang AND stepId = :step)") suspend fun hasStep(lang: String, step: Int): Boolean
     @Upsert suspend fun saveStep(value: StarterProgress)
@@ -42,13 +42,23 @@ data class QuizResult(val songId: String, val questionId: String, val versionCod
     @Query("SELECT * FROM SeenManifest WHERE songId = :id") suspend fun seen(id: String): SeenManifest?
     @Upsert suspend fun saveSeen(value: SeenManifest)
 }
-@Database(entities = [Bookmark::class, ReviewCard::class, StarterProgress::class, SongPlayback::class, QuizResult::class, InstalledPackage::class, SeenManifest::class], version = 1, exportSchema = false)
+@Database(entities = [Bookmark::class, ReviewCard::class, StarterProgress::class, SongPlayback::class, QuizResult::class, InstalledPackage::class, SeenManifest::class], version = 2, exportSchema = false)
 abstract class LearningDatabase: RoomDatabase() {
     abstract fun learning(): LearningDao
     companion object {
+        val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE ReviewCard_new (lexemeId TEXT NOT NULL, stage INTEGER NOT NULL, dueAt INTEGER NOT NULL, savedAt INTEGER NOT NULL, songId TEXT NOT NULL, PRIMARY KEY(songId, lexemeId))")
+                db.execSQL("INSERT INTO ReviewCard_new SELECT r.lexemeId, r.stage, r.dueAt, r.savedAt, b.songId FROM ReviewCard r JOIN Bookmark b ON b.itemId = r.lexemeId AND b.itemType = 'vocabulary' GROUP BY b.songId, r.lexemeId")
+                // Preserve unassignable historical progress rather than guessing its language.
+                db.execSQL("INSERT OR IGNORE INTO ReviewCard_new SELECT lexemeId, stage, dueAt, savedAt, '' FROM ReviewCard WHERE lexemeId NOT IN (SELECT lexemeId FROM ReviewCard_new)")
+                db.execSQL("DROP TABLE ReviewCard")
+                db.execSQL("ALTER TABLE ReviewCard_new RENAME TO ReviewCard")
+            }
+        }
         @Volatile private var instance: LearningDatabase? = null
         fun get(context: Context): LearningDatabase = instance ?: synchronized(this) {
-            instance ?: Room.databaseBuilder(context.applicationContext, LearningDatabase::class.java, "learning.db").build().also { instance = it }
+            instance ?: Room.databaseBuilder(context.applicationContext, LearningDatabase::class.java, "learning.db").addMigrations(MIGRATION_1_2).build().also { instance = it }
         }
     }
 }

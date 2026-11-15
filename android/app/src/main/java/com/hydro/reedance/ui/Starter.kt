@@ -39,7 +39,7 @@ import com.hydro.reedance.data.*
                         Text(group.tr("name", fa), style = MaterialTheme.typography.titleLarge)
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             group.a("letters").forEach { letter ->
-                                PressOutlinedButton({ model.speak(letter.s("glyph"), course.s("locale")) }) { Column {
+                                Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)) { Column(Modifier.padding(12.dp)) {
                                     Text(letter.s("glyph"), style = MaterialTheme.typography.titleLarge)
                                     Text(letter.s("name"), style = MaterialTheme.typography.bodySmall)
                                     if(fa) Text(letter.s("faHint"), style = MaterialTheme.typography.bodySmall)
@@ -53,9 +53,8 @@ import com.hydro.reedance.data.*
                 Foreign(sound.s("symbol"), large = true); Foreign(sound.s("example")); Foreign(sound.s("reading"))
                 if(fa) Text(sound.s("faReading"))
                 Text(sound.tr("tip", fa))
-                PressTextButton({ model.speak(sound.s("example"), course.s("locale")) }) { Text(tr("شنیدن تلفظ", "Hear pronunciation")) }
             } }
-            2 -> items(course.a("grammar"), contentType = { "grammar" }) { note -> LearningNote(note, { model.speak(it, course.s("locale")) }) }
+            2 -> items(course.a("grammar"), contentType = { "grammar" }) { note -> LearningNote(note) }
             3 -> {
                 item(key = "words-intro") { Text(course.tr("wordsIntro", fa)) }
                 items(course.a("words"), contentType = { "word" }) { word -> Panel {
@@ -66,7 +65,6 @@ import com.hydro.reedance.data.*
                     Text(word.tr("part", fa), style = MaterialTheme.typography.labelMedium)
                     Foreign(word.s("example"))
                     Text(word.tr("example", fa))
-                    PressTextButton({ model.speak(word.s("text").ifEmpty { word.s("word") }, course.s("locale")) }) { Text(tr("شنیدن", "Listen")) }
                 } }
                 items(course.a("vocabularyTables"), contentType = { "table" }) { Panel { LearningTable(it) } }
             }
@@ -75,7 +73,6 @@ import com.hydro.reedance.data.*
                 Foreign(practice.s("line"), large = true)
                 if(fa) Text(practice.s("faReading"))
                 Text(practice.tr("translation", fa))
-                PressTextButton({ model.speak(practice.s("line"), course.s("locale")) }) { Text(tr("شنیدن سطر", "Hear the line")) }
                 practice.a("pieces").forEach { part -> Foreign(part.s("text")); Text(part.s(if(fa) "fa" else "en")); HorizontalDivider() }
                 Text(practice.tr("tip", fa))
             } }

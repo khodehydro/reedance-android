@@ -145,9 +145,9 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                             items(lines.take(access.limit("lyrics")), key = { "lyric-${it.s("id")}" }, contentType = { "lyric" }) { line -> renderLine(line) }
                         }
                         if(lines.size > access.limit("lyrics")) item(key = "lyrics-preview") { PremiumPreview() }
-                        item(key = "lyric-quiz") { Action(tr("آماده‌ای؟ خودت را امتحان کن", "Ready? Test what you learned"), Modifier.fillMaxWidth(), onClick = openQuiz) }
+                        item(key = "lyric-quiz") { SongQuizInvitation(openQuiz) }
                     }
-                    1 -> { items(data.a("grammar").take(access.limit("grammar")), key = { "grammar-${it.s("id")}" }, contentType = { "note" }) { note -> LearningNote(note, model::speak) { SaveAction(model, "grammar", note.s("id")) } }
+                    1 -> { items(data.a("grammar").take(access.limit("grammar")), key = { "grammar-${it.s("id")}" }, contentType = { "note" }) { note -> LearningNote(note) { SaveAction(model, "grammar", note.s("id")) } }
                         if(data.a("grammar").size > access.limit("grammar")) item(key = "grammar-preview") { PremiumPreview() }
                     }
                     2 -> {
@@ -155,11 +155,10 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                         items(data.a("vocabulary").take(access.limit("vocabulary")), key = { "word-${it.s("lexemeId")}" }, contentType = { "word" }) { word -> Panel {
                             Foreign(word.s("lemma"), large = true)
                             Text(word.tr("translation", fa))
-                            Foreign(word.s("ipa")); if(fa) Text(word.s("faReading"))
+                            WrittenPronunciation(word)
                             Text(word.tr("part", fa), style = MaterialTheme.typography.labelMedium)
                             Foreign(word.obj("example").s("text"))
                             Text(word.obj("example").tr("translation", fa))
-                            PressTextButton({ model.speak(word.s("lemma")) }) { Text(tr("تلفظ", "Pronounce")) }
                             SaveAction(model, "vocabulary", word.s("lexemeId"))
                         } }
                         if(data.a("vocabulary").size > access.limit("vocabulary") || (access.preview && data.a("vocabularyTables").isNotEmpty())) item(key = "words-preview") { PremiumPreview() }
@@ -186,11 +185,9 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     )
     selectedWord?.let { word -> ReedanceBottomSheet(onDismissRequest = { selectedWord = null }) {
         Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Foreign(word.s("lemma"), large = true); Foreign(word.s("ipa"))
-            if(fa) Text(word.s("faReading"))
+            Foreign(word.s("lemma"), large = true); WrittenPronunciation(word)
             Text(word.tr("translation", fa), style = MaterialTheme.typography.titleLarge)
             Foreign(word.obj("example").s("text")); Text(word.obj("example").tr("translation", fa))
-            PressTextButton({ model.speak(word.s("lemma")) }) { Text(tr("شنیدن تلفظ", "Hear pronunciation")) }
             if(word.s("lexemeId").isNotEmpty()) SaveAction(model, "vocabulary", word.s("lexemeId"))
             Spacer(Modifier.height(24.dp))
         }
@@ -254,18 +251,18 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     val playing by model.playing.collectAsStateWithLifecycle()
     val position by model.position.collectAsStateWithLifecycle()
     Surface(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), shape = RoundedCornerShape(18.dp),
-        color = Color(0xFF0B0B0B), contentColor = Color.White) {
+        color = MaterialTheme.colorScheme.surfaceContainerLowest, contentColor = MaterialTheme.colorScheme.onSurface) {
         Box {
             Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f).clickable(onClick = expand).padding(horizontal = 8.dp)) {
-                    Text(data.s("title"), maxLines = 1, overflow = TextOverflow.Ellipsis, color = Color.White, style = MaterialTheme.typography.bodyMedium)
-                    Text(clock(position), fontSize = 11.sp, color = Color.White)
+                    Text(data.s("title"), maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.bodyMedium)
+                    Text(clock(position), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface)
                 }
                 PressIconButton({ model.seek(position - 10000) }) {
-                    AppIcon(UiIcons.Replay10, tr("۱۰ ثانیه عقب", "Back 10 seconds"), Modifier.size(18.dp), tint = Color.White)
+                    AppIcon(UiIcons.Replay10, tr("۱۰ ثانیه عقب", "Back 10 seconds"), Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurface)
                 }
                 PressIconButton(model::togglePlay) {
-                    AppIcon(if(playing) UiIcons.PauseFilled else UiIcons.PlayFilled, tr("پخش یا مکث", "Play or pause"), Modifier.size(20.dp), tint = Color.White)
+                    AppIcon(if(playing) UiIcons.PauseFilled else UiIcons.PlayFilled, tr("پخش یا مکث", "Play or pause"), Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurface)
                 }
             }
         }

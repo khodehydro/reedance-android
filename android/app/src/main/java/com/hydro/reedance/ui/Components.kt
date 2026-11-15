@@ -145,7 +145,7 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
         table.tr("footer", fa).takeIf { it.isNotEmpty() }?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
     }
 }
-@Composable fun LearningNote(note: JsonObject, onSpeak: (String) -> Unit, save: (@Composable () -> Unit)? = null) {
+@Composable fun LearningNote(note: JsonObject, save: (@Composable () -> Unit)? = null) {
     val fa = LocalFa.current
     var answer by remember(note) { mutableStateOf(false) }
     val color = when(note.s("tone")) {
@@ -155,12 +155,12 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
         Text(note.tr("tag", fa), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelMedium)
         Text(note.tr("title", fa), style = MaterialTheme.typography.titleLarge)
         Text(note.tr("body", fa).ifEmpty { note.tr("tip", fa) })
+        WrittenPronunciation(note)
         val ex = note.get("example")
         val text = if(ex?.isJsonObject == true) ex.asJsonObject.s("text") else if(ex?.isJsonPrimitive == true) ex.asString else ""
         if(text.isNotEmpty()) {
             Foreign(text)
             Text(if(ex?.isJsonObject == true) ex.asJsonObject.tr("translation", fa) else note.tr("translation", fa))
-            PressTextButton({ onSpeak(text) }) { Text(tr("شنیدن نمونه", "Hear example")) }
         }
         note.a("tables").forEach { LearningTable(it) }
         note.tr("takeaway", fa).takeIf { it.isNotEmpty() }?.let { Text(it, style = MaterialTheme.typography.titleSmall) }

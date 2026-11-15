@@ -13,13 +13,16 @@ import kotlinx.coroutines.launch
 
 @Composable fun ReviewScreen(model: AppModel, quiz: () -> Unit) {
     val reviews by model.reviews.collectAsStateWithLifecycle()
-    val lesson by model.lesson.collectAsStateWithLifecycle()
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) { while(true) { delay(1000); now = System.currentTimeMillis() } }
     val due = reviews.filter { it.dueAt <= now }
     val card = due.firstOrNull()
-    val word = lesson?.a("vocabulary")?.find { it.s("lexemeId") == card?.lexemeId }
-    var reveal by remember(card?.lexemeId) { mutableStateOf(false) }
+    val reviewLesson by produceState<com.google.gson.JsonObject?>(null, card?.songId) {
+        value = null
+        value = card?.let { try { model.lessonForReview(it.songId) } catch(cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch(_: Exception) { null } }
+    }
+    val word = reviewLesson?.takeIf { it.s("songId") == card?.songId }?.a("vocabulary")?.find { it.s("lexemeId") == card?.lexemeId }
+    var reveal by remember(card?.songId, card?.lexemeId) { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val reduced = LocalReducedMotion.current
@@ -32,12 +35,11 @@ import kotlinx.coroutines.launch
         } } }
         Text(tr("${due.size} واژه آمادهٔ مرور", "${due.size} words ready to review"))
         if(card != null && word != null) {
-            Deck(card.lexemeId) {
+            Deck("${card.songId}:${card.lexemeId}") {
                 Panel(tone = MaterialTheme.colorScheme.secondaryContainer) {
                     Text(tr("کارت واژه · خانهٔ ${card.stage}", "WORD CARD · STAGE ${card.stage}"), style = MaterialTheme.typography.labelMedium)
                     Foreign(word.s("lemma"), large = true)
-                    Foreign(word.s("ipa"))
-                    if(fa) Text(word.s("faReading"))
+                    WrittenPronunciation(word)
                     if(!reveal) Action(tr("برگرداندن کارت", "Reveal meaning")) { reveal = true }
                     else {
                         Text(word.tr("translation", fa), style = MaterialTheme.typography.titleLarge)
@@ -49,22 +51,27 @@ import kotlinx.coroutines.launch
                     }
                 }
             }
-            PressOutlinedButton(quiz, Modifier.fillMaxWidth()) { Text(tr("مرور با سؤال", "Practice with questions")) }
+            PressOutlinedButton({ card?.let { scope.launch { model.openInstalled(it.songId); quiz() } } }, Modifier.fillMaxWidth()) { Text(tr("مرور با سؤال", "Practice with questions")) }
         } else Panel {
-            Text(if(reviews.isEmpty()) tr("در تب لغت‌های آهنگ، واژه‌ای را نشان کن تا به جعبه‌ات بیاید.", "Save a word in the song lesson to start your collection.") else if(lesson == null) tr("برای نمایش کارت‌ها، بستهٔ آهنگ را دوباره نصب کن. پیشرفتت حفظ شده است.", "Reinstall the song to view these cards. Your progress is preserved.") else tr("عالی بود! واژه‌ها در موعد بعدی برمی‌گردند.", "All caught up! Your words will return when they are due."))
+            Text(if(reviews.isEmpty()) tr("در تب لغت‌های آهنگ، واژه‌ای را نشان کن تا به جعبه‌ات بیاید.", "Save a word in the song lesson to start your collection.") else if(card != null) tr("برای نمایش کارت‌ها، بستهٔ آهنگ را دوباره نصب کن. پیشرفتت حفظ شده است.", "Reinstall the song to view these cards. Your progress is preserved.") else tr("عالی بود! واژه‌ها در موعد بعدی برمی‌گردند.", "All caught up! Your words will return when they are due."))
         }
         Text(tr("پاسخ درست: خانهٔ بعد با فاصلهٔ ۲، ۴، ۸ و ۱۶ روز. فراموشی: خانهٔ اول، یک دقیقهٔ دیگر.", "Remembered: next stage in 2, 4, 8 or 16 days. Forgotten: stage one, due in one minute."), style = MaterialTheme.typography.bodySmall)
     }
 }
 @Composable fun LibraryScreen(model: AppModel, song: (String) -> Unit) {
     val bookmarks by model.bookmarks.collectAsStateWithLifecycle()
+    val settings by model.settings.collectAsStateWithLifecycle()
     val catalog by model.catalog.collectAsStateWithLifecycle()
     val installedIds by model.installedIds.collectAsStateWithLifecycle()
-    val lesson by model.lesson.collectAsStateWithLifecycle()
-    var index by remember { mutableIntStateOf(0) }
+    var index by remember(settings.targetLanguage) { mutableIntStateOf(0) }
     var reveal by remember(index) { mutableStateOf(false) }
     val fa = LocalFa.current
-    val savedPhrases = bookmarks.filter { it.itemType in listOf("idioms", "sentences") }.mapNotNull { mark -> lesson?.a(mark.itemType)?.find { it.s("id") == mark.itemId } }
+    val savedLessons by produceState<Map<String, com.google.gson.JsonObject>>(emptyMap(), bookmarks) {
+        value = bookmarks.map { it.songId }.distinct().mapNotNull { id ->
+            try { model.lessonForReview(id)?.let { id to it } } catch(cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch(_: Exception) { null }
+        }.toMap()
+    }
+    val savedPhrases = bookmarks.filter { it.itemType in listOf("idioms", "sentences") }.mapNotNull { mark -> savedLessons[mark.songId]?.a(mark.itemType)?.find { it.s("id") == mark.itemId } }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 24.dp + LocalOverlayBottomInset.current), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         Heading(tr("کتابخانهٔ تو", "Your little collection"), tr("چیزهایی که می‌خواهی همراهت بمانند.", "Keep the words and lines that speak to you."))
         if(savedPhrases.isNotEmpty()) {
@@ -84,13 +91,13 @@ import kotlinx.coroutines.launch
             Text(tr("${bookmarks.size} مورد نشان‌شده", "${bookmarks.size} saved items"), style = MaterialTheme.typography.titleLarge)
             if(bookmarks.isEmpty()) Text(tr("از صفحهٔ آهنگ، واژه‌ها و جمله‌های دلخواهت را نشان کن.", "Save your favourite words and lines from a song."))
             bookmarks.forEach { mark ->
-                val item = lesson?.a(mark.itemType)?.find { it.s(if(mark.itemType == "vocabulary") "lexemeId" else "id") == mark.itemId }
-                Text(item?.let { it.s("lemma").ifEmpty { it.s("text").ifEmpty { it.tr("title", fa) } } } ?: mark.itemId)
+                val item = savedLessons[mark.songId]?.a(mark.itemType)?.find { it.s(if(mark.itemType == "vocabulary") "lexemeId" else "id") == mark.itemId }
+                Text(if(mark.itemType == "song") catalog.find { it.s("id") == mark.songId }?.s("title") ?: mark.songId else item?.let { it.s("lemma").ifEmpty { it.s("text").ifEmpty { it.tr("title", fa) } } } ?: mark.itemId)
                 if(item == null && mark.itemType != "song") Text(tr("در محتوای قبلی؛ پیشرفت حفظ شده", "From previous content; progress preserved"), style = MaterialTheme.typography.bodySmall)
-                PressTextButton({ model.toggleBookmark(mark.itemType, mark.itemId) }) { Text(tr("حذف نشان", "Remove bookmark")) }
+                PressTextButton({ model.toggleBookmark(mark.itemType, mark.itemId, mark.songId) }) { Text(tr("حذف نشان", "Remove bookmark")) }
             }
         }
-        val installedSongs = catalog.filter { it.s("id") in installedIds }
+        val installedSongs = catalog.filter { it.s("id") in installedIds && it.s("language") == settings.targetLanguage }
         if(installedSongs.isEmpty()) Panel {
             Text(tr("هنوز آهنگی نصب نشده است.", "No songs installed yet."))
         }

@@ -26,7 +26,7 @@ import com.hydro.reedance.data.*
             AppIcon(UiIcons.User, null, Modifier.size(36.dp), tint = MaterialTheme.colorScheme.primary)
             Text(tr("سلام، همراه مهمان", "Hello, guest"), style = MaterialTheme.typography.titleLarge)
             Text(tr("حساب یا همگام‌سازی ابری فعال نیست. پیشرفت فقط روی این دستگاه ذخیره می‌شود.", "No account or cloud sync. Your progress stays on this device."))
-            Text(tr("${reviews.size} واژه · ${steps.size} قدم استارتر · $resultCount پاسخ ثبت‌شده", "${reviews.size} words · ${steps.size} starter steps · $resultCount answers"))
+            Text(tr("${reviews.size} واژه · ${steps.count { it.targetLanguage == settings.targetLanguage }} قدم استارتر · $resultCount پاسخ ثبت‌شده", "${reviews.size} words · ${steps.count { it.targetLanguage == settings.targetLanguage }} starter steps · $resultCount answers"))
             PressTextButton(library) { Text(tr("کتابخانهٔ من", "My library")) }
         }
         Panel {

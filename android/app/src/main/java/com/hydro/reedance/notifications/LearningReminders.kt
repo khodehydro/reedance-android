@@ -66,15 +66,17 @@ class LearningReminderWorker(context: Context, parameters: WorkerParameters): Co
             Result.success()
         } else {
             val dao = LearningDatabase.get(context).learning()
-            val due = dao.dueCount(now)
-            val steps = dao.stepCount()
+            val languageIds = com.hydro.reedance.data.LocalContentRepository(context, dao).catalog()
+                .filter { it.get("language")?.asString == settings.targetLanguage }.map { it.get("id").asString }.toSet()
+            val due = dao.dueReviews(now).count { it.songId in languageIds }
+            val steps = dao.starter().first().count { it.targetLanguage == settings.targetLanguage }
             val fa = settings.language == "fa"
             val stage = ReminderPolicy.stage(now - settings.lastVisit)
             val text = ReminderPolicy.message(stage, due, steps, fa)
             // Recheck opt-in and foreground state immediately before posting.
             withContext(Dispatchers.Main) {
                 val latest = preferences.flow.first()
-                if(latest.reminders && latest.lastVisit == settings.lastVisit && LearningReminders.permitted(context) &&
+                if(latest.reminders && latest.targetLanguage == settings.targetLanguage && latest.lastVisit == settings.lastVisit && LearningReminders.permitted(context) &&
                     !ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
                     val manager = context.getSystemService(NotificationManager::class.java)
                     manager.createNotificationChannel(NotificationChannel(LearningReminders.CHANNEL,

@@ -101,7 +101,7 @@ class AssetTests(unittest.TestCase):
         mini_toggle = model.split('fun toggleActivePlayback()')[1].split('fun preparePlayback()')[0]
         self.assertNotIn('prepareMedia()', mini_toggle)
         self.assertNotIn('lesson.value', mini_toggle)
-        self.assertIn('Color(0xFF0B0B0B)', mini)
+        self.assertIn('color = MaterialTheme.colorScheme.surfaceContainerLowest', mini)
         self.assertNotIn('BannerGradient(', mini)
         gradient = (ui / 'BannerGradient.kt').read_text()
         self.assertIn('MIDNIGHT_FLUID_SHADER', gradient)
@@ -110,7 +110,7 @@ class AssetTests(unittest.TestCase):
         self.assertIn('float t = time * 0.30', gradient)
         self.assertIn('val drift = if(midnight) .55f else .14f', gradient)
         self.assertIn('if(palette == FluidPalette.Midnight) 66_000_000L', gradient)
-        self.assertIn('contentColor = Color.White', mini)
+        self.assertIn('contentColor = MaterialTheme.colorScheme.onSurface', mini)
         self.assertIn('UiIcons.PauseFilled else UiIcons.PlayFilled', mini)
         self.assertIn('Modifier.size(18.dp)', mini)
         self.assertIn('Modifier.size(32.dp).clip(CircleShape)', mini)
@@ -257,7 +257,7 @@ class AssetTests(unittest.TestCase):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'
         song = (ui / 'Song.kt').read_text()
         compact = song.split('@Composable private fun CompactSongController')[1]
-        self.assertIn('Color(0xFF0B0B0B)', compact)
+        self.assertIn('color = MaterialTheme.colorScheme.surfaceContainerLowest', compact)
         self.assertNotIn('BannerGradient(', compact)
         full = song.split('@Composable private fun PlayerPanel')[1].split('@Composable private fun CompactSongController')[0]
         self.assertIn('BannerGradient(', full)
@@ -342,6 +342,40 @@ class AssetTests(unittest.TestCase):
         self.assertIn('cubicTo(', tabs)
         self.assertIn('if(rtl) size.width - x else x', tabs)
         self.assertIn('if(LocalReducedMotion.current) 0 else 260', tabs)
+
+    def test_review_migration_preserves_progress_and_separates_duplicate_lexemes(self):
+        import sqlite3, re
+        source = (ASSETS / 'main/java/com/hydro/reedance/data/Database.kt').read_text()
+        db = sqlite3.connect(':memory:')
+        db.executescript("""
+            CREATE TABLE ReviewCard(lexemeId TEXT PRIMARY KEY, stage INTEGER, dueAt INTEGER, savedAt INTEGER);
+            CREATE TABLE Bookmark(songId TEXT, itemType TEXT, itemId TEXT);
+            INSERT INTO ReviewCard VALUES ('same', 3, 1234, 56), ('orphan', 2, 444, 55);
+            INSERT INTO Bookmark VALUES ('turkish', 'vocabulary', 'same'), ('english', 'vocabulary', 'same');
+        """)
+        migration = source.split('override fun migrate(')[1].split('@Volatile')[0]
+        for sql in re.findall(r'db.execSQL\("([^"\n]+)"\)', migration): db.execute(sql)
+        self.assertEqual([('english', 'same', 3), ('turkish', 'same', 3), ('', 'orphan', 2)],
+            db.execute('SELECT songId, lexemeId, stage FROM ReviewCard ORDER BY lexemeId DESC, songId').fetchall())
+        db.execute("UPDATE ReviewCard SET stage=5 WHERE songId='turkish'")
+        self.assertEqual(3, db.execute("SELECT stage FROM ReviewCard WHERE songId='english'").fetchone()[0])
+        self.assertIn('addMigrations(MIGRATION_1_2)', source)
+
+    def test_language_scoped_learning_and_written_pronunciations(self):
+        model = (ASSETS / 'main/java/com/hydro/reedance/data/AppModel.kt').read_text()
+        self.assertIn('it.s("language") == prefs.targetLanguage', model)
+        for token in ['combine(dao.bookmarks(), languageSongIds)', 'combine(dao.reviews(), languageSongIds)', 'combine(dao.results(), languageSongIds)', 'dao.review(card.lexemeId, card.songId)']:
+            self.assertIn(token, model)
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        library = (ui / 'Library.kt').read_text()
+        self.assertIn('model.lessonForReview(it.songId)', library)
+        self.assertIn('savedLessons[mark.songId]', library)
+        self.assertIn('model.toggleBookmark(mark.itemType, mark.itemId, mark.songId)', library)
+        for name in ['Song.kt', 'Starter.kt', 'Quiz.kt', 'Components.kt']:
+            self.assertNotIn('model.speak', (ui / name).read_text())
+        extra = (ui / 'SongLearningExtras.kt').read_text()
+        self.assertIn('.filter { it.isNotBlank() }.distinct()', extra)
+        self.assertIn('SongQuizInvitation(openQuiz)', (ui / 'Song.kt').read_text())
 
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))
@@ -620,7 +654,7 @@ class AssetTests(unittest.TestCase):
         for permission in ['WRITE_EXTERNAL_STORAGE', 'READ_EXTERNAL_STORAGE', 'MANAGE_EXTERNAL_STORAGE', 'SCHEDULE_EXACT_ALARM']:
             self.assertNotIn(permission, manifest)
         worker = (ASSETS / 'main/java/com/hydro/reedance/notifications/LearningReminders.kt').read_text()
-        for token in ['enqueueUniqueWork', 'ExistingWorkPolicy.APPEND_OR_REPLACE', 'cancelUniqueWork', 'ReminderPolicy.eligible', 'dueCount(now)', 'stepCount()', 'FLAG_IMMUTABLE', 'catch(_: SecurityException)']:
+        for token in ['enqueueUniqueWork', 'ExistingWorkPolicy.APPEND_OR_REPLACE', 'cancelUniqueWork', 'ReminderPolicy.eligible', 'dueReviews(now)', 'it.targetLanguage == settings.targetLanguage', 'FLAG_IMMUTABLE', 'catch(_: SecurityException)']:
             self.assertIn(token, worker)
         self.assertNotIn('http', worker)
         self.assertIn('ReminderControls(model)', (ui / 'Profile.kt').read_text())

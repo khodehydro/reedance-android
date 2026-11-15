@@ -54,9 +54,9 @@ private class PressNode(private val source: InteractionSource, private val enabl
     Button(onClick, modifier.pressFeedback(source), enabled = enabled, shape = shape, colors = colors, interactionSource = source, content = content)
 }
 @Composable fun PressOutlinedButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
-    colors: ButtonColors = ButtonDefaults.outlinedButtonColors(), content: @Composable RowScope.() -> Unit) {
+    colors: ButtonColors = ButtonDefaults.outlinedButtonColors(), shape: Shape = ButtonDefaults.outlinedShape, content: @Composable RowScope.() -> Unit) {
     val source = remember { MutableInteractionSource() }
-    OutlinedButton(onClick, modifier.pressFeedback(source), enabled = enabled, colors = colors, interactionSource = source, content = content)
+    OutlinedButton(onClick, modifier.pressFeedback(source), enabled = enabled, colors = colors, shape = shape, interactionSource = source, content = content)
 }
 @Composable fun PressTextButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, content: @Composable RowScope.() -> Unit) {
     val source = remember { MutableInteractionSource() }

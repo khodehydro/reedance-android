@@ -57,11 +57,18 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
     val preferences = SettingsRepository(app)
     val settings = preferences.flow.onEach { StarterPreload.settings = it; settingsLoaded = true }.stateIn(viewModelScope, SharingStarted.Eagerly, preload?.settings ?: Settings())
     val ready = MutableStateFlow(preload != null)
-    val bookmarks = dao.bookmarks().distinctUntilChanged().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-    val reviews = dao.reviews().distinctUntilChanged().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
     val steps = dao.starter().distinctUntilChanged().onEach { StarterPreload.steps = it; stepsLoaded = true }.stateIn(viewModelScope, SharingStarted.Eagerly, preload?.steps ?: emptyList())
-    val resultCount = dao.resultCount().distinctUntilChanged().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
     val catalog = MutableStateFlow<List<JsonObject>>(emptyList())
+    private val languageSongIds = combine(catalog, settings) { songs, prefs ->
+        songs.filter { it.s("language") == prefs.targetLanguage }.map { it.s("id") }.toSet()
+    }
+    val bookmarks = combine(dao.bookmarks(), languageSongIds) { rows, ids -> rows.filter { it.songId in ids } }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val reviews = combine(dao.reviews(), languageSongIds) { rows, ids -> rows.filter { it.songId in ids } }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val resultCount = combine(dao.results(), languageSongIds) { rows, ids -> rows.count { it.songId in ids } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
     val starters = MutableStateFlow(preload?.courses ?: JsonObject())
     val lesson = MutableStateFlow<JsonObject?>(null)
     val busy = MutableStateFlow(false)
@@ -316,7 +323,7 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
         val old = dao.bookmark(song, type, id)
         if(old != null) dao.deleteBookmark(old) else {
             dao.saveBookmark(Bookmark(song, type, id))
-            if(type == "vocabulary" && dao.review(id) == null) dao.saveReview(ReviewCard(id))
+            if(type == "vocabulary" && dao.review(id, song) == null) dao.saveReview(ReviewCard(id, songId = song))
         }
     } }
     private fun learningMutation(block: suspend () -> Boolean) = operation("ذخیره پیشرفت ناموفق / Progress save failed") {
@@ -328,17 +335,26 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
         else { dao.saveStep(StarterProgress(lang, step)); true }
     } }
     fun review(card: ReviewCard, remembered: Boolean) { learningMutation {
-        val current = dao.review(card.lexemeId) ?: return@learningMutation false
+        val current = dao.review(card.lexemeId, card.songId) ?: return@learningMutation false
         if(current.stage != card.stage || current.dueAt != card.dueAt) return@learningMutation false
         val next = schedule(current.stage, remembered, System.currentTimeMillis())
         dao.saveReview(current.copy(stage = next.stage, dueAt = next.dueAt))
         true
     } }
-    suspend fun dueReviewCards() = dao.dueReviews(System.currentTimeMillis())
-    fun record(q: JsonObject, answer: List<String>, grade: Grade) { learningMutation {
+    suspend fun dueReviewCards(): List<ReviewCard> {
+        val ids = catalog.value.filter { it.s("language") == settings.value.targetLanguage }.map { it.s("id") }.toSet()
+        return dao.dueReviews(System.currentTimeMillis()).filter { it.songId in ids && it.songId == lesson.value?.s("songId") }
+    }
+    suspend fun lessonForReview(songId: String): JsonObject? = content.installedLesson(songId)
+
+    fun record(q: JsonObject, answer: List<String>, grade: Grade) {
+        val sourceLesson = lesson.value ?: return
+        val sourceSong = sourceLesson.s("songId")
+        learningMutation {
         val encoded = withContext(Dispatchers.Default) { Gson().toJson(answer) }
-        dao.saveResult(QuizResult(lesson.value?.s("songId") ?: return@learningMutation false, q.s("id"), dao.installed(lesson.value!!.s("songId"))?.activeVersionCode ?: 1, encoded, grade.correct))
-        grade.missed.forEach { id -> val old = dao.review(id); dao.saveReview(ReviewCard(id, 1, System.currentTimeMillis(), old?.savedAt ?: System.currentTimeMillis())) }
+        dao.saveResult(QuizResult(sourceSong, q.s("id"), dao.installed(sourceSong)?.activeVersionCode ?: 1, encoded, grade.correct))
+        val song = sourceSong
+        grade.missed.forEach { id -> val old = dao.review(id, song); dao.saveReview(ReviewCard(id, 1, System.currentTimeMillis(), old?.savedAt ?: System.currentTimeMillis(), song)) }
         true
     } }
     override fun onCleared() {

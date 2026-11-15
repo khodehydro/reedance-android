@@ -45,7 +45,8 @@ private fun reviewQuestion(word: JsonObject, vocabulary: List<JsonObject>, index
 private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val questions: List<JsonObject>)
 @Composable fun QuizScreen(model: AppModel, review: Boolean, done: () -> Unit, openReview: () -> Unit) {
     val lesson by model.lesson.collectAsStateWithLifecycle()
-    val data = lesson
+    val settings by model.settings.collectAsStateWithLifecycle()
+    val data = lesson?.takeIf { it.s("targetLanguage") == settings.targetLanguage }
     if(data == null) { Column(Modifier.padding(24.dp)) { Text(tr("ابتدا بستهٔ آهنگ را نصب کن.", "Install a song lesson first.")); PressTextButton(done) { Text(tr("بازگشت", "Back")) } }; return }
     val session by produceState<QuizSessionData?>(null, data, review) {
         val due = if(review) model.dueReviewCards() else emptyList()
@@ -123,7 +124,6 @@ private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val qu
                             }
                         }
                     }
-                    if(q.s("speech").isNotEmpty()) PressTextButton({ model.speak(q.s("speech"), data.s("locale")) }) { Text(tr("شنیدن جمله با صدای دستگاه", "Hear sentence with device voice")) }
                     if(checked == null) Action(tr("بررسی پاسخ", "Check answer"), enabled = complete(q, answer) && !busy) {
                         if(!busy && checked == null) {
                             busy = true
