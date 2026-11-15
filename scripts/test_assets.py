@@ -383,9 +383,9 @@ class AssetTests(unittest.TestCase):
         self.assertIn('PracticeChoices(q, answer.singleOrNull(), checked, busy) { submit(listOf(it)) }', quiz)
         self.assertIn('if(!busy && checked == null && complete(q, submitted))', quiz)
         self.assertIn('if(q.s("type") != "choice") Action', quiz)
-        self.assertIn('if(!checked!!.correct || q.s("type") == "match") Action', quiz)
+        self.assertIn('if(!checked!!.correct) Action', quiz)
         effect = quiz.split('LaunchedEffect(index, checked, data, review)')[1].split('    Column')[0]
-        self.assertIn('if(result.correct && index < questions.size && questions[index].s("type") != "match")', effect)
+        self.assertIn('if(result.correct && index < questions.size)', effect)
         self.assertIn('delay(850)', effect)
         self.assertIn('index++', effect)
         choices = (ui / 'PracticeChoices.kt').read_text()
@@ -396,6 +396,8 @@ class AssetTests(unittest.TestCase):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'
         quiz = (ui / 'Quiz.kt').read_text()
         self.assertIn('"match" -> MatchBoard(', quiz)
+        self.assertIn('if(q.s("type") == "match" && !checked!!.correct)', quiz)
+        self.assertNotIn('if(!checked!!.correct ||', quiz)
         self.assertIn('MatchBoard(q, correctAnswer(q), true, false, onAnswer = {}, solution = true)', quiz)
         board = (ui / 'MatchBoard.kt').read_text()
         for token in ['Column(Modifier.weight(1f)', 'boundsInParent()', 'cubicTo(mid, y1, mid, y2, x2, y2)', 'if(pending != null) commit(', 'enabled && !checked && !solution', 'MatchGreen', 'MatchRed', 'stateDescription = state', 'answer.getOrNull(index) == meaning -> ""']:

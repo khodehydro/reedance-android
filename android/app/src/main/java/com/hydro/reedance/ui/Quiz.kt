@@ -71,7 +71,7 @@ private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val qu
     // This effect is cancelled when leaving the screen or changing the question/session.
     LaunchedEffect(index, checked, data, review) {
         val result = checked ?: return@LaunchedEffect
-        if(result.correct && index < questions.size && questions[index].s("type") != "match") {
+        if(result.correct && index < questions.size) {
             delay(850) // Keep success visible, including when decorative motion is disabled.
             grades = grades + Triple(questions[index], answer.toList(), result)
             index++
@@ -135,11 +135,11 @@ private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val qu
                     } else {
                         Text(if(checked!!.correct) tr("✓ آفرین، درست بود", "✓ You got it") else tr("نیاز به مرور؛ اشکالی ندارد", "Needs review — keep going"), style = MaterialTheme.typography.titleMedium)
                         Text(q.tr("explanation", fa))
-                        if(q.s("type") == "match") {
+                        if(q.s("type") == "match" && !checked!!.correct) {
                             Text(tr("پاسخ صحیح", "Correct matches"), style = MaterialTheme.typography.titleMedium)
                             MatchBoard(q, correctAnswer(q), true, false, onAnswer = {}, solution = true)
                         }
-                        if(!checked!!.correct || q.s("type") == "match") Action(tr("ادامه", "Continue"), enabled = !busy) {
+                        if(!checked!!.correct) Action(tr("ادامه", "Continue"), enabled = !busy) {
                             if(!busy) { busy = true; scope.launch {
                                 if(!reduced) delay(220)
                                 grades = grades + Triple(q, answer.toList(), checked!!)
