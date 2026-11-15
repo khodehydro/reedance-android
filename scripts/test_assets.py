@@ -660,6 +660,16 @@ class AssetTests(unittest.TestCase):
         self.assertNotIn('.offset {', page)
         self.assertIn('translationY = distance * (1f - progress.value)', page)
 
+    def test_profile_has_no_manual_package_file_import(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        controls = (ui / 'PackControls.kt').read_text()
+        for token in ['OpenDocument', 'rememberLauncherForActivityResult', 'picker.launch',
+                      'importLocalPackage', 'Choose and install rdpack', 'Local import does not verify']:
+            self.assertNotIn(token, controls)
+        # Internal bundled packages still require the existing secure password flow.
+        self.assertIn('model.savePackPassword(password)', controls)
+        self.assertIn('PasswordVisualTransformation()', controls)
+
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))
 
