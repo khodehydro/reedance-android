@@ -519,6 +519,15 @@ class AssetTests(unittest.TestCase):
         self.assertEqual('eye', icons['Eye']['glyph'])
         self.assertEqual('eye-crossed', icons['EyeClosed']['glyph'])
 
+    def test_table_cells_center_text_without_changing_bidi_direction(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        cell = (ui / 'LearningText.kt').read_text().split('@Composable internal fun LearningCell')[1].split('/** The answer')[0]
+        self.assertIn('textAlign = TextAlign.Center', cell)
+        self.assertIn('if(rtl) TextDirection.Rtl else TextDirection.Ltr', cell)
+        table = (ui / 'Components.kt').read_text().split('@Composable fun LearningTable')[1].split('@Composable fun LearningNote')[0]
+        self.assertIn('LearningCell(it.cell(fa)', table)
+        self.assertIn('LearningCell(cell.cell(fa)', table)
+
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))
 

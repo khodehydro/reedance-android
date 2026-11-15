@@ -72,8 +72,9 @@ alignment; typing fields for the currently supported LTR target languages do as
 well. Lyric translations retain centered alignment in single-line mode.
 
 Tables preserve column order across UI locales. Each cell respects an explicit
-exported `dir` (`rtl`/`ltr`); otherwise Persian-script content is right-aligned and
-original-language cells are left-aligned. UI/navigation labels retain UI-locale
+exported `dir` (`rtl`/`ltr`); otherwise paragraph direction is inferred from the cell content. All table
+headers and cell text are center-aligned, while Persian/target-language bidi
+direction remains independent of alignment. UI/navigation labels retain UI-locale
 behavior. Device checks should cover mixed Persian/Latin/numbers/parentheses,
 English and Persian interface, wrapped table cells and large text sizes.
 

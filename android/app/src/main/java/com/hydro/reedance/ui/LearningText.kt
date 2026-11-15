@@ -28,7 +28,7 @@ internal fun learningCellRtl(text: String, explicit: String = ""): Boolean = whe
     val rtl = learningCellRtl(text, explicit)
     Text(text, Modifier.width(152.dp).padding(12.dp),
         style = style.copy(textDirection = if(rtl) TextDirection.Rtl else TextDirection.Ltr,
-            textAlign = if(rtl) TextAlign.Right else TextAlign.Left))
+            textAlign = TextAlign.Center))
 }
 
 /** The answer is in the song language (currently LTR), never mirrored by an RTL interface. */
