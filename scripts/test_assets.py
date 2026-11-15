@@ -460,7 +460,7 @@ class AssetTests(unittest.TestCase):
         for token in ['fun PersianText(', 'modifier.fillMaxWidth()', 'textDirection = TextDirection.Rtl, textAlign = TextAlign.Right', '"rtl" -> true', '"ltr" -> false', 'textDirection = TextDirection.Ltr, textAlign = TextAlign.Left']:
             self.assertIn(token, helper)
         components = (ui / 'Components.kt').read_text()
-        self.assertIn('PersianText(note.tr("body", fa)', components)
+        self.assertIn('LearningSection("توضیح") { PersianText(body) }', components)
         self.assertIn('LearningCell(cell.cell(fa)', components)
         self.assertIn('textDirection = TextDirection.Ltr, textAlign =', components)
         quiz = (ui / 'Quiz.kt').read_text()
@@ -468,6 +468,17 @@ class AssetTests(unittest.TestCase):
         self.assertIn('PersianText(q.tr("explanation", fa)', quiz)
         self.assertIn('"typing" -> PracticeTypingField(', quiz)
         self.assertIn('PersianText((if(correct)', (ui / 'PracticeChoices.kt').read_text())
+
+    def test_learning_cards_have_theme_aware_sections_and_shared_word_sheet(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        cards = (ui / 'LearningCards.kt').read_text()
+        for token in ['fun WordLearningContent(', 'fun PhraseLearningContent(', 'LearningSection("معنی", accent = true)', 'LearningSection("تلفظ نوشتاری")', 'LearningSection("مثال در جمله")', 'LearningSection("کاربرد")', 'colors.secondaryContainer', 'colors.surfaceContainerLow', 'HorizontalDivider(', 'it.isNotBlank()']:
+            self.assertIn(token, cards)
+        self.assertNotIn('Color(0x', cards)
+        song = (ui / 'Song.kt').read_text()
+        self.assertEqual(2, song.count('WordLearningContent(word)'))
+        self.assertIn('PhraseLearningContent(item)', song)
+        self.assertIn('SaveAction(model, "vocabulary", word.s("lexemeId"))', song)
 
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))
@@ -640,7 +651,9 @@ class AssetTests(unittest.TestCase):
         for name in ['Song.kt', 'Starter.kt']:
             source = (ui / name).read_text()
             self.assertIn('LazyColumn(', source)
-            self.assertNotIn('.verticalScroll(', source)
+            # Word-detail sheets have their own bounded scroll; the main lesson stays lazy.
+            main = source.split('    selectedWord?.let')[0] if name == 'Song.kt' else source
+            self.assertNotIn('.verticalScroll(', main)
             self.assertIn('contentType =', source)
         song = (ui / 'Song.kt').read_text()
         self.assertIn('rememberLazyListState()', song)

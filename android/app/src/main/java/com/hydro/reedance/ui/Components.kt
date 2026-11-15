@@ -155,13 +155,21 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
     Panel(tone = androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.surface, color, .18f)) {
         PersianText(note.tr("tag", fa), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelMedium)
         PersianText(note.tr("title", fa), style = MaterialTheme.typography.titleLarge)
-        PersianText(note.tr("body", fa).ifEmpty { note.tr("tip", fa) })
+        note.tr("body", fa).ifEmpty { note.tr("tip", fa) }.takeIf { it.isNotBlank() }?.let { body ->
+            LearningSection("توضیح") { PersianText(body) }
+        }
         WrittenPronunciation(note)
         val ex = note.get("example")
         val text = if(ex?.isJsonObject == true) ex.asJsonObject.s("text") else if(ex?.isJsonPrimitive == true) ex.asString else ""
         if(text.isNotEmpty()) {
-            Foreign(text)
-            PersianText(if(ex?.isJsonObject == true) ex.asJsonObject.tr("translation", fa) else note.tr("translation", fa))
+            LearningSection("مثال در جمله") {
+                Foreign(text)
+                val translation = if(ex?.isJsonObject == true) ex.asJsonObject.tr("translation", fa) else note.tr("translation", fa)
+                if(translation.isNotBlank()) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f))
+                    PersianText(translation)
+                }
+            }
         }
         note.a("tables").forEach { LearningTable(it) }
         note.tr("takeaway", fa).takeIf { it.isNotEmpty() }?.let { PersianText(it, style = MaterialTheme.typography.titleSmall) }
