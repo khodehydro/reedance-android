@@ -14,10 +14,16 @@ internal fun libraryBookmarks(rows: List<Bookmark>, type: String): List<Bookmark
     rows.filter { it.itemType == type }.sortedByDescending { it.createdAt }
 
 /** Resolve only visible bookmark cards from their own source package, never the currently playing song. */
-@Composable internal fun LibraryBookmarkCard(model: AppModel, mark: Bookmark, catalogSong: JsonObject?, openSong: (String) -> Unit) {
-    val initial = remember(mark.songId, mark.itemType, mark.itemId) { model.cachedLibraryItem(mark) }
-    var loading by remember(mark.songId) { mutableStateOf(initial == null && mark.itemType != "song") }
-    val data by produceState<LibraryItemContent?>(initial, mark.songId, mark.itemType, mark.itemId, catalogSong) {
+@Composable internal fun LibraryBookmarkCard(model: AppModel, mark: Bookmark, catalogSong: JsonObject?, openSong: (String) -> Unit,
+    preloaded: Boolean = false, preloadedContent: LibraryItemContent? = null) {
+    val initial = remember(mark, preloaded, preloadedContent) { if(preloaded) preloadedContent else model.cachedLibraryItem(mark) }
+    var loading by remember(mark, preloaded) { mutableStateOf(!preloaded && initial == null && mark.itemType != "song") }
+    val data by produceState<LibraryItemContent?>(initial, mark, preloaded, preloadedContent) {
+        if(preloaded) {
+            value = preloadedContent
+            loading = false
+            return@produceState
+        }
         loading = value == null && mark.itemType != "song"
         try {
             value = if(mark.itemType == "song") null else model.libraryItem(mark)

@@ -85,11 +85,14 @@ import kotlinx.coroutines.flow.collectLatest
     val scrollConnection = remember(requestKey, threshold) {
         LibraryScrollConnection(threshold) { compact = it }
     }
-    val preparedEntries by produceState<Pair<Pair<String, Int>, List<Bookmark>>?>(null, bookmarks, requestKey) {
-        value = requestKey to withContext(Dispatchers.Default) { libraryBookmarks(bookmarks, types[selected]) }
+    val preparedEntries by produceState<PreparedLibraryEntries?>(null, bookmarks, requestKey) {
+        val rows = withContext(Dispatchers.Default) { libraryBookmarks(bookmarks, types[selected]) }
+        val initialWindow = libraryInitialWindow(rows, model::libraryItem)
+        value = PreparedLibraryEntries(requestKey, rows, initialWindow)
     }
-    val preparingEntries = preparedEntries?.first != requestKey
-    val entries = preparedEntries?.takeIf { it.first == requestKey }?.second.orEmpty()
+    val prepared = preparedEntries?.takeIf { it.key == requestKey }
+    val preparingEntries = prepared == null
+    val entries = prepared?.entries.orEmpty()
     val catalogById = remember(catalog) { catalog.associateBy { it.s("id") } }
     androidx.compose.runtime.key(settings.targetLanguage, selected) {
         val listState = androidx.compose.foundation.lazy.rememberLazyListState()
@@ -148,7 +151,9 @@ import kotlinx.coroutines.flow.collectLatest
             }
             items(entries, key = { "${it.songId}:${it.itemType}:${it.itemId}" }, contentType = { it.itemType }) { mark ->
                 Box(Modifier.padding(horizontal = 20.dp)) {
-                    LibraryBookmarkCard(model, mark, catalogById[mark.songId], song)
+                    LibraryBookmarkCard(model, mark, catalogById[mark.songId], song,
+                        preloaded = prepared?.initialWindow?.containsKey(mark) == true,
+                        preloadedContent = prepared?.initialWindow?.get(mark))
                 }
             }
         }

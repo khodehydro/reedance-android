@@ -245,8 +245,8 @@ class AssetTests(unittest.TestCase):
         self.assertEqual(hashlib.sha256(font).hexdigest(), provenance['sha256'])
         entry = (ui / 'EntryMotion.kt').read_text()
         page = entry.split('@Composable internal fun Modifier.itemEntrance')[0]
-        self.assertIn('.offset {', page)
-        self.assertNotIn('.graphicsLayer {', page)
+        self.assertIn('.graphicsLayer {', page)
+        self.assertNotIn('.offset {', page)
         self.assertNotIn('alpha =', page)
         self.assertIn('compositingStrategy = CompositingStrategy.ModulateAlpha', entry)
         app = (ui / 'App.kt').read_text()
@@ -644,6 +644,21 @@ class AssetTests(unittest.TestCase):
         library = (ui / 'Library.kt').read_text()
         self.assertIn('listState.canScrollForward || listState.canScrollBackward', library)
         self.assertIn('if(!scrollable) scrollConnection.reset()', library)
+
+    def test_library_first_window_is_resolved_before_rows_are_published(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        library = (ui / 'Library.kt').read_text()
+        self.assertLess(library.index('val initialWindow = libraryInitialWindow'), library.index('value = PreparedLibraryEntries'))
+        window = (ui / 'LibraryInitialWindow.kt').read_text()
+        self.assertIn('entries.take(4)', window)
+        self.assertIn('if(mark.itemType == "song") continue', window)
+        self.assertIn('catch(cancelled: CancellationException) { throw cancelled }', window)
+        card = (ui / 'LibraryBookmarkCard.kt').read_text()
+        self.assertLess(card.index('if(preloaded) {'), card.index('model.libraryItem(mark)'))
+        self.assertIn('return@produceState', card)
+        page = (ui / 'EntryMotion.kt').read_text().split('internal fun PageEntrance')[1].split('/** Lazy')[0]
+        self.assertNotIn('.offset {', page)
+        self.assertIn('translationY = distance * (1f - progress.value)', page)
 
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))

@@ -156,3 +156,20 @@ visibility completed, and animated label widths individually. Replace that path:
 
 This targets the reported minimize transition without shortening animation to
 mask it. Device frame traces and native tests are still required for confirmation.
+
+### Initial Library population
+
+Previously, publishing bookmark metadata immediately composed placeholder cards;
+independent row effects then replaced those with different-height learning cards.
+This produced multiple lazy measurement passes during page entry even though the
+visible data is text. First-window preparation now resolves at most four rows
+before publishing the list. Prepared results (including unavailable/null results)
+are passed directly to those cards, avoiding a second load and placeholder pass.
+Remaining rows stay lazy and use the existing bounded nearby prefetch/cache.
+Songs do not load lesson packages. Cancellation on tab change is preserved.
+
+Page entrance translation now reads progress in graphicsLayer, not layout offset:
+no animation-frame placement invalidation, and still no full-screen alpha layer.
+This is a source-level reduction of initial loading/layout churn, not a measured
+frame-time result. Native unit/device tests and cold-entry frame traces remain
+necessary; this environment has no Java/Android runtime.
