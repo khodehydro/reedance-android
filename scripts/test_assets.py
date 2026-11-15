@@ -329,7 +329,7 @@ class AssetTests(unittest.TestCase):
         self.assertIn('LessonTabs(tab, setTab, mode', song)
         tabs = (ui / 'Components.kt').read_text()
         self.assertIn('if(expanded) Modifier.weight(1f)', tabs)
-        self.assertIn('if(expanded) Modifier else Modifier.horizontalScroll', tabs)
+        self.assertIn('if(expanded) Modifier.fillMaxWidth() else Modifier.horizontalScroll', tabs)
 
     def test_connected_lesson_tabs_include_quiz_without_separate_button(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'
@@ -590,6 +590,21 @@ class AssetTests(unittest.TestCase):
         self.assertIn('contentDescription = option.description', tabs)
         self.assertIn('expandHorizontally(tween(duration))', tabs)
         self.assertIn('shrinkHorizontally(tween(duration))', tabs)
+
+    def test_compact_library_tabs_center_and_scroll_avoids_redundant_motion_work(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        tabs = (ui / 'Components.kt').read_text()
+        self.assertIn('compact, centered = true', tabs)
+        self.assertIn('contentAlignment = if(centered) Alignment.Center else Alignment.CenterStart', tabs)
+        self.assertNotIn('.animateContentSize(tween(duration))', tabs)
+        self.assertIn('if(LocalItemEntranceEnabled.current) Modifier.itemEntrance() else Modifier', tabs)
+        library = (ui / 'Library.kt').read_text().split('@Composable fun LibraryScreen')[1]
+        self.assertIn('LocalItemEntranceEnabled provides false', library)
+        self.assertIn('delay(100)', library)
+        self.assertIn('if(model.cachedLibraryItem(mark) == null) model.libraryItem(mark)', library)
+        self.assertNotIn('animateDpAsState', library)
+        self.assertNotIn('expandVertically', library)
+        self.assertNotIn('shrinkVertically', library)
 
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))

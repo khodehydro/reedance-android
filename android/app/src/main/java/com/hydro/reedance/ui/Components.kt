@@ -34,7 +34,7 @@ import com.google.gson.*
 import com.hydro.reedance.data.*
 
 @Composable fun Panel(modifier: Modifier = Modifier, tone: Color = MaterialTheme.colorScheme.surface, content: @Composable ColumnScope.() -> Unit) {
-    Surface(modifier.fillMaxWidth().itemEntrance(), shape = RoundedCornerShape(22.dp), color = tone, border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .35f))) {
+    Surface(modifier.fillMaxWidth().then(if(LocalItemEntranceEnabled.current) Modifier.itemEntrance() else Modifier), shape = RoundedCornerShape(22.dp), color = tone, border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .35f))) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp), content = content)
     }
 }
@@ -66,12 +66,13 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
     PillTabRow(items, selected, true, onSelect)
 
 @Composable internal fun CollapsingPillTabs(items: List<PillOption>, selected: Int, compact: Boolean, onSelect: (Int) -> Unit) =
-    PillTabRow(items, selected, false, onSelect, compact)
+    PillTabRow(items, selected, false, onSelect, compact, centered = true)
 
-@Composable private fun PillTabRow(items: List<PillOption>, selected: Int, expanded: Boolean, onSelect: (Int) -> Unit, compact: Boolean = false) {
+@Composable private fun PillTabRow(items: List<PillOption>, selected: Int, expanded: Boolean, onSelect: (Int) -> Unit, compact: Boolean = false, centered: Boolean = false) {
     val reduced = LocalReducedMotion.current
     val duration = if(reduced) 0 else 150
-    Row(Modifier.fillMaxWidth().then(if(expanded) Modifier else Modifier.horizontalScroll(rememberScrollState())).selectableGroup().padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Box(Modifier.fillMaxWidth(), contentAlignment = if(centered) Alignment.Center else Alignment.CenterStart) {
+    Row(Modifier.then(if(expanded) Modifier.fillMaxWidth() else Modifier.horizontalScroll(rememberScrollState())).selectableGroup().padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         items.forEachIndexed { index, option ->
             val active = selected == index
             val background by animateColorAsState(if(active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface, tween(duration), label = "pill-color")
@@ -80,7 +81,7 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
             Surface(shape = if(option.flag != null) CircleShape else RoundedCornerShape(50), color = background, contentColor = foreground,
                 shadowElevation = if(active) 3.dp else 0.dp,
                 border = BorderStroke(1.dp, if(active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f)),
-                modifier = (if(expanded) Modifier.weight(1f) else Modifier).animateContentSize(tween(duration)).graphicsLayer { scaleX = if(expanded) 1f else scale; scaleY = scale }
+                modifier = (if(expanded) Modifier.weight(1f) else Modifier).graphicsLayer { scaleX = if(expanded) 1f else scale; scaleY = scale }
                     .selectable(active, role = Role.Tab, onClick = { if(!active) onSelect(index) })
                     .semantics { contentDescription = option.description }) {
                 if(option.flag != null) {
@@ -100,6 +101,7 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
                 }
             }
         }
+    }
     }
 }
 /** Reference CSS: enter 390ms (-15,10), exit 220ms (30,0), mirrored in RTL. */

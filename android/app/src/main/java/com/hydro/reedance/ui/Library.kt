@@ -1,7 +1,6 @@
 package com.hydro.reedance.ui
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.input.nestedscroll.*
 import androidx.compose.ui.geometry.Offset
@@ -105,17 +104,15 @@ import kotlinx.coroutines.flow.collectLatest
         }
     }
     val duration = if(LocalReducedMotion.current) 0 else 190
-    val headerTop by animateDpAsState(if(compact) 8.dp else 24.dp, tween(duration), label = "library-header-padding")
     val preparedEntries by produceState<Pair<Pair<String, Int>, List<Bookmark>>?>(null, bookmarks, requestKey) {
         value = requestKey to withContext(Dispatchers.Default) { libraryBookmarks(bookmarks, types[selected]) }
     }
     val preparingEntries = preparedEntries?.first != requestKey
     val entries = preparedEntries?.takeIf { it.first == requestKey }?.second.orEmpty()
     val catalogById = remember(catalog) { catalog.associateBy { it.s("id") } }
-    Column(Modifier.fillMaxSize().padding(top = headerTop)) {
+    Column(Modifier.fillMaxSize().padding(top = 8.dp)) {
         Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            AnimatedVisibility(!compact, enter = fadeIn(tween(duration)) + expandVertically(tween(duration)),
-                exit = fadeOut(tween(duration)) + shrinkVertically(tween(duration))) {
+            AnimatedVisibility(!compact, enter = fadeIn(tween(duration)), exit = fadeOut(tween(duration))) {
                 Heading(tr("کتابخانهٔ تو", "Your little collection"), tr("نشان‌شده‌ها؛ از جدید به قدیم.", "Your saved items, newest first."))
             }
             CollapsingPillTabs(listOf(
@@ -125,8 +122,7 @@ import kotlinx.coroutines.flow.collectLatest
                 PillOption(tr("اصطلاحات", "Expressions"), UiIcons.Phrases, filledIcon = UiIcons.PhrasesFilled),
                 PillOption(tr("جمله‌ها", "Sentences"), UiIcons.Lines, filledIcon = UiIcons.LinesFilled)
             ), selected, compact) { selected = it }
-            AnimatedVisibility(!compact, enter = fadeIn(tween(duration)) + expandVertically(tween(duration)),
-                exit = fadeOut(tween(duration)) + shrinkVertically(tween(duration))) {
+            AnimatedVisibility(!compact, enter = fadeIn(tween(duration)), exit = fadeOut(tween(duration))) {
                 Text(tr("${entries.size} مورد نشان‌شده", "${entries.size} saved items"), style = MaterialTheme.typography.labelMedium)
             }
         }
@@ -139,16 +135,18 @@ import kotlinx.coroutines.flow.collectLatest
                     val end = visible.lastOrNull()?.index ?: 0
                     start to end
                 }.distinctUntilChanged().collectLatest { (start, end) ->
+                    delay(100) // Coalesce range changes during a fling instead of chasing each row.
                     // A small rolling window, never the complete saved library.
                     val from = (start - 2).coerceIn(0, entries.size)
                     val until = (end + 9).coerceIn(from, minOf(entries.size, from + 24))
                     entries.subList(from, until)
                         .filter { it.itemType != "song" }.distinctBy { it.songId }.take(4).forEach { mark ->
-                            try { model.libraryItem(mark) }
+                            try { if(model.cachedLibraryItem(mark) == null) model.libraryItem(mark) }
                             catch(cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch(_: Exception) { /* The visible card supplies the unavailable state. */ }
                         }
                 }
             }
+            CompositionLocalProvider(LocalItemEntranceEnabled provides false) {
             androidx.compose.foundation.lazy.LazyColumn(Modifier.weight(1f).nestedScroll(scrollConnection), state = listState,
                 contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 20.dp + LocalOverlayBottomInset.current),
                 verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -161,6 +159,7 @@ import kotlinx.coroutines.flow.collectLatest
                 items(entries, key = { "${it.songId}:${it.itemType}:${it.itemId}" }, contentType = { it.itemType }) { mark ->
                     LibraryBookmarkCard(model, mark, catalogById[mark.songId], song)
                 }
+            }
             }
         }
     }

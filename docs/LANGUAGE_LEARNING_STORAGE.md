@@ -121,3 +121,22 @@ cases have been added. They are not measured device-performance results: native
 tests are unavailable here. Room still emits the lightweight bookmark metadata
 list (not a paging source); device frame/memory tests are needed before claiming
 smoothness for arbitrarily large libraries or many very large packages.
+
+### Library scroll jank mitigation
+
+Compact tab groups now measure at content width inside a centered full-width
+container. Removed the additional per-pill `animateContentSize` that overlapped
+label width animations. Header title/count use opacity transitions rather than
+simultaneously animating two heights plus outer padding, avoiding a lazy viewport
+resize on every animation frame. Header space is released when the fade finishes.
+
+Dense library rows skip the generic per-card entrance layer/coroutine; page entry,
+tab labels/colors and bookmark feedback remain animated. Range prefetch coalesces
+for 100ms during flings and skips packages already in the bounded index cache,
+instead of repeatedly validating the same installed rows as the range changes.
+
+These are source-level mitigations, not a measured fix for the reported lag.
+Before calling this smooth, profile release/profileable builds on the reporting
+device (model/API, dataset/song count, cold and warm scroll, rapid tab switching,
+large text, RTL/LTR); inspect FrameTimeline/main/RenderThread, allocations and
+package-read counts. Kotlin syntax and host source checks cannot measure jank.

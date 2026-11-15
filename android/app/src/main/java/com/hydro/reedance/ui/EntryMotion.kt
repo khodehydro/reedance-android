@@ -17,6 +17,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
 import kotlin.math.roundToInt
 
+/** Disable per-card entrance work in dense, continuously recycled lists; page motion is separate. */
+internal val LocalItemEntranceEnabled = staticCompositionLocalOf { true }
+
 /** Placement-only page entry: no full-window alpha layer around live RuntimeShaders. */
 @Composable internal fun PageEntrance(destination: String, content: @Composable BoxScope.() -> Unit) {
     val reduced = LocalReducedMotion.current

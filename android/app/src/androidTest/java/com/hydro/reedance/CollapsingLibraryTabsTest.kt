@@ -6,6 +6,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import com.hydro.reedance.data.Settings
 import com.hydro.reedance.ui.*
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
@@ -31,6 +32,10 @@ class CollapsingLibraryTabsTest {
         compose.onNodeWithText("Notes").assertDoesNotExist()
         val compactWidth = compose.onNodeWithContentDescription("Words").fetchSemanticsNode().boundsInRoot.width
         assertTrue(compactWidth < expandedWidth)
+        val wordsBounds = compose.onNodeWithContentDescription("Words").fetchSemanticsNode().boundsInRoot
+        val notesBounds = compose.onNodeWithContentDescription("Notes").fetchSemanticsNode().boundsInRoot
+        val root = compose.onRoot().fetchSemanticsNode().boundsInRoot
+        assertEquals(root.center.x, (wordsBounds.left + notesBounds.right) / 2f, 2f)
         compose.onNodeWithContentDescription("Notes").performClick().assertIsSelected()
         compose.runOnIdle { compact = false }
         compose.waitForIdle()
