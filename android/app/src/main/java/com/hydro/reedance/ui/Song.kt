@@ -45,7 +45,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     val access = LessonAccess(premium = song.s("access") == "paid")
     var subscriptionInfo by remember { mutableStateOf(false) }
     val openQuiz = { if(access.preview) subscriptionInfo = true else quiz() }
-    val fa = LocalFa.current
+    val fa = LearningLanguage.persian
     var mode by rememberSaveable { mutableIntStateOf(1) }
     var singleLyric by rememberSaveable(songId) { mutableStateOf(false) }
     var selectedWord by remember { mutableStateOf<JsonObject?>(null) }

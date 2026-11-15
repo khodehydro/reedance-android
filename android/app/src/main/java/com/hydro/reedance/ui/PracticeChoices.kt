@@ -13,7 +13,7 @@ import com.hydro.reedance.domain.Grade
 
 /** Explicit disabled colors keep submitted answers readable instead of fading feedback away. */
 @Composable internal fun PracticeChoices(question: JsonObject, selected: String?, result: Grade?, busy: Boolean, onSelect: (String) -> Unit) {
-    val fa = LocalFa.current
+    val fa = LearningLanguage.persian
     question.a("options").forEach { option ->
         val id = option.s("id")
         val correct = result != null && id == question.s("correctId")

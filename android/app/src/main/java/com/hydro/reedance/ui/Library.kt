@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
     var busy by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val reduced = LocalReducedMotion.current
-    val fa = LocalFa.current
+    val fa = LearningLanguage.persian
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 24.dp + LocalOverlayBottomInset.current), verticalArrangement = Arrangement.spacedBy(22.dp)) {
         Heading(tr("جعبهٔ لایتنر", "Words that stay"), tr("یادگیری، یک مرور کوتاه در هر روز.", "A little practice. A lasting memory."))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) { (1..5).forEach { stage -> Column {
@@ -65,7 +65,7 @@ import kotlinx.coroutines.launch
     val installedIds by model.installedIds.collectAsStateWithLifecycle()
     var index by remember(settings.targetLanguage) { mutableIntStateOf(0) }
     var reveal by remember(index) { mutableStateOf(false) }
-    val fa = LocalFa.current
+    val fa = LearningLanguage.persian
     val savedLessons by produceState<Map<String, com.google.gson.JsonObject>>(emptyMap(), bookmarks) {
         value = bookmarks.map { it.songId }.distinct().mapNotNull { id ->
             try { model.lessonForReview(id)?.let { id to it } } catch(cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch(_: Exception) { null }

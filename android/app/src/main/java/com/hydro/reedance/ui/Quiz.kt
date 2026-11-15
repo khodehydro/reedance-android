@@ -69,7 +69,7 @@ private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val qu
     var busy by remember(data, review) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val reduced = LocalReducedMotion.current
-    val fa = LocalFa.current
+    val fa = LearningLanguage.persian
     // This effect is cancelled when leaving the screen or changing the question/session.
     LaunchedEffect(index, checked, data, review) {
         val result = checked ?: return@LaunchedEffect

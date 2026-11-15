@@ -125,7 +125,7 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
     }
 }
 @Composable fun LearningTable(table: JsonObject) {
-    val fa = LocalFa.current
+    val fa = LearningLanguage.persian
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(table.tr("title", fa), style = MaterialTheme.typography.titleSmall)
         table.tr("intro", fa).takeIf { it.isNotEmpty() }?.let { Text(it) }
@@ -146,7 +146,7 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
     }
 }
 @Composable fun LearningNote(note: JsonObject, save: (@Composable () -> Unit)? = null) {
-    val fa = LocalFa.current
+    val fa = LearningLanguage.persian
     var answer by remember(note) { mutableStateOf(false) }
     val color = when(note.s("tone")) {
         "mint" -> Color(0xFFDEEFE7); "amber" -> Color(0xFFFFEBCB); "coral" -> Color(0xFFFFE0D8); "rose" -> Color(0xFFF8DFE8); "apricot" -> Color(0xFFFFE6CF); else -> Color(0xFFE3EEFF)

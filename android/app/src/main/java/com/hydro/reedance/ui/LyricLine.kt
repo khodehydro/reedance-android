@@ -16,8 +16,8 @@ import com.hydro.reedance.data.*
 /** A play action at the start of the original line; translation sits below the text, not the button. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable internal fun LyricLine(line: JsonObject, mode: Int, active: Boolean, onPlay: () -> Unit, onToken: (JsonObject) -> Unit, playing: Boolean = false, single: Boolean = false) {
-    val fa = LocalFa.current
-    val interfaceDirection = LocalLayoutDirection.current
+    val fa = LearningLanguage.persian
+    val interfaceDirection = LayoutDirection.Rtl
     Panel(tone = if(active) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface) {
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(4.dp)) {

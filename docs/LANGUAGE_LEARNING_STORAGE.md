@@ -24,8 +24,7 @@ they may be hidden until catalog/package metadata is available again.
 
 ## Written pronunciation
 
-Song vocabulary/review/word sheets show supplied `ipa`, `reading` and (in Persian
-UI) `faReading` when nonblank. Existing v1 song export contracts specify `ipa` and
+Song vocabulary/review/word sheets show supplied `ipa`, `reading` and `faReading` when nonblank. Existing v1 song export contracts specify `ipa` and
 `faReading`; `reading` is also used by Starter data. Missing values produce no
 empty row or fabricated pronunciation. TTS actions have been removed from song
 lessons, notes, quizzes and Starter. The legacy unused speech helper is not called.
@@ -50,3 +49,16 @@ in the lesson's lyrics, phrases or vocabulary examples (using accepted blank
 answers to find the sentence). It does not guess a translation or use the answer
 explanation as a pre-answer hint. Review-generated questions copy the original
 vocabulary example's translations.
+
+
+## Interface language is not teaching language
+
+All teaching meanings, explanations, lesson tables, lyric translations, review
+cards, written Persian readings, and practice hints/options are Persian, even
+when interface language is English. Original target-language words/sentences
+remain in their original language. `LearningLanguage` defines this policy;
+`LocalFa` controls interface labels only. English translations in existing packs
+are retained for compatibility but not selected for teaching in this app.
+Matching equivalence and grading always use the displayed Persian meanings, not
+hidden English translations. An English-UI instrumentation regression asserts
+English navigation labels alongside Persian learning content.

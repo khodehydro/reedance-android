@@ -52,7 +52,7 @@ import com.hydro.reedance.domain.normalizeAnswer
 }
 
 /** Use supplied full translations; never invent a translation or reveal an explanation as a hint. */
-internal fun typingSentenceMeaning(question: JsonObject, lesson: JsonObject, fa: Boolean): String {
+internal fun typingSentenceMeaning(question: JsonObject, lesson: JsonObject, fa: Boolean = LearningLanguage.persian): String {
     question.tr("translation", fa).takeIf { it.isNotBlank() }?.let { return it }
     question.tr("contextTranslation", fa).takeIf { it.isNotBlank() }?.let { return it }
     val context = question.s("context")

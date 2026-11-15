@@ -26,7 +26,7 @@ class LyricLineTest {
             }
         }
         compose.onNodeWithText("0:04").assertDoesNotExist()
-        compose.onNodeWithText("Hello world").assertIsDisplayed()
+        compose.onNodeWithText("سلام دنیا").assertIsDisplayed()
         compose.onNodeWithContentDescription("Play line: Merhaba dünya").performClick()
         compose.runOnIdle { assertEquals(1, plays) }
     }
@@ -56,7 +56,7 @@ class LyricLineTest {
         compose.onNodeWithContentDescription("Play line: Merhaba dünya").assertDoesNotExist()
         compose.onNodeWithContentDescription("Pause line: Merhaba dünya").assertDoesNotExist()
         compose.onNodeWithText("Merhaba").assertIsDisplayed()
-        compose.onNodeWithText("Hello world").assertIsDisplayed()
+        compose.onNodeWithText("سلام دنیا").assertIsDisplayed()
     }
 
     @Test fun persianTranslationAndForeignLineRemainVisibleInRtl() {

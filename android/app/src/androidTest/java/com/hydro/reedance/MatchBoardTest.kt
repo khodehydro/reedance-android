@@ -13,7 +13,7 @@ import org.junit.Test
 
 class MatchBoardTest {
     @get:Rule val compose = createComposeRule()
-    private val question = JsonParser.parseString("""{"pairs":[{"id":"a","text":"bir","en":"one"},{"id":"b","text":"iki","en":"two"}],"meaningOrder":["b","a"]}""").asJsonObject
+    private val question = JsonParser.parseString("""{"pairs":[{"id":"a","text":"bir","en":"one","fa":"یک"},{"id":"b","text":"iki","en":"two","fa":"دو"}],"meaningOrder":["b","a"]}""").asJsonObject
 
     @Test fun connectsFromEitherSideAndMovingMeaningDisconnectsPreviousWord() {
         var answer by mutableStateOf<List<String>>(emptyList())
@@ -25,15 +25,15 @@ class MatchBoardTest {
             }
         }
         compose.onNodeWithText("bir").performClick()
-        compose.onNodeWithText("one").performClick()
+        compose.onNodeWithText("یک").performClick()
         compose.runOnIdle { assertEquals(listOf("a", ""), answer) }
-        compose.onNodeWithText("one").performClick()
+        compose.onNodeWithText("یک").performClick()
         compose.onNodeWithText("iki").performClick()
         compose.runOnIdle { assertEquals(listOf("", "a"), answer) }
     }
 
     @Test fun swappedDuplicateMeaningsReceiveGreenFeedback() {
-        val duplicates = JsonParser.parseString("""{"pairs":[{"id":"a","text":"kalp","en":"heart"},{"id":"b","text":"gönül","en":"heart"}]}""").asJsonObject
+        val duplicates = JsonParser.parseString("""{"pairs":[{"id":"a","text":"kalp","en":"heart","fa":"قلب"},{"id":"b","text":"gönül","en":"heart","fa":"قلب"}]}""").asJsonObject
         compose.setContent {
             CompositionLocalProvider(LocalFa provides false, LocalReducedMotion provides true) {
                 ReedanceTheme(Settings(language = "en")) {
@@ -45,7 +45,7 @@ class MatchBoardTest {
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Correct"))
         compose.onNodeWithText("✓ gönül")
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Correct"))
-        compose.onAllNodesWithText("✓ heart").assertCountEquals(2)
+        compose.onAllNodesWithText("✓ قلب").assertCountEquals(2)
     }
 
     @Test fun checkedBoardShowsPerConnectionFeedbackAndLocksInput() {
@@ -58,6 +58,6 @@ class MatchBoardTest {
         }
         compose.onNodeWithText("✕ bir").assertIsNotEnabled()
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Incorrect"))
-        compose.onNodeWithText("✕ two").assertIsNotEnabled()
+        compose.onNodeWithText("✕ دو").assertIsNotEnabled()
     }
 }

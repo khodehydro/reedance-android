@@ -13,10 +13,13 @@ import com.hydro.reedance.data.*
 
 /** Only supplied text is shown; no guessed pronunciation or device TTS. */
 @Composable internal fun WrittenPronunciation(item: JsonObject) {
-    val fa = LocalFa.current
+    val fa = LearningLanguage.persian
     val readings = listOf(item.s("ipa"), item.s("reading"), if(fa) item.s("faReading") else "")
         .filter { it.isNotBlank() }.distinct()
-    readings.forEach { Foreign(it) }
+    readings.forEach { reading ->
+        if(reading == item.s("faReading")) Text(reading, Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Right)
+        else Foreign(reading)
+    }
 }
 
 @Composable internal fun SongQuizInvitation(onClick: () -> Unit) {

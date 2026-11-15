@@ -18,7 +18,7 @@ import com.hydro.reedance.data.*
     val progress by model.steps.collectAsStateWithLifecycle()
     var step by rememberSaveable(code) { mutableIntStateOf(0) }
     val course = courses.obj(code)
-    val fa = LocalFa.current
+    val fa = LearningLanguage.persian
     val names = listOf(tr("حروف", "Alphabet"), tr("صداها", "Sounds"), tr("گرامر", "Grammar"), tr("واژه‌ها", "Words"), tr("اولین سطر", "First line"))
     val done = progress.count { it.targetLanguage == code }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 20.dp + LocalOverlayBottomInset.current), verticalArrangement = Arrangement.spacedBy(20.dp)) {

@@ -19,7 +19,7 @@ fun normalizeAnswer(value: String, locale: String = "en-GB"): String =
 private fun normalizedMeaning(text: String): String =
     Normalizer.normalize(text, Normalizer.Form.NFC).trim().replace(Regex("[\\s\\p{Z}]+"), " ").lowercase(Locale.ROOT)
 
-fun matchCorrectness(q: JsonObject, answer: List<String>, meaningLanguage: String = "en"): List<Boolean> {
+fun matchCorrectness(q: JsonObject, answer: List<String>, meaningLanguage: String = LearningLanguage.meaningKey): List<Boolean> {
     val pairs = q.a("pairs")
     val byId = pairs.associateBy { it.s("id") }
     val counts = answer.groupingBy { it }.eachCount()
@@ -33,7 +33,7 @@ fun matchCorrectness(q: JsonObject, answer: List<String>, meaningLanguage: Strin
 }
 
 data class Grade(val correct: Boolean, val missed: Set<String>)
-fun grade(q: JsonObject, answer: List<String>, locale: String = "en-GB", meaningLanguage: String = "en"): Grade {
+fun grade(q: JsonObject, answer: List<String>, locale: String = "en-GB", meaningLanguage: String = LearningLanguage.meaningKey): Grade {
     val pairs = q.a("pairs")
     val matches = if(q.s("type") == "match") matchCorrectness(q, answer, meaningLanguage) else emptyList()
     val correct = when(q.s("type")) {

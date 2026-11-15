@@ -15,7 +15,7 @@ import org.junit.Test
 
 class PracticeChoicesTest {
     @get:Rule val compose = createComposeRule()
-    private val question = JsonParser.parseString("""{"type":"choice","correctId":"yes","options":[{"id":"yes","en":"Right"},{"id":"no","en":"Wrong"}]}""").asJsonObject
+    private val question = JsonParser.parseString("""{"type":"choice","correctId":"yes","options":[{"id":"yes","en":"Right","fa":"درست"},{"id":"no","en":"Wrong","fa":"اشتباه"}]}""").asJsonObject
 
     private fun showAndChoose(id: String) {
         var selected by mutableStateOf<String?>(null)
@@ -34,10 +34,10 @@ class PracticeChoicesTest {
                 }
             }
         }
-        compose.onNodeWithText(if(id == "yes") "○ Right" else "○ Wrong").performClick()
-        compose.onNodeWithText("✓ Right").assertIsNotEnabled()
+        compose.onNodeWithText(if(id == "yes") "○ درست" else "○ اشتباه").performClick()
+        compose.onNodeWithText("✓ درست").assertIsNotEnabled()
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Correct answer"))
-        if(id == "no") compose.onNodeWithText("✕ Wrong").assertIsNotEnabled()
+        if(id == "no") compose.onNodeWithText("✕ اشتباه").assertIsNotEnabled()
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Incorrect answer"))
         compose.runOnIdle { assertEquals(1, submissions) }
     }

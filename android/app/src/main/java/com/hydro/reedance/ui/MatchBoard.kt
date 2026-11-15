@@ -47,7 +47,7 @@ private val MatchRed = Color(0xFFA82232)
         if(it.size == ids.size) it else ids.reversed()
     }
     val values = if(solution) ids else answer
-    val fa = LocalFa.current
+    val fa = LearningLanguage.persian
     val correctLinks = matchCorrectness(question, values, if(fa) "fa" else "en")
     var word by remember(question) { mutableStateOf<Int?>(null) }
     var meaning by remember(question) { mutableStateOf<String?>(null) }

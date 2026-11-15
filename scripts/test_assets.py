@@ -440,6 +440,20 @@ class AssetTests(unittest.TestCase):
         self.assertIn('translationFa', question['properties'])
         self.assertNotIn('translationFa', question['required'])
 
+    def test_teaching_language_is_persian_independent_of_ui_language(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        policy = (ASSETS / 'main/java/com/hydro/reedance/data/LearningLanguage.kt').read_text()
+        self.assertIn('const val persian = true', policy)
+        self.assertIn('const val meaningKey = "fa"', policy)
+        for name in ['Song', 'Quiz', 'Starter', 'Components', 'LyricLine', 'Library', 'MatchBoard', 'PracticeChoices', 'SongLearningExtras']:
+            source = (ui / (name + '.kt')).read_text()
+            self.assertIn('val fa = LearningLanguage.persian', source)
+            self.assertNotIn('LocalFa.current', source)
+        self.assertIn('if(LocalFa.current) fa else en', (ui / 'Theme.kt').read_text())
+        learning = (ASSETS / 'main/java/com/hydro/reedance/domain/Learning.kt').read_text()
+        self.assertIn('meaningLanguage: String = LearningLanguage.meaningKey', learning)
+        self.assertIn('val interfaceDirection = LayoutDirection.Rtl', (ui / 'LyricLine.kt').read_text())
+
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))
 
