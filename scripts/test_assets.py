@@ -369,8 +369,8 @@ class AssetTests(unittest.TestCase):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'
         library = (ui / 'Library.kt').read_text()
         self.assertIn('model.lessonForReview(it.songId)', library)
-        self.assertIn('savedLessons[mark.songId]', library)
-        self.assertIn('model.toggleBookmark(mark.itemType, mark.itemId, mark.songId)', library)
+        self.assertIn('model.lessonForReview(mark.songId)', (ui / 'LibraryBookmarkCard.kt').read_text())
+        self.assertIn('model.removeBookmark(mark)', (ui / 'LibraryBookmarkCard.kt').read_text())
         for name in ['Song.kt', 'Starter.kt', 'Quiz.kt', 'Components.kt']:
             self.assertNotIn('model.speak', (ui / name).read_text())
         extra = (ui / 'SongLearningExtras.kt').read_text()
@@ -514,7 +514,7 @@ class AssetTests(unittest.TestCase):
         self.assertIn('Hide meaning', source)
         self.assertIn('stateDescription = state', source)
         self.assertIn('RevealButton(answer, { answer = !answer })', (ui / 'Components.kt').read_text())
-        self.assertEqual(2, (ui / 'Library.kt').read_text().count('RevealButton(reveal, { reveal = !reveal }, meaning = true)'))
+        self.assertEqual(1, (ui / 'Library.kt').read_text().count('RevealButton(reveal, { reveal = !reveal }, meaning = true)'))
         icons = load(ASSETS / 'main/assets/uicons-provenance.json')['icons']
         self.assertEqual('eye', icons['Eye']['glyph'])
         self.assertEqual('eye-crossed', icons['EyeClosed']['glyph'])
@@ -549,6 +549,22 @@ class AssetTests(unittest.TestCase):
         self.assertIn('compact = compactNavigation', (ui / 'App.kt').read_text())
         for file in ['MiniPlayer.kt', 'FloatingNavigation.kt']:
             self.assertIn('if(compact) 52.dp else 20.dp', (ui / file).read_text())
+
+    def test_library_tabs_filter_sort_and_remove_bookmarks_idempotently(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        library = (ui / 'Library.kt').read_text().split('@Composable fun LibraryScreen')[1]
+        self.assertIn('listOf("song", "vocabulary", "grammar", "idioms", "sentences")', library)
+        self.assertIn('libraryBookmarks(bookmarks, types[selected])', library)
+        self.assertIn('rememberSaveable(settings.targetLanguage)', library)
+        self.assertIn('LazyColumn(', library)
+        self.assertNotIn('installedSongs', library)
+        self.assertIn('contentType = { it.itemType }', library)
+        card = (ui / 'LibraryBookmarkCard.kt').read_text()
+        self.assertIn('rows.filter { it.itemType == type }.sortedByDescending { it.createdAt }', card)
+        self.assertIn('ItemBookmarkButton(true) { model.removeBookmark(mark) }', card)
+        model = (ASSETS / 'main/java/com/hydro/reedance/data/AppModel.kt').read_text().split('fun removeBookmark(')[1].split('private fun learningMutation')[0]
+        self.assertIn('dao.deleteBookmark(it)', model)
+        self.assertNotIn('saveBookmark', model)
 
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))

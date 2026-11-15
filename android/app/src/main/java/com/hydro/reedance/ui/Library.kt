@@ -2,6 +2,7 @@ package com.hydro.reedance.ui
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -68,51 +69,32 @@ import kotlinx.coroutines.launch
     val bookmarks by model.bookmarks.collectAsStateWithLifecycle()
     val settings by model.settings.collectAsStateWithLifecycle()
     val catalog by model.catalog.collectAsStateWithLifecycle()
-    val installedIds by model.installedIds.collectAsStateWithLifecycle()
-    var index by remember(settings.targetLanguage) { mutableIntStateOf(0) }
-    var reveal by remember(index) { mutableStateOf(false) }
-    val fa = LearningLanguage.persian
-    val savedLessons by produceState<Map<String, com.google.gson.JsonObject>>(emptyMap(), bookmarks) {
-        value = bookmarks.map { it.songId }.distinct().mapNotNull { id ->
-            try { model.lessonForReview(id)?.let { id to it } } catch(cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch(_: Exception) { null }
-        }.toMap()
-    }
-    val savedPhrases = bookmarks.filter { it.itemType in listOf("idioms", "sentences") }.mapNotNull { mark -> savedLessons[mark.songId]?.a(mark.itemType)?.find { it.s("id") == mark.itemId } }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 24.dp + LocalOverlayBottomInset.current), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        Heading(tr("کتابخانهٔ تو", "Your little collection"), tr("چیزهایی که می‌خواهی همراهت بمانند.", "Keep the words and lines that speak to you."))
-        if(savedPhrases.isNotEmpty()) {
-            val current = savedPhrases[index.mod(savedPhrases.size)]
-            Deck(index) { Panel(tone = MaterialTheme.colorScheme.secondaryContainer) {
-                Text(tr("عبارت نشان‌شده", "SAVED LINE"), style = MaterialTheme.typography.labelMedium)
-                Foreign(current.s("text"), large = true)
-                RevealButton(reveal, { reveal = !reveal }, meaning = true)
-                if(reveal) PersianText(current.tr("translation", fa))
-                PersianText(current.tr("context", fa))
-            } }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                PressOutlinedButton({ index-- }, enabled = index > 0) { Text(tr("قبلی", "Previous")) }
-                PressOutlinedButton({ index++ }) { Text(tr("بعدی", "Next")) }
+    var selected by androidx.compose.runtime.saveable.rememberSaveable(settings.targetLanguage) { mutableIntStateOf(0) }
+    val types = listOf("song", "vocabulary", "grammar", "idioms", "sentences")
+    val entries = remember(bookmarks, selected) { libraryBookmarks(bookmarks, types[selected]) }
+    Column(Modifier.fillMaxSize().padding(top = 24.dp)) {
+        Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Heading(tr("کتابخانهٔ تو", "Your little collection"), tr("نشان‌شده‌ها؛ از جدید به قدیم.", "Your saved items, newest first."))
+            PillTabs(listOf(
+                PillOption(tr("آهنگ‌ها", "Songs"), UiIcons.Lyrics, filledIcon = UiIcons.LyricsFilled),
+                PillOption(tr("لغت‌ها", "Words"), UiIcons.Words, filledIcon = UiIcons.WordsFilled),
+                PillOption(tr("نکته‌ها", "Notes"), UiIcons.Notes, filledIcon = UiIcons.NotesFilled),
+                PillOption(tr("اصطلاحات", "Expressions"), UiIcons.Phrases, filledIcon = UiIcons.PhrasesFilled),
+                PillOption(tr("جمله‌ها", "Sentences"), UiIcons.Lines, filledIcon = UiIcons.LinesFilled)
+            ), selected) { selected = it }
+            Text(tr("${entries.size} مورد نشان‌شده", "${entries.size} saved items"), style = MaterialTheme.typography.labelMedium)
+        }
+        androidx.compose.runtime.key(settings.targetLanguage, selected) {
+            androidx.compose.foundation.lazy.LazyColumn(Modifier.weight(1f),
+                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 20.dp + LocalOverlayBottomInset.current),
+                verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                if(entries.isEmpty()) item(key = "empty") {
+                    Panel { Text(tr("در این بخش هنوز موردی نشان نکرده‌ای.", "No saved items in this tab yet.")) }
+                }
+                items(entries, key = { "${it.songId}:${it.itemType}:${it.itemId}" }, contentType = { it.itemType }) { mark ->
+                    LibraryBookmarkCard(model, mark, catalog.find { it.s("id") == mark.songId }, song)
+                }
             }
         }
-        Panel {
-            Text(tr("${bookmarks.size} مورد نشان‌شده", "${bookmarks.size} saved items"), style = MaterialTheme.typography.titleLarge)
-            if(bookmarks.isEmpty()) Text(tr("از صفحهٔ آهنگ، واژه‌ها و جمله‌های دلخواهت را نشان کن.", "Save your favourite words and lines from a song."))
-            bookmarks.forEach { mark ->
-                val item = savedLessons[mark.songId]?.a(mark.itemType)?.find { it.s(if(mark.itemType == "vocabulary") "lexemeId" else "id") == mark.itemId }
-                Text(if(mark.itemType == "song") catalog.find { it.s("id") == mark.songId }?.s("title") ?: mark.songId else item?.let { it.s("lemma").ifEmpty { it.s("text").ifEmpty { it.tr("title", fa) } } } ?: mark.itemId)
-                if(item == null && mark.itemType != "song") Text(tr("در محتوای قبلی؛ پیشرفت حفظ شده", "From previous content; progress preserved"), style = MaterialTheme.typography.bodySmall)
-                PressTextButton({ model.toggleBookmark(mark.itemType, mark.itemId, mark.songId) }) { Text(tr("حذف نشان", "Remove bookmark")) }
-            }
-        }
-        val installedSongs = catalog.filter { it.s("id") in installedIds && it.s("language") == settings.targetLanguage }
-        if(installedSongs.isEmpty()) Panel {
-            Text(tr("هنوز آهنگی نصب نشده است.", "No songs installed yet."))
-        }
-        installedSongs.forEach { entry -> Panel {
-            Text(entry.s("title"), style = MaterialTheme.typography.titleLarge)
-            Text(entry.s("artist"))
-            Text(tr("آمادهٔ آفلاین", "Ready offline"))
-            Action(tr("باز کردن آهنگ", "Open song"), onClick = { song(entry.s("id")) })
-        } }
     }
 }

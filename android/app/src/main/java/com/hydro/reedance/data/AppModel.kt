@@ -326,6 +326,10 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
             if(type == "vocabulary" && dao.review(id, song) == null) dao.saveReview(ReviewCard(id, songId = song))
         }
     } }
+    /** Removal is idempotent: rapid taps cannot toggle an item back on before Room emits. */
+    fun removeBookmark(mark: Bookmark) { mutation {
+        dao.bookmark(mark.songId, mark.itemType, mark.itemId)?.let { dao.deleteBookmark(it) }
+    } }
     private fun learningMutation(block: suspend () -> Boolean) = operation("ذخیره پیشرفت ناموفق / Progress save failed") {
         val completed = mutationMutex.withLock { withContext(Dispatchers.IO) { database.withTransaction { block() } } }
         if(completed) activity.complete()
