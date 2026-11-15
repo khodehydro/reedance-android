@@ -1,5 +1,11 @@
 package com.hydro.reedance.ui
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.input.nestedscroll.*
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.items
@@ -76,23 +82,53 @@ import kotlinx.coroutines.flow.collectLatest
     var selected by androidx.compose.runtime.saveable.rememberSaveable(settings.targetLanguage) { mutableIntStateOf(0) }
     val types = listOf("song", "vocabulary", "grammar", "idioms", "sentences")
     val requestKey = settings.targetLanguage to selected
+    var compact by remember(requestKey) { mutableStateOf(false) }
+    val threshold = with(LocalDensity.current) { 40.dp.toPx() }
+    val scrollConnection = remember(requestKey, threshold) {
+        object : NestedScrollConnection {
+            var distance = 0f
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if(source == NestedScrollSource.UserInput && available.y != 0f) {
+                    if(distance * available.y < 0f) distance = 0f
+                    distance += available.y
+                    if(kotlin.math.abs(distance) >= threshold) {
+                        compact = distance < 0f
+                        distance = 0f
+                    }
+                }
+                return Offset.Zero
+            }
+            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                if(source == NestedScrollSource.UserInput && available.y > 0f) compact = false
+                return Offset.Zero
+            }
+        }
+    }
+    val duration = if(LocalReducedMotion.current) 0 else 190
+    val headerTop by animateDpAsState(if(compact) 8.dp else 24.dp, tween(duration), label = "library-header-padding")
     val preparedEntries by produceState<Pair<Pair<String, Int>, List<Bookmark>>?>(null, bookmarks, requestKey) {
         value = requestKey to withContext(Dispatchers.Default) { libraryBookmarks(bookmarks, types[selected]) }
     }
     val preparingEntries = preparedEntries?.first != requestKey
     val entries = preparedEntries?.takeIf { it.first == requestKey }?.second.orEmpty()
     val catalogById = remember(catalog) { catalog.associateBy { it.s("id") } }
-    Column(Modifier.fillMaxSize().padding(top = 24.dp)) {
+    Column(Modifier.fillMaxSize().padding(top = headerTop)) {
         Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Heading(tr("کتابخانهٔ تو", "Your little collection"), tr("نشان‌شده‌ها؛ از جدید به قدیم.", "Your saved items, newest first."))
-            PillTabs(listOf(
+            AnimatedVisibility(!compact, enter = fadeIn(tween(duration)) + expandVertically(tween(duration)),
+                exit = fadeOut(tween(duration)) + shrinkVertically(tween(duration))) {
+                Heading(tr("کتابخانهٔ تو", "Your little collection"), tr("نشان‌شده‌ها؛ از جدید به قدیم.", "Your saved items, newest first."))
+            }
+            CollapsingPillTabs(listOf(
                 PillOption(tr("آهنگ‌ها", "Songs"), UiIcons.Lyrics, filledIcon = UiIcons.LyricsFilled),
                 PillOption(tr("لغت‌ها", "Words"), UiIcons.Words, filledIcon = UiIcons.WordsFilled),
                 PillOption(tr("نکته‌ها", "Notes"), UiIcons.Notes, filledIcon = UiIcons.NotesFilled),
                 PillOption(tr("اصطلاحات", "Expressions"), UiIcons.Phrases, filledIcon = UiIcons.PhrasesFilled),
                 PillOption(tr("جمله‌ها", "Sentences"), UiIcons.Lines, filledIcon = UiIcons.LinesFilled)
-            ), selected) { selected = it }
-            Text(tr("${entries.size} مورد نشان‌شده", "${entries.size} saved items"), style = MaterialTheme.typography.labelMedium)
+            ), selected, compact) { selected = it }
+            AnimatedVisibility(!compact, enter = fadeIn(tween(duration)) + expandVertically(tween(duration)),
+                exit = fadeOut(tween(duration)) + shrinkVertically(tween(duration))) {
+                Text(tr("${entries.size} مورد نشان‌شده", "${entries.size} saved items"), style = MaterialTheme.typography.labelMedium)
+            }
         }
         androidx.compose.runtime.key(settings.targetLanguage, selected) {
             val listState = androidx.compose.foundation.lazy.rememberLazyListState()
@@ -113,7 +149,7 @@ import kotlinx.coroutines.flow.collectLatest
                         }
                 }
             }
-            androidx.compose.foundation.lazy.LazyColumn(Modifier.weight(1f), state = listState,
+            androidx.compose.foundation.lazy.LazyColumn(Modifier.weight(1f).nestedScroll(scrollConnection), state = listState,
                 contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 20.dp + LocalOverlayBottomInset.current),
                 verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 if(preparingEntries) item(key = "preparing") {

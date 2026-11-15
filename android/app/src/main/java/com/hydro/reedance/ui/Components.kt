@@ -65,7 +65,10 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
 @Composable fun ExpandedPillTabs(items: List<PillOption>, selected: Int, onSelect: (Int) -> Unit) =
     PillTabRow(items, selected, true, onSelect)
 
-@Composable private fun PillTabRow(items: List<PillOption>, selected: Int, expanded: Boolean, onSelect: (Int) -> Unit) {
+@Composable internal fun CollapsingPillTabs(items: List<PillOption>, selected: Int, compact: Boolean, onSelect: (Int) -> Unit) =
+    PillTabRow(items, selected, false, onSelect, compact)
+
+@Composable private fun PillTabRow(items: List<PillOption>, selected: Int, expanded: Boolean, onSelect: (Int) -> Unit, compact: Boolean = false) {
     val reduced = LocalReducedMotion.current
     val duration = if(reduced) 0 else 150
     Row(Modifier.fillMaxWidth().then(if(expanded) Modifier else Modifier.horizontalScroll(rememberScrollState())).selectableGroup().padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -77,7 +80,7 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
             Surface(shape = if(option.flag != null) CircleShape else RoundedCornerShape(50), color = background, contentColor = foreground,
                 shadowElevation = if(active) 3.dp else 0.dp,
                 border = BorderStroke(1.dp, if(active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f)),
-                modifier = (if(expanded) Modifier.weight(1f) else Modifier).graphicsLayer { scaleX = if(expanded) 1f else scale; scaleY = scale }
+                modifier = (if(expanded) Modifier.weight(1f) else Modifier).animateContentSize(tween(duration)).graphicsLayer { scaleX = if(expanded) 1f else scale; scaleY = scale }
                     .selectable(active, role = Role.Tab, onClick = { if(!active) onSelect(index) })
                     .semantics { contentDescription = option.description }) {
                 if(option.flag != null) {
@@ -89,7 +92,11 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
                         fontWeight = if(active) FontWeight.Bold else FontWeight.Normal)
                 } else Row(Modifier.heightIn(min = 48.dp).padding(horizontal = 16.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
                     (if(active) option.filledIcon ?: option.icon else option.icon)?.let { AppIcon(it, null, Modifier.size(17.dp)) }
-                    Text(option.label, style = MaterialTheme.typography.labelLarge, fontWeight = if(active) FontWeight.Bold else FontWeight.Normal)
+                    AnimatedVisibility(!compact || option.icon == null,
+                        enter = fadeIn(tween(duration)) + expandHorizontally(tween(duration)),
+                        exit = fadeOut(tween(duration)) + shrinkHorizontally(tween(duration))) {
+                        Text(option.label, style = MaterialTheme.typography.labelLarge, fontWeight = if(active) FontWeight.Bold else FontWeight.Normal)
+                    }
                 }
             }
         }

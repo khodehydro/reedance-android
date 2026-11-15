@@ -580,6 +580,17 @@ class AssetTests(unittest.TestCase):
         for token in ['size > 4', 'lock.withLock', 'cached?.revision == revision', 'row.signedPayloadSha256', 'row.activeVersionCode', 'withContext(Dispatchers.Default)', 'items[mark.itemType to mark.itemId]']:
             self.assertIn(token, loader)
 
+    def test_library_header_and_tabs_collapse_on_user_scroll_without_consuming_it(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        library = (ui / 'Library.kt').read_text().split('@Composable fun LibraryScreen')[1]
+        for token in ['compact by remember(requestKey)', 'NestedScrollSource.UserInput', 'compact = distance < 0f', 'return Offset.Zero', '.nestedScroll(scrollConnection)', 'CollapsingPillTabs(listOf(', '), selected, compact)', 'AnimatedVisibility(!compact']:
+            self.assertIn(token, library)
+        tabs = (ui / 'Components.kt').read_text()
+        self.assertIn('AnimatedVisibility(!compact || option.icon == null', tabs)
+        self.assertIn('contentDescription = option.description', tabs)
+        self.assertIn('expandHorizontally(tween(duration))', tabs)
+        self.assertIn('shrinkHorizontally(tween(duration))', tabs)
+
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))
 
