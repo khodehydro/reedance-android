@@ -1,7 +1,5 @@
 package com.hydro.reedance.ui
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.tween
 import androidx.compose.ui.input.nestedscroll.*
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalDensity
@@ -74,6 +72,7 @@ import kotlinx.coroutines.flow.collectLatest
         Text(tr("پاسخ درست: خانهٔ بعد با فاصلهٔ ۲، ۴، ۸ و ۱۶ روز. فراموشی: خانهٔ اول، یک دقیقهٔ دیگر.", "Remembered: next stage in 2, 4, 8 or 16 days. Forgotten: stage one, due in one minute."), style = MaterialTheme.typography.bodySmall)
     }
 }
+@OptIn(ExperimentalFoundationApi::class)
 @Composable fun LibraryScreen(model: AppModel, song: (String) -> Unit) {
     val bookmarks by model.bookmarks.collectAsStateWithLifecycle()
     val settings by model.settings.collectAsStateWithLifecycle()
@@ -103,64 +102,67 @@ import kotlinx.coroutines.flow.collectLatest
             }
         }
     }
-    val duration = if(LocalReducedMotion.current) 0 else 190
     val preparedEntries by produceState<Pair<Pair<String, Int>, List<Bookmark>>?>(null, bookmarks, requestKey) {
         value = requestKey to withContext(Dispatchers.Default) { libraryBookmarks(bookmarks, types[selected]) }
     }
     val preparingEntries = preparedEntries?.first != requestKey
     val entries = preparedEntries?.takeIf { it.first == requestKey }?.second.orEmpty()
     val catalogById = remember(catalog) { catalog.associateBy { it.s("id") } }
-    Column(Modifier.fillMaxSize().padding(top = 8.dp)) {
-        Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            AnimatedVisibility(!compact, enter = fadeIn(tween(duration)), exit = fadeOut(tween(duration))) {
-                Heading(tr("کتابخانهٔ تو", "Your little collection"), tr("نشان‌شده‌ها؛ از جدید به قدیم.", "Your saved items, newest first."))
-            }
-            CollapsingPillTabs(listOf(
-                PillOption(tr("آهنگ‌ها", "Songs"), UiIcons.Lyrics, filledIcon = UiIcons.LyricsFilled),
-                PillOption(tr("لغت‌ها", "Words"), UiIcons.Words, filledIcon = UiIcons.WordsFilled),
-                PillOption(tr("نکته‌ها", "Notes"), UiIcons.Notes, filledIcon = UiIcons.NotesFilled),
-                PillOption(tr("اصطلاحات", "Expressions"), UiIcons.Phrases, filledIcon = UiIcons.PhrasesFilled),
-                PillOption(tr("جمله‌ها", "Sentences"), UiIcons.Lines, filledIcon = UiIcons.LinesFilled)
-            ), selected, compact) { selected = it }
-            AnimatedVisibility(!compact, enter = fadeIn(tween(duration)), exit = fadeOut(tween(duration))) {
-                Text(tr("${entries.size} مورد نشان‌شده", "${entries.size} saved items"), style = MaterialTheme.typography.labelMedium)
+    androidx.compose.runtime.key(settings.targetLanguage, selected) {
+        val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+        LaunchedEffect(listState, entries) {
+            snapshotFlow {
+                val visible = listState.layoutInfo.visibleItemsInfo.filter { it.index >= 2 }
+                val start = ((visible.firstOrNull()?.index ?: 2) - 2).coerceAtLeast(0)
+                val end = ((visible.lastOrNull()?.index ?: 2) - 2).coerceAtLeast(0)
+                start to end
+            }.distinctUntilChanged().collectLatest { (start, end) ->
+                delay(100) // Coalesce range changes during a fling instead of chasing each row.
+                // A small rolling window, never the complete saved library.
+                val from = (start - 2).coerceIn(0, entries.size)
+                val until = (end + 9).coerceIn(from, minOf(entries.size, from + 24))
+                entries.subList(from, until)
+                    .filter { it.itemType != "song" }.distinctBy { it.songId }.take(4).forEach { mark ->
+                        try { if(model.cachedLibraryItem(mark) == null) model.libraryItem(mark) }
+                        catch(cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch(_: Exception) { /* The visible card supplies the unavailable state. */ }
+                    }
             }
         }
-        androidx.compose.runtime.key(settings.targetLanguage, selected) {
-            val listState = androidx.compose.foundation.lazy.rememberLazyListState()
-            LaunchedEffect(listState, entries) {
-                snapshotFlow {
-                    val visible = listState.layoutInfo.visibleItemsInfo
-                    val start = (visible.firstOrNull()?.index ?: 0).coerceAtLeast(0)
-                    val end = visible.lastOrNull()?.index ?: 0
-                    start to end
-                }.distinctUntilChanged().collectLatest { (start, end) ->
-                    delay(100) // Coalesce range changes during a fling instead of chasing each row.
-                    // A small rolling window, never the complete saved library.
-                    val from = (start - 2).coerceIn(0, entries.size)
-                    val until = (end + 9).coerceIn(from, minOf(entries.size, from + 24))
-                    entries.subList(from, until)
-                        .filter { it.itemType != "song" }.distinctBy { it.songId }.take(4).forEach { mark ->
-                            try { if(model.cachedLibraryItem(mark) == null) model.libraryItem(mark) }
-                            catch(cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch(_: Exception) { /* The visible card supplies the unavailable state. */ }
-                        }
+        CompositionLocalProvider(LocalItemEntranceEnabled provides false) {
+        androidx.compose.foundation.lazy.LazyColumn(Modifier.fillMaxSize().nestedScroll(scrollConnection), state = listState,
+            contentPadding = PaddingValues(top = 8.dp, bottom = 20.dp + LocalOverlayBottomInset.current),
+            verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            item(key = "library-heading", contentType = "heading") {
+                Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Heading(tr("کتابخانهٔ تو", "Your little collection"), tr("نشان‌شده‌ها؛ از جدید به قدیم.", "Your saved items, newest first."))
+                    Text(tr("${entries.size} مورد نشان‌شده", "${entries.size} saved items"), style = MaterialTheme.typography.labelMedium)
                 }
             }
-            CompositionLocalProvider(LocalItemEntranceEnabled provides false) {
-            androidx.compose.foundation.lazy.LazyColumn(Modifier.weight(1f).nestedScroll(scrollConnection), state = listState,
-                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 20.dp + LocalOverlayBottomInset.current),
-                verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                if(preparingEntries) item(key = "preparing") {
-                    LinearProgressIndicator(Modifier.fillMaxWidth())
+            stickyHeader(key = "library-tabs") {
+                Surface(color = MaterialTheme.colorScheme.background) {
+                    Box(Modifier.padding(horizontal = 20.dp)) {
+                        CollapsingPillTabs(listOf(
+                            PillOption(tr("آهنگ‌ها", "Songs"), UiIcons.Lyrics, filledIcon = UiIcons.LyricsFilled),
+                            PillOption(tr("لغت‌ها", "Words"), UiIcons.Words, filledIcon = UiIcons.WordsFilled),
+                            PillOption(tr("نکته‌ها", "Notes"), UiIcons.Notes, filledIcon = UiIcons.NotesFilled),
+                            PillOption(tr("اصطلاحات", "Expressions"), UiIcons.Phrases, filledIcon = UiIcons.PhrasesFilled),
+                            PillOption(tr("جمله‌ها", "Sentences"), UiIcons.Lines, filledIcon = UiIcons.LinesFilled)
+                        ), selected, compact) { selected = it }
+                    }
                 }
-                else if(entries.isEmpty()) item(key = "empty") {
-                    Panel { Text(tr("در این بخش هنوز موردی نشان نکرده‌ای.", "No saved items in this tab yet.")) }
-                }
-                items(entries, key = { "${it.songId}:${it.itemType}:${it.itemId}" }, contentType = { it.itemType }) { mark ->
+            }
+            if(preparingEntries) item(key = "preparing") {
+                LinearProgressIndicator(Modifier.fillMaxWidth())
+            }
+            else if(entries.isEmpty()) item(key = "empty") {
+                Panel { Text(tr("در این بخش هنوز موردی نشان نکرده‌ای.", "No saved items in this tab yet.")) }
+            }
+            items(entries, key = { "${it.songId}:${it.itemType}:${it.itemId}" }, contentType = { it.itemType }) { mark ->
+                Box(Modifier.padding(horizontal = 20.dp)) {
                     LibraryBookmarkCard(model, mark, catalogById[mark.songId], song)
                 }
             }
-            }
+        }
         }
     }
 }

@@ -583,19 +583,20 @@ class AssetTests(unittest.TestCase):
     def test_library_header_and_tabs_collapse_on_user_scroll_without_consuming_it(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'
         library = (ui / 'Library.kt').read_text().split('@Composable fun LibraryScreen')[1]
-        for token in ['compact by remember(requestKey)', 'NestedScrollSource.UserInput', 'compact = distance < 0f', 'return Offset.Zero', '.nestedScroll(scrollConnection)', 'CollapsingPillTabs(listOf(', '), selected, compact)', 'AnimatedVisibility(!compact']:
+        for token in ['compact by remember(requestKey)', 'NestedScrollSource.UserInput', 'compact = distance < 0f', 'return Offset.Zero', '.nestedScroll(scrollConnection)', 'CollapsingPillTabs(listOf(', '), selected, compact)', 'stickyHeader(key = "library-tabs")']:
             self.assertIn(token, library)
-        tabs = (ui / 'Components.kt').read_text()
-        self.assertIn('AnimatedVisibility(!compact || option.icon == null', tabs)
-        self.assertIn('contentDescription = option.description', tabs)
-        self.assertIn('expandHorizontally(tween(duration))', tabs)
-        self.assertIn('shrinkHorizontally(tween(duration))', tabs)
+        tabs = (ui / 'CollapsingPillTabs.kt').read_text()
+        self.assertIn('height(56.dp)', tabs)
+        self.assertIn('contentDescription = item.description', tabs)
+        self.assertIn('alpha = progress.value', tabs)
+        self.assertNotIn('AnimatedVisibility', tabs)
 
     def test_compact_library_tabs_center_and_scroll_avoids_redundant_motion_work(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'
         tabs = (ui / 'Components.kt').read_text()
-        self.assertIn('compact, centered = true', tabs)
-        self.assertIn('contentAlignment = if(centered) Alignment.Center else Alignment.CenterStart', tabs)
+        collapsing = (ui / 'CollapsingPillTabs.kt').read_text()
+        self.assertIn('contentAlignment = Alignment.Center', collapsing)
+        self.assertIn('Modifier.clearAndSetSemantics', collapsing)
         self.assertNotIn('.animateContentSize(tween(duration))', tabs)
         self.assertIn('if(LocalItemEntranceEnabled.current) Modifier.itemEntrance() else Modifier', tabs)
         library = (ui / 'Library.kt').read_text().split('@Composable fun LibraryScreen')[1]
@@ -605,6 +606,22 @@ class AssetTests(unittest.TestCase):
         self.assertNotIn('animateDpAsState', library)
         self.assertNotIn('expandVertically', library)
         self.assertNotIn('shrinkVertically', library)
+
+    def test_library_collapse_animation_uses_fixed_slot_and_draw_only_progress(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        tabs = (ui / 'CollapsingPillTabs.kt').read_text()
+        self.assertIn('Modifier.fillMaxWidth().height(56.dp)', tabs)
+        self.assertEqual(2, tabs.count('Modifier.graphicsLayer {'))
+        self.assertIn('interactive: Boolean', tabs)
+        self.assertIn('enabled = interactive', tabs)
+        self.assertNotIn('animateContentSize', tabs)
+        self.assertNotIn('expandHorizontally', tabs)
+        self.assertNotIn('shrinkHorizontally', tabs)
+        library = (ui / 'Library.kt').read_text().split('@Composable fun LibraryScreen')[1]
+        self.assertIn('stickyHeader(key = "library-tabs")', library)
+        self.assertIn('item(key = "library-heading"', library)
+        self.assertNotIn('AnimatedVisibility', library)
+        self.assertIn('Modifier.fillMaxSize().nestedScroll(scrollConnection)', library)
 
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))

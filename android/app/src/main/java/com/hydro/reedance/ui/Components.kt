@@ -65,13 +65,10 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
 @Composable fun ExpandedPillTabs(items: List<PillOption>, selected: Int, onSelect: (Int) -> Unit) =
     PillTabRow(items, selected, true, onSelect)
 
-@Composable internal fun CollapsingPillTabs(items: List<PillOption>, selected: Int, compact: Boolean, onSelect: (Int) -> Unit) =
-    PillTabRow(items, selected, false, onSelect, compact, centered = true)
-
-@Composable private fun PillTabRow(items: List<PillOption>, selected: Int, expanded: Boolean, onSelect: (Int) -> Unit, compact: Boolean = false, centered: Boolean = false) {
+@Composable private fun PillTabRow(items: List<PillOption>, selected: Int, expanded: Boolean, onSelect: (Int) -> Unit) {
     val reduced = LocalReducedMotion.current
     val duration = if(reduced) 0 else 150
-    Box(Modifier.fillMaxWidth(), contentAlignment = if(centered) Alignment.Center else Alignment.CenterStart) {
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
     Row(Modifier.then(if(expanded) Modifier.fillMaxWidth() else Modifier.horizontalScroll(rememberScrollState())).selectableGroup().padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         items.forEachIndexed { index, option ->
             val active = selected == index
@@ -93,11 +90,7 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
                         fontWeight = if(active) FontWeight.Bold else FontWeight.Normal)
                 } else Row(Modifier.heightIn(min = 48.dp).padding(horizontal = 16.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
                     (if(active) option.filledIcon ?: option.icon else option.icon)?.let { AppIcon(it, null, Modifier.size(17.dp)) }
-                    AnimatedVisibility(!compact || option.icon == null,
-                        enter = fadeIn(tween(duration)) + expandHorizontally(tween(duration)),
-                        exit = fadeOut(tween(duration)) + shrinkHorizontally(tween(duration))) {
-                        Text(option.label, style = MaterialTheme.typography.labelLarge, fontWeight = if(active) FontWeight.Bold else FontWeight.Normal)
-                    }
+                    Text(option.label, style = MaterialTheme.typography.labelLarge, fontWeight = if(active) FontWeight.Bold else FontWeight.Normal)
                 }
             }
         }

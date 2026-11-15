@@ -140,3 +140,19 @@ Before calling this smooth, profile release/profileable builds on the reporting
 device (model/API, dataset/song count, cold and warm scroll, rapid tab switching,
 large text, RTL/LTR); inspect FrameTimeline/main/RenderThread, allocations and
 package-read counts. Kotlin syntax and host source checks cannot measure jank.
+
+### Follow-up: fixed viewport during tab collapse
+
+The previous library implementation still changed the lazy viewport when heading
+visibility completed, and animated label widths individually. Replace that path:
+
+- Heading/count are normal lazy content and scroll out naturally.
+- The tab bar is one fixed 56dp sticky header; the list remains full-size.
+- Two premeasured strips (labels/icons) crossfade/translate through graphicsLayer.
+  Animation progress is read only in layer lambdas, never in width/height/padding.
+- Only the current strip accepts input and exposes accessibility semantics. Hidden
+  horizontal-scroll controls cannot steal touches.
+- Prefetch ignores sticky-header indexes when calculating the rolling item window.
+
+This targets the reported minimize transition without shortening animation to
+mask it. Device frame traces and native tests are still required for confirmation.
