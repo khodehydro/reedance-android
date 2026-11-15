@@ -60,14 +60,23 @@ private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val qu
     if(prepared == null) { Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) { CircularProgressIndicator() }; return }
     val dueCards = prepared.dueCards
     val questions = prepared.questions
-    var index by remember { mutableIntStateOf(0) }
-    var answer by remember(index) { mutableStateOf<List<String>>(emptyList()) }
-    var checked by remember(index) { mutableStateOf<Grade?>(null) }
-    var grades by remember { mutableStateOf<List<Triple<JsonObject, List<String>, Grade>>>(emptyList()) }
-    var busy by remember { mutableStateOf(false) }
+    var index by remember(data, review) { mutableIntStateOf(0) }
+    var answer by remember(data, review, index) { mutableStateOf<List<String>>(emptyList()) }
+    var checked by remember(data, review, index) { mutableStateOf<Grade?>(null) }
+    var grades by remember(data, review) { mutableStateOf<List<Triple<JsonObject, List<String>, Grade>>>(emptyList()) }
+    var busy by remember(data, review) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val reduced = LocalReducedMotion.current
     val fa = LocalFa.current
+    // This effect is cancelled when leaving the screen or changing the question/session.
+    LaunchedEffect(index, checked, data, review) {
+        val result = checked ?: return@LaunchedEffect
+        if(result.correct && index < questions.size) {
+            delay(850) // Keep success visible, including when decorative motion is disabled.
+            grades = grades + Triple(questions[index], answer.toList(), result)
+            index++
+        }
+    }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         if(index >= questions.size) {
             Heading(if(questions.isEmpty()) tr("فعلاً مروری نداری", "All caught up") else tr("یک قدم جلوتر!", "One step further!"), tr("پیشرفتت روی همین دستگاه ذخیره شد.", "Your progress is saved on this device."))
@@ -85,6 +94,20 @@ private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val qu
             if(!review) PressOutlinedButton(openReview) { Text(tr("مرور واژه‌ها در لایتنر", "Review words in Leitner")) }
         } else {
             val q = questions[index]
+            val submit: (List<String>) -> Unit = { submitted ->
+                if(!busy && checked == null && complete(q, submitted)) {
+                    busy = true
+                    answer = submitted
+                    scope.launch {
+                        try {
+                            val result = withContext(Dispatchers.Default) { grade(q, submitted, data.s("locale")) }
+                            if(review) q.strings("relatedLexemeIds").forEach { dueCards[it]?.let { card -> model.review(card, result.correct) } }
+                            else model.record(q, submitted, result)
+                            checked = result
+                        } finally { busy = false }
+                    }
+                }
+            }
             Text(tr("سؤال ${index+1} از ${questions.size}", "Question ${index+1} of ${questions.size}"), color = MaterialTheme.colorScheme.primary)
             LinearProgressIndicator(progress = { index.toFloat()/questions.size }, modifier = Modifier.fillMaxWidth())
             Deck(index) {
@@ -93,12 +116,7 @@ private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val qu
                     Text(q.tr("prompt", fa), style = MaterialTheme.typography.titleLarge)
                     if(q.s("context").isNotEmpty()) Foreign(q.s("context"))
                     when(q.s("type")) {
-                        "choice" -> q.a("options").forEach { option ->
-                            PressOutlinedButton({ answer = listOf(option.s("id")) }, Modifier.fillMaxWidth(), enabled = checked == null && !busy,
-                                colors = ButtonDefaults.outlinedButtonColors(containerColor = if(answer.singleOrNull() == option.s("id")) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface)) {
-                                Text((if(answer.singleOrNull() == option.s("id")) "● " else "○ ") + option.s(if(fa) "fa" else "en"))
-                            }
-                        }
+                        "choice" -> PracticeChoices(q, answer.singleOrNull(), checked, busy) { submit(listOf(it)) }
                         "typing" -> OutlinedTextField(answer.firstOrNull() ?: "", { answer = listOf(it) }, Modifier.fillMaxWidth(), enabled = checked == null && !busy, label = { Text(tr("پاسخ", "Answer")) }, singleLine = true)
                         "order" -> {
                             Foreign(answer.joinToString(" ") { id -> q.a("chunks").find { it.s("id") == id }?.s("text") ?: "" }, large = true)
@@ -124,23 +142,14 @@ private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val qu
                             }
                         }
                     }
-                    if(checked == null) Action(tr("بررسی پاسخ", "Check answer"), enabled = complete(q, answer) && !busy) {
-                        if(!busy && checked == null) {
-                            busy = true
-                            val submitted = answer.toList()
-                            scope.launch {
-                                try {
-                                    val result = withContext(Dispatchers.Default) { grade(q, submitted, data.s("locale")) }
-                                    checked = result
-                                    if(review) q.strings("relatedLexemeIds").forEach { dueCards[it]?.let { card -> model.review(card, result.correct) } }
-                                    else model.record(q, submitted, result)
-                                } finally { busy = false }
-                            }
+                    if(checked == null) {
+                        if(q.s("type") != "choice") Action(tr("بررسی پاسخ", "Check answer"), enabled = complete(q, answer) && !busy) {
+                            submit(answer.toList())
                         }
                     } else {
                         Text(if(checked!!.correct) tr("✓ آفرین، درست بود", "✓ You got it") else tr("نیاز به مرور؛ اشکالی ندارد", "Needs review — keep going"), style = MaterialTheme.typography.titleMedium)
                         Text(q.tr("explanation", fa))
-                        Action(tr("ادامه", "Continue"), enabled = !busy) {
+                        if(!checked!!.correct) Action(tr("ادامه", "Continue"), enabled = !busy) {
                             if(!busy) { busy = true; scope.launch {
                                 if(!reduced) delay(220)
                                 grades = grades + Triple(q, answer.toList(), checked!!)

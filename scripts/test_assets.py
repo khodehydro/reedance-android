@@ -377,6 +377,21 @@ class AssetTests(unittest.TestCase):
         self.assertIn('.filter { it.isNotBlank() }.distinct()', extra)
         self.assertIn('SongQuizInvitation(openQuiz)', (ui / 'Song.kt').read_text())
 
+    def test_practice_choices_submit_on_tap_and_only_errors_wait_for_continue(self):
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        quiz = (ui / 'Quiz.kt').read_text()
+        self.assertIn('PracticeChoices(q, answer.singleOrNull(), checked, busy) { submit(listOf(it)) }', quiz)
+        self.assertIn('if(!busy && checked == null && complete(q, submitted))', quiz)
+        self.assertIn('if(q.s("type") != "choice") Action', quiz)
+        self.assertIn('if(!checked!!.correct) Action', quiz)
+        effect = quiz.split('LaunchedEffect(index, checked, data, review)')[1].split('    Column')[0]
+        self.assertIn('if(result.correct && index < questions.size)', effect)
+        self.assertIn('delay(850)', effect)
+        self.assertIn('index++', effect)
+        choices = (ui / 'PracticeChoices.kt').read_text()
+        for token in ['id == question.s("correctId")', 'id == selected && !correct', 'Color(0xFF176B3A)', 'Color(0xFFA82232)', 'disabledContainerColor = background', 'disabledContentColor = foreground', 'enabled = result == null && !busy', 'stateDescription = state']:
+            self.assertIn(token, choices)
+
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))
 
