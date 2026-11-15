@@ -32,6 +32,22 @@ class MatchBoardTest {
         compose.runOnIdle { assertEquals(listOf("", "a"), answer) }
     }
 
+    @Test fun swappedDuplicateMeaningsReceiveGreenFeedback() {
+        val duplicates = JsonParser.parseString("""{"pairs":[{"id":"a","text":"kalp","en":"heart"},{"id":"b","text":"gönül","en":"heart"}]}""").asJsonObject
+        compose.setContent {
+            CompositionLocalProvider(LocalFa provides false, LocalReducedMotion provides true) {
+                ReedanceTheme(Settings(language = "en")) {
+                    MatchBoard(duplicates, listOf("b", "a"), true, false, {})
+                }
+            }
+        }
+        compose.onNodeWithText("✓ kalp")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Correct"))
+        compose.onNodeWithText("✓ gönül")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Correct"))
+        compose.onAllNodesWithText("✓ heart").assertCountEquals(2)
+    }
+
     @Test fun checkedBoardShowsPerConnectionFeedbackAndLocksInput() {
         compose.setContent {
             CompositionLocalProvider(LocalFa provides false, LocalReducedMotion provides true) {

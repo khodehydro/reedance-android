@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.google.gson.JsonObject
 import com.hydro.reedance.data.*
+import com.hydro.reedance.domain.matchCorrectness
 
 /** One-to-one assignment: moving a meaning disconnects its previous word. */
 internal fun connectMatch(answer: List<String>, count: Int, word: Int, meaning: String): List<String> =
@@ -47,6 +48,7 @@ private val MatchRed = Color(0xFFA82232)
     }
     val values = if(solution) ids else answer
     val fa = LocalFa.current
+    val correctLinks = matchCorrectness(question, values, if(fa) "fa" else "en")
     var word by remember(question) { mutableStateOf<Int?>(null) }
     var meaning by remember(question) { mutableStateOf<String?>(null) }
     val leftBounds = remember(question) { mutableStateMapOf<Int, Rect>() }
@@ -54,7 +56,7 @@ private val MatchRed = Color(0xFFA82232)
     val neutral = MaterialTheme.colorScheme.primary
     val editable = enabled && !checked && !solution
     fun linkColor(index: Int): Color = if(!checked && !solution) neutral
-        else if(values.getOrNull(index) == ids[index]) MatchGreen else MatchRed
+        else if(correctLinks.getOrNull(index) == true) MatchGreen else MatchRed
     fun commit(index: Int, id: String) {
         onAnswer(connectMatch(answer, pairs.size, index, id))
         word = null; meaning = null

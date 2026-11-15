@@ -402,6 +402,19 @@ class AssetTests(unittest.TestCase):
             self.assertIn(token, board)
         self.assertNotIn('PressFilterChip', board)
 
+    def test_match_grading_and_feedback_share_visible_meaning_equivalence(self):
+        source = (ASSETS / 'main/java/com/hydro/reedance/domain/Learning.kt').read_text()
+        self.assertIn('fun matchCorrectness(', source)
+        self.assertIn('expected.s(meaningLanguage)', source)
+        self.assertIn('chosen.s(meaningLanguage)', source)
+        self.assertIn('expectedText.isNotBlank()', source)
+        self.assertIn('counts[chosenId] == 1', source)
+        self.assertIn('complete(q, answer) && matches.all { it }', source)
+        self.assertIn('!matches[i]', source)
+        ui = ASSETS / 'main/java/com/hydro/reedance/ui'
+        self.assertIn('matchCorrectness(question, values, if(fa) "fa" else "en")', (ui / 'MatchBoard.kt').read_text())
+        self.assertIn('grade(q, submitted, data.s("locale"), if(fa) "fa" else "en")', (ui / 'Quiz.kt').read_text())
+
     def test_lesson_matches_unchanged_v1_schema(self):
         Draft202012Validator(load(ROOT / 'contracts/v1/lesson.schema.json')).validate(load(ROOT / 'tests/fixtures/legacy-demo/demo_lesson.json'))
 

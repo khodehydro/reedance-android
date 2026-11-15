@@ -101,7 +101,7 @@ private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val qu
                     answer = submitted
                     scope.launch {
                         try {
-                            val result = withContext(Dispatchers.Default) { grade(q, submitted, data.s("locale")) }
+                            val result = withContext(Dispatchers.Default) { grade(q, submitted, data.s("locale"), if(fa) "fa" else "en") }
                             if(review) q.strings("relatedLexemeIds").forEach { dueCards[it]?.let { card -> model.review(card, result.correct) } }
                             else model.record(q, submitted, result)
                             checked = result
