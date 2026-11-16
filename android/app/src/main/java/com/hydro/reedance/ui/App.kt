@@ -59,9 +59,11 @@ import com.hydro.reedance.data.*
 @Composable private fun Setup(model: AppModel) {
     var language by rememberSaveable { mutableStateOf("en") }
     CompositionLocalProvider(LocalFa provides (language == "fa"), LocalLayoutDirection provides if(language == "fa") LayoutDirection.Rtl else LayoutDirection.Ltr) {
-        Column(Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(28.dp), verticalArrangement = Arrangement.spacedBy(22.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(Modifier.fillMaxSize()) {
+            PremiumBackdrop(Modifier.matchParentSize())
+            Column(Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(28.dp), verticalArrangement = Arrangement.spacedBy(22.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(Modifier.height(30.dp))
-            Image(painterResource(R.drawable.reedance_logo), "Reedance", Modifier.size(110.dp))
+            Image(painterResource(R.drawable.reedance_header), "Reedance", Modifier.size(120.dp))
             Text(tr("به ری‌دنس خوش آمدی", "Welcome to Reedance"), style = MaterialTheme.typography.headlineMedium)
             Text(tr("با موسیقی، زبان یاد بگیر.", "Find your rhythm. Learn a language."))
             Panel {
@@ -75,6 +77,7 @@ import com.hydro.reedance.data.*
             }
             Action(tr("شروع کنیم", "Let's get started"), Modifier.fillMaxWidth()) { model.language(language) }
             Text("HYDRO team", color = MaterialTheme.colorScheme.primary)
+            }
         }
     }
 }
