@@ -122,7 +122,7 @@ import com.hydro.reedance.data.*
     }
     LaunchedEffect(message) { if(message.isNotEmpty()) { snackbar.showSnackbar(message); model.message.value = "" } }
     fun navigate(to: String) { if(to == "quiz") model.pause(); page = to }
-    val independent = page in listOf("song", "quiz")
+    val independent = page in listOf("song", "quiz", "premium")
     BackHandler(page != "home") { page = when(page) { "quiz" -> if(reviewQuiz) "review" else "song"; "premium" -> premiumReturnPage; else -> "home" } }
     SearchDismissHost {
      Box(Modifier.fillMaxSize()) {
