@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.dp
         if(reduced) progress.snapTo(if(compact) 1f else 0f)
         else progress.animateTo(if(compact) 1f else 0f, tween(180))
     }
-    Box(Modifier.fillMaxWidth().height(56.dp), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxWidth().height(56.dp), contentAlignment = if(compact) Alignment.Center else Alignment.CenterStart) {
         LibraryTabStrip(items, selected, false, !compact, Modifier.graphicsLayer {
             alpha = 1f - progress.value
             translationY = -4.dp.toPx() * progress.value
