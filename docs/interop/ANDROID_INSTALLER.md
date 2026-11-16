@@ -125,10 +125,11 @@ signed installed songs appear in Downloaded and share normal playback/learning.
 The previous bundled Gülüm II package and its old manifests have been removed
 from `android/app/src/main/assets`. No full song `.rdpack` is shipped as an app
 asset. For an unprovisioned debug build only, the app downloads the hosting URL
-from `android/app/src/debug/assets/pack_direct_test.json`. The path is relative
-to `public_html`; `pz25995.parspack.net` is the domain folder shown in the
-provided DirectAdmin screenshot. Confirm that this is the public HTTPS domain
-for the site before relying on it.
+from `android/app/src/debug/assets/pack_direct_test.json`. The current debug URL is
+`http://dl.reedance.ir/songs/tr/Ayaz%20Erdo%C4%9Fan/G%C3%BCl%C3%BCm%20II/file.rdpack`.
+The supplied HTTP link is permitted only in the debug build for this exact
+host; size and pinned SHA-256 are checked before decryption. Production downloads
+still require HTTPS and signed manifests.
 
 The download is pinned to the filename SHA-256
 `5768de9104f518d4c227ea9ab94ffa9f98d811bbb9e1dcfa194c36a60587c19e` and exact
@@ -140,9 +141,10 @@ performed outside Android. Actual WorkManager download, on-device extraction,
 and playback still require a successful Android debug build/device run.
 
 This direct-link route is intentionally limited to `DEBUG` builds using the
-public test key. It checks HTTPS, allowlisted redirects, exact length, pinned
-SHA-256, GCM authentication, strict ZIP contents, schema, and semantic/media
-validation. It does **not** verify an Ed25519 publisher manifest, so it makes
+public test key. It allows cleartext HTTP only to the pinned `dl.reedance.ir`
+host in debug; redirects are restricted to the allowlist and may upgrade to
+HTTPS. It checks exact length, pinned SHA-256, GCM authentication, strict ZIP
+contents, schema, and semantic/media validation. It does **not** verify an Ed25519 publisher manifest, so it makes
 no publisher-authenticity claim and must not be enabled for production. The
 file itself is downloaded at runtime and is not placed in the APK. The tiny
 cross-platform test fixture under `src/test/resources` is test-only and is not

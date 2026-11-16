@@ -1,7 +1,8 @@
 {
   "gulum-2": {
-    "url": "https://pz25995.parspack.net/songs/tr/Ayaz%20Erdo%C4%9Fan/G%C3%BCl%C3%BCm%20II/v000003-5768de9104f518d4c227ea9ab94ffa9f98d811bbb9e1dcfa194c36a60587c19e.rdpack",
-    "allowedHosts": ["pz25995.parspack.net"],
+    "url": "http://dl.reedance.ir/songs/tr/Ayaz%20Erdo%C4%9Fan/G%C3%BCl%C3%BCm%20II/file.rdpack",
+    "allowedHosts": ["dl.reedance.ir"],
+    "urlFileName": "file.rdpack",
     "fileName": "v000003-5768de9104f518d4c227ea9ab94ffa9f98d811bbb9e1dcfa194c36a60587c19e.rdpack",
     "sizeBytes": 7583229,
     "sha256": "5768de9104f518d4c227ea9ab94ffa9f98d811bbb9e1dcfa194c36a60587c19e",

@@ -44,18 +44,24 @@ class PackInstaller(private val context: Context) {
         } catch(_: java.io.FileNotFoundException) { return null }
         return if(index.has(song)) index.obj(song) else null
     }
-    private suspend fun download(url: String, file: File, limit: Long, hosts: Set<String>, progress: suspend (Long, Long) -> Unit) {
-        var current = url.toHttpUrl()
-        require(current.isHttps && current.username.isEmpty() && current.password.isEmpty() && current.fragment == null && current.query == null)
-        val origin = current.host
+    private suspend fun download(url: String, file: File, limit: Long, hosts: Set<String>, allowHttp: Boolean = false,
+        progress: suspend (Long, Long) -> Unit) {
+        val initial = url.toHttpUrl()
+        var current = initial
+        require((current.isHttps || allowHttp && current.scheme == "http") && current.username.isEmpty() && current.password.isEmpty() && current.fragment == null && current.query == null)
         val port = current.port
-        require(origin in hosts)
+        var secureRequired = current.isHttps
+        require(current.host in hosts)
         repeat(4) {
             currentCoroutineContext().ensureActive()
             client.newCall(Request.Builder().url(current).build()).execute().use { response ->
                 if(response.code in 300..399) {
-                    current = current.resolve(response.header("Location") ?: error("Missing redirect")) ?: error("Invalid redirect")
-                    require(current.isHttps && current.port == port && current.host in hosts && current.username.isEmpty() && current.password.isEmpty() && current.query == null && current.fragment == null)
+                    val next = current.resolve(response.header("Location") ?: error("Missing redirect")) ?: error("Invalid redirect")
+                    val secure = next.isHttps || allowHttp && !secureRequired && next.scheme == "http"
+                    val portAllowed = next.port == port || allowHttp && !initial.isHttps && next.isHttps && next.port == 443
+                    require(secure && portAllowed && next.host in hosts && next.username.isEmpty() && next.password.isEmpty() && next.query == null && next.fragment == null)
+                    current = next
+                    if(current.isHttps) secureRequired = true
                 } else {
                     require(response.isSuccessful) { "HTTP ${response.code}" }
                     val body = response.body ?: error("Empty response")
@@ -185,14 +191,15 @@ class PackInstaller(private val context: Context) {
         val size = entry.n("sizeBytes"); require(size in 1..268435456L)
         val url = entry.s("url").toHttpUrl()
         val hosts = entry.strings("allowedHosts").toSet()
-        require(url.isHttps && url.host in hosts && url.encodedPath.substringAfterLast('/') == name)
-        require(url.username.isEmpty() && url.password.isEmpty() && url.query == null && url.fragment == null)
+        require(hosts == setOf("dl.reedance.ir")) { "Debug direct-download host allowlist must stay pinned" }
+        require(url.scheme == "http" && url.host == "dl.reedance.ir" && url.host in hosts && url.encodedPath.substringAfterLast('/') == entry.s("urlFileName"))
+        require(entry.s("urlFileName").isNotEmpty() && url.username.isEmpty() && url.password.isEmpty() && url.query == null && url.fragment == null)
         val stage = File(File(root, ".staging").apply { mkdirs() }, java.util.UUID.randomUUID().toString()).apply { check(mkdirs()) }
         try {
             val pack = File(stage, "download.part")
             require(root.usableSpace > size * 3 + 32L * 1024 * 1024) { "Insufficient storage" }
             progress("download", 0, size)
-            download(url.toString(), pack, size, hosts) { bytes, total -> progress("download", bytes, total) }
+            download(url.toString(), pack, size, hosts, allowHttp = true) { bytes, total -> progress("download", bytes, total) }
             require(pack.length() == size && hash(pack) == entry.s("sha256")) { "Direct test package hash/length mismatch" }
             val payload = JsonObject().apply {
                 addProperty("manifestVersion", 1)
