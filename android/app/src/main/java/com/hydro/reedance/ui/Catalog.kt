@@ -3,7 +3,15 @@ package com.hydro.reedance.ui
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.LruCache
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -31,15 +39,18 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.animation.core.tween
 import com.hydro.reedance.R
 import com.hydro.reedance.data.*
 import com.google.gson.JsonObject
 import com.hydro.reedance.domain.latestSongs
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 fun cover(id: String): Int? = when(id) {
     "pending-gulum-ii", "gulum-2" -> R.drawable.gulum_ii
@@ -69,6 +80,11 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
     }
 }
 @Composable fun CatalogScreen(model: AppModel, home: Boolean, openSong: (String) -> Unit, starter: () -> Unit, explore: () -> Unit) {
+    if(home) CatalogFeed(model, true, openSong, starter, explore)
+    else ExploreCatalogScreen(model, openSong)
+}
+
+@Composable private fun CatalogFeed(model: AppModel, home: Boolean, openSong: (String) -> Unit, starter: () -> Unit, explore: () -> Unit) {
     val catalog by model.catalog.collectAsStateWithLifecycle()
     val settings by model.settings.collectAsStateWithLifecycle()
     val targetLanguage = settings.targetLanguage
@@ -131,6 +147,121 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
         }
     }
 }
+@OptIn(ExperimentalFoundationApi::class)
+@Composable private fun ExploreCatalogScreen(model: AppModel, openSong: (String) -> Unit) {
+    val catalog by model.catalog.collectAsStateWithLifecycle()
+    val settings by model.settings.collectAsStateWithLifecycle()
+    val installedIds by model.installedIds.collectAsStateWithLifecycle()
+    val query = rememberSaveable { mutableStateOf("") }
+    val targetLanguage = settings.targetLanguage
+    val filters = listOf(
+        PillOption(tr("همه", "All"), UiIcons.All, filledIcon = UiIcons.AllFilled),
+        PillOption(tr("رایگان", "Free"), UiIcons.Play, filledIcon = UiIcons.PlayFilled),
+        PillOption(tr("پریمیوم", "Premium"), UiIcons.Crown, filledIcon = UiIcons.CrownFilled),
+        PillOption(tr("دانلودشده‌ها", "Downloaded"), UiIcons.Check, filledIcon = UiIcons.CheckFilled)
+    )
+    val pagerState = rememberPagerState(pageCount = { filters.size })
+    val scope = rememberCoroutineScope()
+    val searchFocus = LocalSearchFocus.current
+    val compactPages = remember(filters.size) {
+        mutableStateListOf<Boolean>().apply { repeat(filters.size) { add(false) } }
+    }
+    val compact = compactPages[pagerState.currentPage]
+    DisposableEffect(searchFocus) { onDispose { searchFocus?.focused = false } }
+    LaunchedEffect(compact) { if(compact) searchFocus?.dismiss?.invoke() }
+
+    Column(Modifier.fillMaxSize()) {
+        AnimatedVisibility(
+            visible = !compact,
+            enter = fadeIn(tween(170)) + expandVertically(tween(190)),
+            exit = fadeOut(tween(120)) + shrinkVertically(tween(190))
+        ) {
+            Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Heading(tr("کشف موسیقی", "Discover music"), tr("موسیقی را بشنو، کلمه‌ها را کشف کن.", "Good music. Words that stay with you."))
+                OutlinedTextField(
+                    value = query.value,
+                    onValueChange = { query.value = it },
+                    modifier = Modifier.fillMaxWidth()
+                        .onFocusChanged { searchFocus?.focused = it.isFocused }
+                        .onGloballyPositioned { searchFocus?.bounds = it.boundsInRoot() },
+                    shape = RoundedCornerShape(20.dp),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { searchFocus?.dismiss?.invoke() }),
+                    leadingIcon = { AppIcon(UiIcons.Search, null, Modifier.size(20.dp)) },
+                    singleLine = true,
+                    label = { Text(tr("جست‌وجوی آهنگ یا خواننده", "Search songs or artists")) },
+                    trailingIcon = {
+                        if(query.value.isNotEmpty()) PressTextButton({ query.value = "" }) { Text(tr("پاک کردن", "Clear")) }
+                    }
+                )
+            }
+        }
+        Surface(color = MaterialTheme.colorScheme.background) {
+            Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
+                CollapsingPillTabs(filters, pagerState.currentPage, compact) { target ->
+                    scope.launch {
+                        if(kotlin.math.abs(target - pagerState.currentPage) > 1) pagerState.scrollToPage(target)
+                        else pagerState.animateScrollToPage(target)
+                    }
+                }
+            }
+        }
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.weight(1f),
+            key = { filters[it].label }
+        ) { page ->
+            val gridState = rememberLazyGridState()
+            val threshold = with(LocalDensity.current) { 40.dp.toPx() }
+            val scrollConnection = remember(page, threshold) {
+                LibraryScrollConnection(threshold) { compactPages[page] = it }
+            }
+            val filtered = remember(catalog, targetLanguage, page, installedIds, query.value) {
+                catalog.filter { song ->
+                    song.s("language") == targetLanguage &&
+                        (query.value.isBlank() || listOf(song.s("title"), song.s("artist")).any { it.contains(query.value.trim(), ignoreCase = true) }) &&
+                        when(page) {
+                            1 -> song.s("access") == "free"
+                            2 -> song.s("access") == "paid"
+                            3 -> song.s("id") in installedIds
+                            else -> true
+                        }
+                }
+            }
+            LaunchedEffect(gridState, scrollConnection) {
+                snapshotFlow { gridState.canScrollForward || gridState.canScrollBackward }
+                    .distinctUntilChanged().collectLatest { scrollable ->
+                        if(!scrollable) scrollConnection.reset()
+                    }
+            }
+            LaunchedEffect(query.value, targetLanguage, gridState) { gridState.scrollToItem(0) }
+            val reduced = LocalReducedMotion.current
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                state = gridState,
+                modifier = Modifier.fillMaxSize().nestedScroll(scrollConnection),
+                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 20.dp + LocalOverlayBottomInset.current),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                items(filtered, key = { it.s("id") }, contentType = { "song" }) { song ->
+                    SongTile(song, Modifier.fillMaxWidth().animateItem(
+                        fadeInSpec = tween(if(reduced) 0 else 180),
+                        placementSpec = tween(if(reduced) 0 else 220),
+                        fadeOutSpec = tween(if(reduced) 0 else 140)
+                    )) { openSong(song.s("id")) }
+                }
+                if(filtered.isEmpty()) item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
+                    Panel { Text(tr("آهنگی پیدا نشد؛ جست‌وجو یا فیلترها را تغییر بده.", "No songs found. Try another search or filter.")) }
+                }
+                item(key = "credits", span = { GridItemSpan(maxLineSpan) }) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) { DeveloperCredit() }
+                }
+            }
+        }
+    }
+}
+
 @Composable private fun SongTile(song: JsonObject, modifier: Modifier, onClick: () -> Unit) {
     Column(modifier.itemEntrance().clickable(onClick = onClick), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Box {
