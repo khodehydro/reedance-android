@@ -1,5 +1,7 @@
 # Android installer: desktop password architecture alignment
 
+> **Legacy implementation note — do not use as the target architecture for new Windows work.** The password-based workflow described below is being superseded by [the no-password Windows ↔ Android handoff](WINDOWS_NO_PASSWORD_HANDOFF.md). Windows exports the shared v1 encrypted format; Reedance Android must decrypt it automatically with its app-provisioned key. No user file password, Profile setup, or password-derived key should be required.
+
 Reviewed desktop branch `arena/132cfe2a-reedance-desktop` at commit
 `0d1f612ceacda4105207cdcde3dcc9325efe5279` (2026-11-13).
 Source of truth: `docs/CRYPTO.md`, `src/main/keys.ts`, `crypto/pack.ts`,
