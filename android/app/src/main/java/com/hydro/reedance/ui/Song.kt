@@ -1,6 +1,7 @@
 package com.hydro.reedance.ui
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -239,9 +240,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(18.dp)) {
         Text(tr("مشخصات آهنگ", "SONG DETAILS"), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         Box(Modifier.size(228.dp), contentAlignment = Alignment.Center) {
-            AnimatedVisibility(visible = busy, enter = fadeIn(tween(200)), exit = fadeOut(tween(120))) {
-                    CircularWaveProgress(transferFraction, Modifier.fillMaxSize())
-            }
+            if(busy) CircularWaveProgress(transferFraction, Modifier.fillMaxSize())
             CoverImage(
                 if(song.s("distributionRef") == "gulum-ii") "pending-gulum-ii" else songId,
                 song.s("title"),
@@ -361,9 +360,12 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
         repeat(steps + 1) { index ->
             val fraction = index.toFloat() / steps
             val angle = (start + sweep * fraction) * PI.toFloat() / 180f
-            val radiusOffset = sin(fraction * 12f * PI.toFloat() - phase) * waveAmplitude
+            val radiusOffset = sin((fraction * 12f * PI.toFloat() - phase).toDouble()).toFloat() * waveAmplitude
             val r = radius + radiusOffset
-            val point = Offset(size.width / 2f + cos(angle) * r, size.height / 2f + sin(angle) * r)
+            val point = Offset(
+                size.width / 2f + cos(angle.toDouble()).toFloat() * r,
+                size.height / 2f + sin(angle.toDouble()).toFloat() * r
+            )
             if(index == 0) path.moveTo(point.x, point.y) else path.lineTo(point.x, point.y)
         }
         if(progress == null || progress > 0f) drawPath(path, active, style = Stroke(stroke, cap = StrokeCap.Round))
