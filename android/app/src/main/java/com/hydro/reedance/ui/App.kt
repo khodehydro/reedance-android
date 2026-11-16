@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.*
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.core.view.WindowCompat
@@ -56,17 +57,34 @@ import com.hydro.reedance.data.*
         }
     }
 }
+@Composable private fun SetupBackdrop(modifier: Modifier = Modifier) {
+    Box(modifier.background(Brush.linearGradient(listOf(
+        Color(0xFFEAF5FF), Color(0xFF9BC8FF), Color(0xFFF8FCFF), Color(0xFFB6D6FF), Color(0xFFEFF7FF)
+    )))) {
+        Canvas(Modifier.matchParentSize()) {
+            drawRect(Brush.radialGradient(
+                listOf(Color.White.copy(alpha = .62f), Color.Transparent),
+                center = Offset(size.width * .18f, size.height * .2f), radius = size.width * .82f
+            ))
+            drawRect(Brush.radialGradient(
+                listOf(Color(0xFF6FA7F7).copy(alpha = .24f), Color.Transparent),
+                center = Offset(size.width * .92f, size.height * .86f), radius = size.width * .92f
+            ))
+        }
+    }
+}
+
 @Composable private fun Setup(model: AppModel) {
     var language by rememberSaveable { mutableStateOf("en") }
     CompositionLocalProvider(LocalFa provides (language == "fa"), LocalLayoutDirection provides if(language == "fa") LayoutDirection.Rtl else LayoutDirection.Ltr) {
         Box(Modifier.fillMaxSize()) {
-            PremiumBackdrop(Modifier.matchParentSize())
+            SetupBackdrop(Modifier.matchParentSize())
             Column(Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(28.dp), verticalArrangement = Arrangement.spacedBy(22.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(Modifier.height(30.dp))
             Image(painterResource(R.drawable.reedance_header), "Reedance", Modifier.size(120.dp))
             Text(tr("به ری‌دنس خوش آمدی", "Welcome to Reedance"), style = MaterialTheme.typography.headlineMedium)
             Text(tr("با موسیقی، زبان یاد بگیر.", "Find your rhythm. Learn a language."))
-            Panel {
+            Panel(tone = Color.White.copy(alpha = .58f)) {
                 Text(tr("زبان برنامه را انتخاب کن", "Choose your app language"), style = MaterialTheme.typography.titleLarge)
                 listOf("en" to "English", "fa" to "فارسی").forEach { (code, label) ->
                     Row(Modifier.fillMaxWidth().clickable { language = code }.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
