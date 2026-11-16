@@ -1,5 +1,12 @@
 package com.hydro.reedance.ui
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -12,9 +19,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import kotlin.math.PI
+import kotlin.math.sin
 
 /** Never compose hidden text/actions: blur is presentation, not access control.
  * Placeholder bars also work below API 31, where Compose's blur is unsupported. */
@@ -39,6 +49,51 @@ import androidx.compose.ui.unit.dp
             Text(tr("برای دسترسی به تمام محتوای آموزشی، امکانات پریمیوم را ببین.", "Explore Premium for full access to all learning content."))
             PressButton(onClick, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF493300), contentColor = Color(0xFFFFE69A))) {
                 Text(tr("مشاهدهٔ پریمیوم", "Explore Premium"))
+            }
+        }
+    }
+}
+
+/** Warm, full-screen golden haze with slow drifting dust; kept behind cards and copy for legibility. */
+@Composable internal fun PremiumBackdrop(modifier: Modifier = Modifier) {
+    val motion = rememberInfiniteTransition(label = "premium-gold-dust")
+    val phase by motion.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(24000, easing = LinearEasing), RepeatMode.Restart),
+        label = "premium-dust-drift"
+    )
+    Box(
+        modifier.background(
+            Brush.linearGradient(
+                listOf(Color(0xFFFFFDF4), Color(0xFFFFE87A), Color(0xFFFFF8D9), Color(0xFFEFCB45), Color(0xFFFFFCF2))
+            )
+        )
+    ) {
+        Canvas(Modifier.matchParentSize()) {
+            val width = size.width
+            val height = size.height
+            drawRect(Brush.radialGradient(
+                listOf(Color(0xFFFFC928).copy(alpha = .54f), Color.Transparent),
+                center = Offset(width * .12f, height * .27f), radius = width * .78f
+            ))
+            drawRect(Brush.radialGradient(
+                listOf(Color.White.copy(alpha = .92f), Color.Transparent),
+                center = Offset(width * .86f, height * .58f), radius = width * .8f
+            ))
+            drawRect(Brush.radialGradient(
+                listOf(Color(0xFFFFD83D).copy(alpha = .52f), Color.Transparent),
+                center = Offset(width * .92f, height * .06f), radius = width * .58f
+            ))
+            repeat(92) { index ->
+                val seedX = ((index * 83) % 997) / 997f
+                val seedY = ((index * 229) % 991) / 991f
+                val y = (seedY + phase * (.18f + (index % 5) * .025f)) % 1f
+                val x = (seedX + sin(phase * (2.0 * PI) + index) * .008f).toFloat()
+                val radius = ((index % 3) + 1).dp.toPx() * if(index % 11 == 0) 1.45f else .72f
+                val tint = if(index % 4 == 0) Color.White else Color(0xFFFFF8D6)
+                val alpha = if(index % 9 == 0) .38f else .2f
+                drawCircle(tint.copy(alpha = alpha), radius, Offset(x * width, y * height))
             }
         }
     }
@@ -76,7 +131,8 @@ import androidx.compose.ui.unit.dp
         Surface(
             Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = .7f)
+            color = Color.White.copy(alpha = .84f),
+            contentColor = MaterialTheme.colorScheme.onSurface
         ) {
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(tr("همین حالا آمادهٔ خرید نیست", "Checkout isn’t available yet"), style = MaterialTheme.typography.titleMedium)
@@ -112,11 +168,11 @@ import androidx.compose.ui.unit.dp
     Surface(
         Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
-        color = Color(0xFF162B4B),
+        color = Color(0xFF3A2C0C),
         contentColor = Color.White
     ) {
         Box {
-            Box(Modifier.align(Alignment.TopEnd).offset(x = 25.dp, y = (-34).dp).size(150.dp).clip(CircleShape).background(Color(0xFF31547D).copy(alpha = .55f)))
+            Box(Modifier.align(Alignment.TopEnd).offset(x = 25.dp, y = (-34).dp).size(150.dp).clip(CircleShape).background(Color(0xFF99721A).copy(alpha = .42f)))
             Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Surface(shape = CircleShape, color = Color(0xFFFFDF80).copy(alpha = .18f), contentColor = Color(0xFFFFDF80)) {
                     Row(Modifier.padding(horizontal = 12.dp, vertical = 7.dp), horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {

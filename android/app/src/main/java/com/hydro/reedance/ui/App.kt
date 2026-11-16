@@ -115,8 +115,11 @@ import com.hydro.reedance.data.*
     fun navigate(to: String) { if(to == "quiz") model.pause(); page = to }
     val independent = page in listOf("song", "quiz")
     BackHandler(page != "home") { page = when(page) { "quiz" -> if(reviewQuiz) "review" else "song"; "premium" -> premiumReturnPage; else -> "home" } }
-    SearchDismissHost { Scaffold(containerColor = Color.Transparent, snackbarHost = { SnackbarHost(snackbar) }, topBar = {
-        if(page != "song") HeaderSurface { Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+    SearchDismissHost {
+     Box(Modifier.fillMaxSize()) {
+      if(page == "premium") PremiumBackdrop(Modifier.matchParentSize())
+      Scaffold(Modifier.fillMaxSize(), containerColor = Color.Transparent, snackbarHost = { SnackbarHost(snackbar) }, topBar = {
+        if(page != "song") Surface(color = if(page == "premium") Color.Transparent else MaterialTheme.colorScheme.background, contentColor = MaterialTheme.colorScheme.onSurface) { Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             if(page == "quiz" || page == "premium") {
                 PressIconButton({ page = if(page == "quiz") { if(reviewQuiz) "review" else "song" } else premiumReturnPage }) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
                 Text(if(page == "quiz") tr("آزمون", "Practice") else tr("پریمیوم", "Premium"), style = MaterialTheme.typography.titleLarge)
@@ -155,6 +158,7 @@ import com.hydro.reedance.data.*
          }
          }
         }
+      }
     }
     }
 }
