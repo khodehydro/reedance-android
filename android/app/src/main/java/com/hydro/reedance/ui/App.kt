@@ -83,6 +83,7 @@ import com.hydro.reedance.data.*
     var songId by rememberSaveable { mutableStateOf("") }
     var songTab by rememberSaveable { mutableIntStateOf(0) }
     var reviewQuiz by rememberSaveable { mutableStateOf(false) }
+    var premiumReturnPage by rememberSaveable { mutableStateOf("profile") }
     val snackbar = remember { SnackbarHostState() }
     val message by model.message.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -113,12 +114,12 @@ import com.hydro.reedance.data.*
     LaunchedEffect(message) { if(message.isNotEmpty()) { snackbar.showSnackbar(message); model.message.value = "" } }
     fun navigate(to: String) { if(to == "quiz") model.pause(); page = to }
     val independent = page in listOf("song", "quiz")
-    BackHandler(page != "home") { page = if(page == "quiz") if(reviewQuiz) "review" else "song" else "home" }
+    BackHandler(page != "home") { page = when(page) { "quiz" -> if(reviewQuiz) "review" else "song"; "premium" -> premiumReturnPage; else -> "home" } }
     SearchDismissHost { Scaffold(containerColor = Color.Transparent, snackbarHost = { SnackbarHost(snackbar) }, topBar = {
         if(page != "song") HeaderSurface { Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            if(page == "quiz") {
-                PressIconButton({ page = if(reviewQuiz) "review" else "song" }) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
-                Text(tr("آزمون", "Practice"), style = MaterialTheme.typography.titleLarge)
+            if(page == "quiz" || page == "premium") {
+                PressIconButton({ page = if(page == "quiz") { if(reviewQuiz) "review" else "song" } else premiumReturnPage }) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
+                Text(if(page == "quiz") tr("آزمون", "Practice") else tr("پریمیوم", "Premium"), style = MaterialTheme.typography.titleLarge)
             } else {
                 MainHeader(settings.targetLanguage, model::targetLanguage, { navigate("profile") })
             }
@@ -142,11 +143,12 @@ import com.hydro.reedance.data.*
            PageEntrance(if(page == "song") "$page:$songId" else page) {
             when(page) {
                 "home", "explore" -> CatalogScreen(model, page == "home", { songId = it; navigate("song") }, { context.startActivity(android.content.Intent(context, com.hydro.reedance.StarterActivity::class.java)) }, { navigate("explore") })
-                "song" -> SongScreen(model, songId, songTab, { songTab = it }, { navigate("home") }, { reviewQuiz = false; navigate("quiz") })
+                "song" -> SongScreen(model, songId, songTab, { songTab = it }, { navigate("home") }, { reviewQuiz = false; navigate("quiz") }) { premiumReturnPage = "song"; navigate("premium") }
+                "premium" -> PremiumScreen()
                 "quiz" -> QuizScreen(model, reviewQuiz, { navigate(if(reviewQuiz) "review" else "song") }, { navigate("review") })
                 "review" -> ReviewScreen(model) { reviewQuiz = true; navigate("quiz") }
                 "library" -> LibraryScreen(model) { songId = it; navigate("song") }
-                "profile" -> ProfileScreen(model) { navigate("library") }
+                "profile" -> ProfileScreen(model, { navigate("library") }) { premiumReturnPage = "profile"; navigate("premium") }
             }
            }
           }

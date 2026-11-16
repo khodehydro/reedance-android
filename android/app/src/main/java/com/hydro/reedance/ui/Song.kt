@@ -29,7 +29,7 @@ import com.hydro.reedance.domain.songEntryState
 
 fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
-@Composable fun SongScreen(model: AppModel, songId: String, tab: Int, setTab: (Int) -> Unit, back: () -> Unit, quiz: () -> Unit) {
+@Composable fun SongScreen(model: AppModel, songId: String, tab: Int, setTab: (Int) -> Unit, back: () -> Unit, quiz: () -> Unit, premium: () -> Unit) {
     val catalog by model.catalog.collectAsStateWithLifecycle()
     val loadedLesson by model.lesson.collectAsStateWithLifecycle()
     val lesson = loadedLesson?.takeIf { it.s("songId") == songId } ?: model.cachedLesson(songId)
@@ -168,14 +168,15 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                     }
                 }
             }
-            if(access.preview) item(key = "subscription") { SubscriptionOffer { subscriptionInfo = true } }
+            if(access.preview) item(key = "subscription") { SubscriptionOffer(premium) }
         }
     }
     if(subscriptionInfo) AlertDialog(
         onDismissRequest = { subscriptionInfo = false },
         title = { Text(tr("اشتراک پریمیوم", "Premium subscription")) },
         text = { Text(tr("خرید اشتراک هنوز به فروشگاه متصل نشده است؛ در این نسخه پرداختی انجام نمی‌شود.", "Subscription checkout is not connected yet. No payment is taken in this version.")) },
-        confirmButton = { PressTextButton({ subscriptionInfo = false }) { Text(tr("باشه", "OK")) } }
+        confirmButton = { PressTextButton({ subscriptionInfo = false; premium() }) { Text(tr("دیدن امکانات پریمیوم", "Explore Premium")) } },
+        dismissButton = { PressTextButton({ subscriptionInfo = false }) { Text(tr("بعداً", "Later")) } }
     )
     selectedWord?.let { word -> ReedanceBottomSheet(onDismissRequest = { selectedWord = null }) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {

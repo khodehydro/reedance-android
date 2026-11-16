@@ -12,14 +12,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hydro.reedance.data.*
 
-@Composable fun ProfileScreen(model: AppModel, library: () -> Unit) {
+@Composable fun ProfileScreen(model: AppModel, library: () -> Unit, premium: () -> Unit) {
     val settings by model.settings.collectAsStateWithLifecycle()
     val lesson by model.lesson.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    var membershipInfo by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 24.dp + LocalOverlayBottomInset.current), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         Heading(tr("فضای من", "My space"), tr("ریتم یادگیری خودت را پیدا کن.", "Make this little space your own."))
-        ProfileMembershipCard { membershipInfo = true }
+        ProfileMembershipCard(premium)
         ProfileStarterCard { context.startActivity(Intent(context, com.hydro.reedance.StarterActivity::class.java)) }
         Panel {
             Text(tr("تنظیمات برنامه", "Make yourself at home"), style = MaterialTheme.typography.titleLarge)
@@ -55,8 +54,4 @@ import com.hydro.reedance.data.*
             DeveloperCredit()
         }
     }
-    if(membershipInfo) AlertDialog(onDismissRequest = { membershipInfo = false },
-        title = { Text(tr("اشتراک پریمیوم", "Premium membership")) },
-        text = { Text(tr("خرید اشتراک هنوز فعال نشده است؛ در این نسخه پرداختی انجام نمی‌شود.", "Membership checkout is not available yet. No payment is taken in this version.")) },
-        confirmButton = { PressTextButton({ membershipInfo = false }) { Text(tr("باشه", "OK")) } })
 }
