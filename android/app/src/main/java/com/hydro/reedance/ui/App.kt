@@ -88,6 +88,15 @@ import com.hydro.reedance.data.*
     val message by model.message.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val settings by model.settings.collectAsStateWithLifecycle()
+    val lightSystemBars = page == "premium" || MaterialTheme.colorScheme.background.luminance() > .5f
+    SideEffect {
+        (context as? android.app.Activity)?.window?.let { window ->
+            WindowCompat.getInsetsController(window, window.decorView).apply {
+                isAppearanceLightStatusBars = lightSystemBars
+                isAppearanceLightNavigationBars = lightSystemBars
+            }
+        }
+    }
     val started by model.started.collectAsStateWithLifecycle()
     val playing by model.playing.collectAsStateWithLifecycle()
     val activePlayback by model.activePlayback.collectAsStateWithLifecycle()
@@ -119,7 +128,7 @@ import com.hydro.reedance.data.*
      Box(Modifier.fillMaxSize()) {
       if(page == "premium") PremiumBackdrop(Modifier.matchParentSize())
       Scaffold(Modifier.fillMaxSize(), containerColor = Color.Transparent, snackbarHost = { SnackbarHost(snackbar) }, topBar = {
-        if(page != "song") Surface(color = if(page == "premium") Color.Transparent else MaterialTheme.colorScheme.background, contentColor = MaterialTheme.colorScheme.onSurface) { Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        if(page != "song") Surface(color = if(page == "premium") Color.Transparent else MaterialTheme.colorScheme.background, contentColor = if(page == "premium") Color(0xFF493300) else MaterialTheme.colorScheme.onSurface) { Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             if(page == "quiz" || page == "premium") {
                 PressIconButton({ page = if(page == "quiz") { if(reviewQuiz) "review" else "song" } else premiumReturnPage }) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
                 Text(if(page == "quiz") tr("آزمون", "Practice") else tr("پریمیوم", "Premium"), style = MaterialTheme.typography.titleLarge)

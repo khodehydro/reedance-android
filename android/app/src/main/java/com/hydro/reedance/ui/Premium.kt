@@ -26,6 +26,16 @@ import androidx.compose.ui.unit.dp
 import kotlin.math.PI
 import kotlin.math.sin
 
+private val PremiumColors = lightColorScheme(
+    primary = Color(0xFF805B00), onPrimary = Color.White,
+    primaryContainer = Color(0xFFFFE69A), onPrimaryContainer = Color(0xFF493300),
+    secondary = Color(0xFF725D2A), onSecondary = Color.White,
+    background = Color(0xFFFFF8E4), onBackground = Color(0xFF352900),
+    surface = Color(0xFFFFFEFA), onSurface = Color(0xFF352900),
+    surfaceVariant = Color(0xFFF5EAC9), onSurfaceVariant = Color(0xFF62552F),
+    outline = Color(0xFF827242), outlineVariant = Color(0xFFDED2AB)
+)
+
 /** Never compose hidden text/actions: blur is presentation, not access control.
  * Placeholder bars also work below API 31, where Compose's blur is unsupported. */
 @Composable internal fun PremiumPreview() {
@@ -100,6 +110,13 @@ import kotlin.math.sin
 }
 
 @Composable internal fun PremiumScreen() {
+    val typography = MaterialTheme.typography
+    MaterialTheme(colorScheme = PremiumColors, typography = typography) {
+        PremiumScreenContent()
+    }
+}
+
+@Composable private fun PremiumScreenContent() {
     var checkoutInfo by remember { mutableStateOf(false) }
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState())
