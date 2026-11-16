@@ -86,7 +86,7 @@ Reedance Android
 1. جریان ورودی password-based (`PackPassword`, `PackKeyStore`, تنظیم رمز در Profile و import محلیِ رمزدار) حذف شده است؛ بازکردن فایل اکنون به ورودی کاربر وابسته نیست.
 2. `PackDistributionKey` می‌خواند `enc-main` را از build config؛ debugِ بدون کلید از public test key مشترک با Windows استفاده می‌کند. کلید واقعی فقط از مسیر امن build (`REEDANCE_ENC_MAIN_KEY`) provision شود؛ در UI هیچ password prompt وجود ندارد.
 3. حفظ شده است: بررسی امضای manifest، allowlist HTTPS، اندازه/hash، AES-GCM tag **پیش از استخراج**، ZIP امن، schema/semantic validation، ضد rollback، staging و فعال‌سازی اتمی. مسیر local file picker حذف شده است.
-4. برای debug بدون کلید محلی، لینک آزمایشی `Gülüm 2` در `android/app/src/debug/assets/pack_direct_test.json` است؛ فایل از شبکه دانلود می‌شود و تا تأیید اندازه، SHA-256 و GCM هیچ ZIPی استخراج نمی‌شود. این مسیر فقط test key/debug است و manifest امضاشده را جایگزین نمی‌کند.
+4. برای debug بدون کلید محلی، لینک آزمایشی `Gülüm 2` در `android/app/src/debug/assets/pack_direct_test.json` به هاست Parspack اشاره می‌کند؛ فایل از شبکه دانلود می‌شود و تا تأیید اندازه، SHA-256 و GCM هیچ ZIPی استخراج نمی‌شود. این مسیر فقط test key/debug است و manifest امضاشده را جایگزین نمی‌کند.
 5. شبکهٔ production تا زمان افزودن کلید عمومی پایدار و URLهای مجاز به `pack_distribution.json` هنوز پیکربندی نشده است. خطاها باید علت واقعی (نسخه/امضا/خرابی/کلید ناشناخته/شبکه) را نشان دهند، نه «رمز اشتباه».
 
 ## معیار پذیرش مشترک

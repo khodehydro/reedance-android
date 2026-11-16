@@ -124,10 +124,11 @@ signed installed songs appear in Downloaded and share normal playback/learning.
 
 The previous bundled Gülüm II package and its old manifests have been removed
 from `android/app/src/main/assets`. No full song `.rdpack` is shipped as an app
-asset. For an unprovisioned debug build only, the app downloads the owner's
-provided GitHub URL from `android/app/src/debug/assets/pack_direct_test.json`.
-The source URL redirects from `github.com` to `raw.githubusercontent.com`; both
-hosts are explicitly allowlisted for this debug-only entry.
+asset. For an unprovisioned debug build only, the app downloads the hosting URL
+from `android/app/src/debug/assets/pack_direct_test.json`. The path is relative
+to `public_html`; `pz25995.parspack.net` is the domain folder shown in the
+provided DirectAdmin screenshot. Confirm that this is the public HTTPS domain
+for the site before relying on it.
 
 The download is pinned to the filename SHA-256
 `5768de9104f518d4c227ea9ab94ffa9f98d811bbb9e1dcfa194c36a60587c19e` and exact
