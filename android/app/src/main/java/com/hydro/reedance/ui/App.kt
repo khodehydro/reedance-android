@@ -121,6 +121,7 @@ import com.hydro.reedance.data.*
     val started by model.started.collectAsStateWithLifecycle()
     val playing by model.playing.collectAsStateWithLifecycle()
     val activePlayback by model.activePlayback.collectAsStateWithLifecycle()
+    val installedIds by model.installedIds.collectAsStateWithLifecycle()
     val pageStates = rememberSaveableStateHolder()
     var compactNavigation by remember(page) { mutableStateOf(false) }
     val threshold = with(LocalDensity.current) { 36.dp.toPx() }
@@ -143,15 +144,20 @@ import com.hydro.reedance.data.*
     }
     LaunchedEffect(message) { if(message.isNotEmpty()) { snackbar.showSnackbar(message); model.message.value = "" } }
     fun navigate(to: String) { if(to == "quiz") model.pause(); page = to }
-    val independent = page in listOf("song", "quiz", "premium")
-    BackHandler(page != "home") { page = when(page) { "quiz" -> if(reviewQuiz) "review" else "song"; "premium" -> premiumReturnPage; else -> "home" } }
+    fun openSong(id: String) {
+        songId = id
+        navigate(if(id in installedIds) "song-playback" else "song-download")
+    }
+    val songPage = page == "song-download" || page == "song-playback"
+    val independent = songPage || page in listOf("quiz", "premium")
+    BackHandler(page != "home") { page = when(page) { "quiz" -> if(reviewQuiz) "review" else "song-playback"; "premium" -> premiumReturnPage; else -> "home" } }
     SearchDismissHost {
      Box(Modifier.fillMaxSize()) {
       if(page == "premium") PremiumBackdrop(Modifier.matchParentSize())
       Scaffold(Modifier.fillMaxSize(), containerColor = Color.Transparent, snackbarHost = { SnackbarHost(snackbar) }, topBar = {
-        if(page != "song") Surface(color = if(page == "premium") Color.Transparent else MaterialTheme.colorScheme.background, contentColor = if(page == "premium") Color(0xFF493300) else MaterialTheme.colorScheme.onSurface) { Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        if(!songPage) Surface(color = if(page == "premium") Color.Transparent else MaterialTheme.colorScheme.background, contentColor = if(page == "premium") Color(0xFF493300) else MaterialTheme.colorScheme.onSurface) { Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             if(page == "quiz" || page == "premium") {
-                PressIconButton({ page = if(page == "quiz") { if(reviewQuiz) "review" else "song" } else premiumReturnPage }) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
+                PressIconButton({ page = if(page == "quiz") { if(reviewQuiz) "review" else "song-playback" } else premiumReturnPage }) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
                 Text(if(page == "quiz") tr("آزمون", "Practice") else tr("پریمیوم", "Premium"), style = MaterialTheme.typography.titleLarge)
             } else {
                 MainHeader(settings.targetLanguage, model::targetLanguage, { navigate("profile") })
@@ -161,7 +167,7 @@ import com.hydro.reedance.data.*
     }, bottomBar = {
         if(!independent) Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             if(started) activePlayback?.let { active ->
-                MiniPlayer(active, playing, model::toggleActivePlayback, { songId = active.songId; navigate("song") }, compact = compactNavigation)
+                MiniPlayer(active, playing, model::toggleActivePlayback, { openSong(active.songId) }, compact = compactNavigation)
             }
             FloatingNavigation(page, compactNavigation, ::navigate)
         }
@@ -173,14 +179,15 @@ import com.hydro.reedance.data.*
          CompositionLocalProvider(LocalOverlayBottomInset provides if(independent) 0.dp else padding.calculateBottomPadding()) {
          key(page) {
           pageStates.SaveableStateProvider(page) {
-           PageEntrance(if(page == "song") "$page:$songId" else page) {
+           PageEntrance(if(songPage) "$page:$songId" else page) {
             when(page) {
-                "home", "explore" -> CatalogScreen(model, page == "home", { songId = it; navigate("song") }, { context.startActivity(android.content.Intent(context, com.hydro.reedance.StarterActivity::class.java)) }, { navigate("explore") })
-                "song" -> SongScreen(model, songId, songTab, { songTab = it }, { navigate("home") }, { reviewQuiz = false; navigate("quiz") }) { premiumReturnPage = "song"; navigate("premium") }
+                "home", "explore" -> CatalogScreen(model, page == "home", ::openSong, { context.startActivity(android.content.Intent(context, com.hydro.reedance.StarterActivity::class.java)) }, { navigate("explore") })
+                "song-download" -> SongDownloadScreen(model, songId, { navigate("home") }) { navigate("song-playback") }
+                "song-playback" -> SongPlaybackScreen(model, songId, songTab, { songTab = it }, { navigate("home") }, { navigate("song-download") }, { reviewQuiz = false; navigate("quiz") }) { premiumReturnPage = "song-playback"; navigate("premium") }
                 "premium" -> PremiumScreen()
-                "quiz" -> QuizScreen(model, reviewQuiz, { navigate(if(reviewQuiz) "review" else "song") }, { navigate("review") })
+                "quiz" -> QuizScreen(model, reviewQuiz, { navigate(if(reviewQuiz) "review" else "song-playback") }, { navigate("review") })
                 "review" -> ReviewScreen(model) { reviewQuiz = true; navigate("quiz") }
-                "library" -> LibraryScreen(model) { songId = it; navigate("song") }
+                "library" -> LibraryScreen(model, ::openSong)
                 "profile" -> ProfileScreen(model, { navigate("library") }) { premiumReturnPage = "profile"; navigate("premium") }
             }
            }
