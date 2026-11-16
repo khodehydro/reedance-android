@@ -105,7 +105,10 @@ import kotlinx.coroutines.flow.collectLatest
                     PillOption(tr("اصطلاحات", "Expressions"), UiIcons.Phrases, filledIcon = UiIcons.PhrasesFilled),
                     PillOption(tr("جمله‌ها", "Sentences"), UiIcons.Lines, filledIcon = UiIcons.LinesFilled)
                 ), pagerState.currentPage, compact) { target ->
-                    scope.launch { pagerState.animateScrollToPage(target) }
+                    scope.launch {
+                        if(kotlin.math.abs(target - pagerState.currentPage) > 1) pagerState.scrollToPage(target)
+                        else pagerState.animateScrollToPage(target)
+                    }
                 }
             }
         }
