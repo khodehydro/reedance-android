@@ -1,5 +1,6 @@
 import java.time.LocalDate
 import java.time.ZoneOffset
+import java.util.Properties
 
 plugins {
     id("com.android.application")
@@ -8,7 +9,7 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
-val localPackKey = java.util.Properties().let { properties ->
+val localPackKey: String = Properties().let { properties ->
     rootProject.file("local.properties").takeIf { it.isFile }?.inputStream()?.use { properties.load(it) }
     properties.getProperty("REEDANCE_ENC_MAIN_KEY", "")
 }
