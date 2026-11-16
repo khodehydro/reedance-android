@@ -36,7 +36,7 @@ class PackInstaller(private val context: Context) {
     private fun config(): JsonObject = try {
         context.assets.open("pack_distribution.json").use { PackVerifier.strictJson(it.readBytes(), 65536) }
     } catch(_: java.io.FileNotFoundException) { error("تنظیمات آدرس انتشار و کلید عمومی ناشر موجود نیست / Publisher manifest/host/public-key configuration is missing") }
-    private suspend fun download(url: String, file: File, limit: Long, hosts: Set<String>, progress: suspend (Long) -> Unit) {
+    private suspend fun download(url: String, file: File, limit: Long, hosts: Set<String>, progress: suspend (Long, Long) -> Unit) {
         var current = url.toHttpUrl()
         require(current.isHttps && current.username.isEmpty() && current.password.isEmpty() && current.fragment == null && current.query == null)
         val origin = current.host
@@ -51,16 +51,20 @@ class PackInstaller(private val context: Context) {
                 } else {
                     require(response.isSuccessful) { "HTTP ${response.code}" }
                     val body = response.body ?: error("Empty response")
-                    require(body.contentLength() <= limit)
+                    val contentLength = body.contentLength()
+                    require(contentLength <= limit)
+                    val total = contentLength.takeIf { it > 0 } ?: limit
+                    var count = 0L
                     body.byteStream().use { input -> file.outputStream().use { output ->
-                        val buffer = ByteArray(65536); var count = 0L; var last = 0L
+                        val buffer = ByteArray(65536); var last = 0L
                         while(true) {
                             currentCoroutineContext().ensureActive()
                             val n = input.read(buffer); if(n < 0) break
                             count += n; require(count <= limit); output.write(buffer, 0, n)
-                            if(count - last >= 262144) { progress(count); last = count }
+                            if(count - last >= 262144) { progress(count, total); last = count }
                         }
                     } }
+                    progress(count, total)
                     return
                 }
             }
@@ -124,7 +128,7 @@ class PackInstaller(private val context: Context) {
         }
     }
     suspend fun recover() = lock.withLock { withContext(Dispatchers.IO) { recoverLocked() } }
-    suspend fun install(song: String, progress: suspend (String, Long) -> Unit): JsonObject = lock.withLock { withContext(Dispatchers.IO) {
+    suspend fun install(song: String, progress: suspend (String, Long, Long) -> Unit): JsonObject = lock.withLock { withContext(Dispatchers.IO) {
         require(song.matches(Regex("[a-z0-9]+(?:-[a-z0-9]+)*")))
         recoverLocked()
         val config = config()
@@ -139,8 +143,8 @@ class PackInstaller(private val context: Context) {
         val stage = File(stagingRoot, java.util.UUID.randomUUID().toString()).apply { check(mkdirs()) }
         try {
             val manifest = File(stage, "latest.json")
-            progress("manifest", 0)
-            download(source.s("manifestUrl"), manifest, 32768, hosts) { }
+            progress("manifest", 0, 0)
+            download(source.s("manifestUrl"), manifest, 32768, hosts) { _, _ -> }
             val seen = dao.seen(song)
             val payload = PackVerifier.manifest(manifest.readBytes(), publicKeys, song, language, seen?.highestVersionCode?.toLong() ?: 0, seen?.packageSha256 ?: "")
             val spec = payload.obj("package")
@@ -151,26 +155,30 @@ class PackInstaller(private val context: Context) {
             val url = source.s("manifestUrl").toHttpUrl().resolve(spec.s("fileName")) ?: error("Invalid package URL")
             val pack = File(stage, "download.part")
             require(root.usableSpace > spec.n("sizeBytes") * 3 + 32L * 1024 * 1024) { "فضای خالی کافی نیست / Insufficient storage" }
-            progress("download", 0)
-            download(url.toString(), pack, spec.n("sizeBytes"), hosts) { progress("download", it) }
+            progress("download", 0, spec.n("sizeBytes"))
+            download(url.toString(), pack, spec.n("sizeBytes"), hosts) { bytes, total -> progress("download", bytes, total) }
             require(pack.length() == spec.n("sizeBytes") && hash(pack) == spec.s("sha256")) { "Package hash/length mismatch" }
-            progress("decrypt", pack.length())
+            progress("decrypt", pack.length(), pack.length())
             val zip = File(stage, "authenticated.zip"); decrypt(pack, zip, payload)
             validateAndActivate(stage, zip, payload, song, language, manifest, progress)
         } finally { withContext(NonCancellable) { stage.deleteRecursively() } }
     } }
     /** Explicit user-selected local import, NOT publisher-signature verification. */
-    suspend fun importLocal(uri: android.net.Uri, progress: suspend (String, Long) -> Unit): JsonObject = lock.withLock { withContext(Dispatchers.IO) {
+    suspend fun importLocal(uri: android.net.Uri, progress: suspend (String, Long, Long) -> Unit): JsonObject = lock.withLock { withContext(Dispatchers.IO) {
         require(uri.scheme == "content")
         recoverLocked()
         PackKeyStore(context).load().fill(0)
-        val name = context.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
-            require(cursor.moveToFirst()); cursor.getString(0)
+        var totalBytes = 0L
+        val name = context.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME, android.provider.OpenableColumns.SIZE), null, null, null)?.use { cursor ->
+            require(cursor.moveToFirst())
+            val sizeIndex = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE)
+            if(sizeIndex >= 0) totalBytes = cursor.getLong(sizeIndex).coerceAtLeast(0)
+            cursor.getString(0)
         } ?: error("Missing package filename")
-        importPackFile(name, { context.contentResolver.openInputStream(uri) ?: error("Cannot open selected file") }, null, null, progress)
+        importPackFile(name, { context.contentResolver.openInputStream(uri) ?: error("Cannot open selected file") }, null, null, totalBytes.takeIf { it > 0 }, progress)
     } }
     /** Bundled bytes are pinned by the installed APK, not by a verified publisher signature. */
-    suspend fun installBundled(song: String, progress: suspend (String, Long) -> Unit): JsonObject = lock.withLock { withContext(Dispatchers.IO) {
+    suspend fun installBundled(song: String, progress: suspend (String, Long, Long) -> Unit): JsonObject = lock.withLock { withContext(Dispatchers.IO) {
         require(song.matches(Regex("[a-z0-9]+(?:-[a-z0-9]+)*")))
         recoverLocked()
         PackKeyStore(context).load().fill(0)
@@ -179,10 +187,10 @@ class PackInstaller(private val context: Context) {
         val name = entry.s("fileName")
         require(name.isNotEmpty()) { "No bundled package for this song" }
         val language = entry.s("language"); require(language in listOf("en", "es", "ko", "tr"))
-        importPackFile(name, { context.assets.open("packs/$song/$name") }, song, language, progress)
+        importPackFile(name, { context.assets.open("packs/$song/$name") }, song, language, entry.n("sizeBytes").takeIf { it > 0 }, progress)
     } }
     private suspend fun importPackFile(name: String, source: () -> java.io.InputStream,
-        expectedSong: String?, expectedLanguage: String?, progress: suspend (String, Long) -> Unit): JsonObject {
+        expectedSong: String?, expectedLanguage: String?, expectedSize: Long?, progress: suspend (String, Long, Long) -> Unit): JsonObject {
         val match = Regex("^v([0-9]{6,10})-([a-f0-9]{64})\\.rdpack$").matchEntire(name)
             ?: error("Keep the exported vNNNNNN-sha256.rdpack filename")
         val version = match.groupValues[1].toLong(); require(version in 1..Int.MAX_VALUE.toLong())
@@ -192,31 +200,33 @@ class PackInstaller(private val context: Context) {
         val stage = File(parent, java.util.UUID.randomUUID().toString()).apply { check(mkdirs()) }
         try {
             val pack = File(stage, "local.part")
+            progress("copy", 0, expectedSize ?: 0L)
             source().use { input -> pack.outputStream().use { output ->
-                val buffer = ByteArray(65536); var count = 0L
+                val buffer = ByteArray(65536); var count = 0L; var last = 0L
                 while(true) {
                     currentCoroutineContext().ensureActive()
                     val n = input.read(buffer); if(n < 0) break
                     count += n; require(count <= 268435456L) { "Package too large" }
                     require(root.usableSpace > count * 2 + 32L * 1024 * 1024) { "Insufficient storage" }
                     output.write(buffer, 0, n)
-                    if(count % 262144L == 0L) progress("copy", count)
+                    if(count - last >= 262144L) { progress("copy", count, expectedSize ?: 0L); last = count }
                 }
             } }
+            progress("copy", pack.length(), expectedSize ?: 0L)
             require(hash(pack) == expectedHash) { "Package hash does not match filename" }
             val payload = JsonObject().apply {
                 addProperty("contentVersionCode", version)
                 add("package", JsonObject().apply { addProperty("sha256", expectedHash); addProperty("encryptionKeyId", "enc-main") })
             }
-            progress("decrypt", pack.length())
+            progress("decrypt", pack.length(), pack.length())
             val zip = File(stage, "authenticated.zip"); decrypt(pack, zip, payload)
             return validateAndActivate(stage, zip, payload, expectedSong, expectedLanguage, null, progress)
         } finally { withContext(NonCancellable) { stage.deleteRecursively() } }
     }
     private suspend fun validateAndActivate(stage: File, zip: File, payload: JsonObject,
-        expectedSong: String?, expectedLanguage: String?, manifest: File?, progress: suspend (String, Long) -> Unit): JsonObject {
+        expectedSong: String?, expectedLanguage: String?, manifest: File?, progress: suspend (String, Long, Long) -> Unit): JsonObject {
             val output = File(stage, "content"); StrictPackZip.extract(zip, output)
-            progress("validate", 0)
+            progress("validate", 0, 0)
             require(File(output, "lesson.json").length() <= 4 * 1024 * 1024)
             val lesson = PackVerifier.strictJson(File(output, "lesson.json").readBytes(), 4 * 1024 * 1024)
             val schema = context.assets.open("lesson.schema.json").use { PackVerifier.strictJson(it.readBytes(), 131072) }
@@ -289,7 +299,7 @@ class PackInstaller(private val context: Context) {
                 } catch(e: Exception) { target.deleteRecursively(); throw e }
                 File(target, ".activation-pending").delete(); syncDirectory(target)
             }
-            progress("installed", 0)
+            progress("installed", 0, 0)
             return lesson
     }
 }

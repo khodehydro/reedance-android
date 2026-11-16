@@ -61,7 +61,7 @@ fun cover(id: String): Int? = when(id) {
 private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
     override fun sizeOf(key: Int, value: Bitmap) = value.allocationByteCount
 }
-@Composable fun CoverImage(id: String, description: String, modifier: Modifier = Modifier) {
+@Composable fun CoverImage(id: String, description: String, modifier: Modifier = Modifier, shapeProgress: Float = 0f) {
     val resource = cover(id)
     val resources = LocalContext.current.resources
     val bitmap by produceState<Bitmap?>(resource?.let { coverCache.get(it) }, resource) {
@@ -73,7 +73,9 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
     // Draw-time clipping is independent of lazy animateItem/retained graphics layers.
     // Apply it to both placeholder and decoded image on every draw.
     Box(modifier.drawWithCache {
-        val radius = 20.dp.toPx()
+        val baseRadius = 20.dp.toPx()
+        val circleRadius = minOf(size.width, size.height) / 2f
+        val radius = baseRadius + (circleRadius - baseRadius) * shapeProgress.coerceIn(0f, 1f)
         val outline = Path().apply { addRoundRect(RoundRect(Rect(Offset.Zero, size), CornerRadius(radius))) }
         onDrawWithContent { clipPath(outline) { this@onDrawWithContent.drawContent() } }
     }.background(MaterialTheme.colorScheme.secondaryContainer)) {

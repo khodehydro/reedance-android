@@ -24,7 +24,10 @@ class LocalContentRepository(context: Context, private val dao: LearningDao,
         val text = assetText("catalog_preview.json")
         val songs = withContext(cpu) { JsonParser.parseString(text).asJsonArray.map { it.asJsonObject } }
         val distribution = try { parseObject(assetText("pack_distribution.json")) } catch(_: java.io.FileNotFoundException) { JsonObject() }
+        val bundled = try { parseObject(assetText("bundled_packs.json")) } catch(_: java.io.FileNotFoundException) { JsonObject() }
         songs.forEach { song ->
+            val packSize = bundled.obj(song.s("id")).n("sizeBytes")
+            if(packSize > 0) song.addProperty("packageSizeBytes", packSize)
             val actualId = distribution.obj("catalogBindings").s(song.s("distributionRef"))
             if(actualId.isNotEmpty()) song.addProperty("id", actualId)
         }

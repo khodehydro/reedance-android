@@ -26,6 +26,9 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 data class ActivePlayback(val songId: String, val title: String, val artist: String, val coverPath: String?)
+data class InstallTransferProgress(val phase: String, val bytes: Long, val totalBytes: Long) {
+    val fraction: Float? get() = totalBytes.takeIf { it > 0 }?.let { (bytes.toFloat() / it).coerceIn(0f, 1f) }
+}
 
 class AppModel @JvmOverloads constructor(app: Application, private val starterOnly: Boolean = false): AndroidViewModel(app) {
     private val preload = if(starterOnly) StarterPreload.snapshot() else null
@@ -225,6 +228,7 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
     fun onBackground() { updateProgress(); checkpoint(force = true) }
     private var installRequest: java.util.UUID? = null
     val installProgress = MutableStateFlow("")
+    val installTransfer = MutableStateFlow<InstallTransferProgress?>(null)
     fun cancelInstall() { installRequest?.let { WorkManager.getInstance(getApplication()).cancelWorkById(it) } }
     fun cachedLesson(id: String): JsonObject? = content.cachedLesson(id)
     suspend fun openInstalled(id: String) {
@@ -267,7 +271,11 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
                 manager.getWorkInfosForUniqueWorkFlow("pack-install").first { infos ->
                     val info = infos.firstOrNull { it.id == request.id } ?: infos.firstOrNull { !it.state.isFinished } ?: return@first false
                     installRequest = info.id
-                    installProgress.value = "${info.progress.getString("phase") ?: info.state.name} · ${info.progress.getLong("bytes", 0) / 1024} KB"
+                    val phase = info.progress.getString("phase") ?: info.state.name
+                    val bytes = info.progress.getLong("bytes", 0)
+                    val totalBytes = info.progress.getLong("totalBytes", 0)
+                    installTransfer.value = InstallTransferProgress(phase, bytes, totalBytes)
+                    installProgress.value = "$phase · ${bytes / 1024} KB"
                     if(info.state.isFinished) {
                         if(info.state == WorkInfo.State.SUCCEEDED) {
                             lesson.value = content.installedLesson(info.outputData.getString("songId") ?: input.getString("songId") ?: "")
@@ -278,7 +286,7 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
                         true
                     } else false
                 }
-            } catch(cancelled: CancellationException) { throw cancelled } catch(error: Exception) { message.value = error.message ?: "Installation failed" } finally { busy.value = false; installProgress.value = "" }
+            } catch(cancelled: CancellationException) { throw cancelled } catch(error: Exception) { message.value = error.message ?: "Installation failed" } finally { busy.value = false; installProgress.value = ""; installTransfer.value = null }
         }
     }
     fun togglePlay() {

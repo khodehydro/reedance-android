@@ -8,7 +8,9 @@ import kotlinx.coroutines.CancellationException
 class PackInstallWorker(context: Context, params: WorkerParameters): CoroutineWorker(context, params) {
     override suspend fun doWork(): Result = try {
         val installer = PackInstaller(applicationContext)
-        val progress: suspend (String, Long) -> Unit = { phase, bytes -> setProgress(workDataOf("phase" to phase, "bytes" to bytes)) }
+        val progress: suspend (String, Long, Long) -> Unit = { phase, bytes, totalBytes ->
+            setProgress(workDataOf("phase" to phase, "bytes" to bytes, "totalBytes" to totalBytes))
+        }
         val uri = inputData.getString("localUri")
         val bundled = inputData.getString("bundledSong")
         val lesson = if(bundled != null) installer.installBundled(bundled, progress)
