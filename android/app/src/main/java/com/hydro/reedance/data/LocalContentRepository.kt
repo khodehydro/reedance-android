@@ -3,6 +3,7 @@ package com.hydro.reedance.data
 import android.content.Context
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.hydro.reedance.BuildConfig
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.withLock
 import java.io.File
@@ -25,18 +26,27 @@ class LocalContentRepository(context: Context, private val dao: LearningDao,
         val songs = withContext(cpu) { JsonParser.parseString(text).asJsonArray.map { it.asJsonObject } }
         val distribution = try { parseObject(assetText("pack_distribution.json")) } catch(_: java.io.FileNotFoundException) { JsonObject() }
         val bundled = try { parseObject(assetText("bundled_packs.json")) } catch(_: java.io.FileNotFoundException) { JsonObject() }
+        val directTest = if(BuildConfig.DEBUG && BuildConfig.PACK_ENC_TEST_KEY) {
+            try { parseObject(assetText("pack_direct_test.json")) } catch(_: java.io.FileNotFoundException) { JsonObject() }
+        } else JsonObject()
         songs.forEach { song ->
             val bundledEntry = bundled.obj(song.s("id"))
-            val packSize = bundledEntry.n("sizeBytes")
+            val directTestEntry = directTest.obj(song.s("id"))
+            val packSize = bundledEntry.n("sizeBytes").takeIf { it > 0 } ?: directTestEntry.n("sizeBytes")
             if(packSize > 0) song.addProperty("packageSizeBytes", packSize)
             if(bundledEntry.s("fileName").isNotEmpty()) {
                 song.addProperty("bundledPackReady", bundledEntry.get("requiresReexport")?.asBoolean != true)
             }
+            if(directTestEntry.has("url")) song.addProperty("directTestPack", true)
             val actualId = distribution.obj("catalogBindings").s(song.s("distributionRef"))
+            val distributionId = actualId.ifEmpty { song.s("id") }
+            if(distribution.obj("songs").obj(distributionId).has("manifestUrl") || directTestEntry.has("url")) {
+                song.addProperty("remotePackReady", true)
+            }
             if(actualId.isNotEmpty()) song.addProperty("id", actualId)
         }
         val replacedPreviewIds = mutableSetOf<String>()
-        val installed = dao.installedPackages().filter { it.state in listOf("VERIFIED", "BUNDLED", "LOCAL_PASSWORD") }.mapNotNull { row ->
+        val installed = dao.installedPackages().filter { it.state in listOf("VERIFIED", "BUNDLED", "DIRECT_TEST", "LOCAL_PASSWORD") }.mapNotNull { row ->
             installedLesson(row.songId)?.let { data ->
                 // Metadata match is only for merging a display placeholder; identity always comes from lesson.json.
                 val preview = songs.firstOrNull { it.s("id") == row.songId } ?: songs.firstOrNull {
@@ -48,6 +58,7 @@ class LocalContentRepository(context: Context, private val dao: LearningDao,
                     addProperty("language", data.s("targetLanguage")); addProperty("level", data.s("level"))
                     if(!has("access")) addProperty("access", "free")
                     addProperty("bundled", row.state == "BUNDLED")
+                    addProperty("directTest", row.state == "DIRECT_TEST")
                 }
             }
         }
@@ -56,7 +67,7 @@ class LocalContentRepository(context: Context, private val dao: LearningDao,
     suspend fun installedLesson(id: String): JsonObject? = withContext(io) {
         val row = dao.installed(id) ?: run { lessonCache.remove(id); return@withContext null }
         val file = File(row.activePath, "lesson.json")
-        check(file.isFile && row.state in listOf("VERIFIED", "BUNDLED", "LOCAL_PASSWORD")) { "Installed package is unavailable" }
+        check(file.isFile && row.state in listOf("VERIFIED", "BUNDLED", "DIRECT_TEST", "LOCAL_PASSWORD")) { "Installed package is unavailable" }
         require(file.length() <= 4 * 1024 * 1024)
         com.hydro.reedance.contract.PackVerifier.strictJson(file.inputStream().use { it.readBytes() }, 4 * 1024 * 1024).also { lessonCache[id] = it }
     }

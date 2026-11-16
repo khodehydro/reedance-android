@@ -120,39 +120,29 @@ signed installed songs appear in Downloaded and share normal playback/learning.
   Production release audit and device verification are still required; the
   release Gradle guard remains closed.
 
-## Bundled Gülüm II export fetched from reedance-doc
+## Current debug network smoke test — Gülüm 2
 
-At the owner's request the exact export files from
-`khodehydro/reedance-doc`, branch `arena/a26a127d-reedance-doc`, pinned commit
-`7e689c2da83e5d819d6070e34710bd6d371404e2`, directory
-`tr/ayaz-erdogan/gulum-2/gulum-2`, are now placed under
-`android/app/src/main/assets/packs/gulum-2/`:
+The previous bundled Gülüm II package and its old manifests have been removed
+from `android/app/src/main/assets`. No full song `.rdpack` is shipped as an app
+asset. For an unprovisioned debug build only, the app downloads the owner's
+provided GitHub URL from `android/app/src/debug/assets/pack_direct_test.json`.
+The source URL redirects from `github.com` to `raw.githubusercontent.com`; both
+hosts are explicitly allowlisted for this debug-only entry.
 
-- `latest.json`
-- `manifests/v000002-70d627f9e15aa358ddfc7c125c5d37e8e0b8e1488f7c5f45c50bc153143dfe56.json`
-- `v000002-70d627f9e15aa358ddfc7c125c5d37e8e0b8e1488f7c5f45c50bc153143dfe56.rdpack`
+The download is pinned to the filename SHA-256
+`5768de9104f518d4c227ea9ab94ffa9f98d811bbb9e1dcfa194c36a60587c19e` and exact
+size 7,583,229 bytes. I fetched the blob through GitHub's API and verified the
+artifact hash, `RDPACK1`/`enc-main` header, and AES-256-GCM decryption using the
+public debug test key; the authenticated ZIP contains `lesson.json`,
+`audio.mp3`, and `cover.jpg`, with identity `gulum-2` / `tr`. These checks were
+performed outside Android. Actual WorkManager download, on-device extraction,
+and playback still require a successful Android debug build/device run.
 
-The encrypted package is intentionally bundled as the requested content asset
-(7,583,229 bytes), not a build artifact or an unencrypted lesson. SHA-256:
-`70d627f9e15aa358ddfc7c125c5d37e8e0b8e1488f7c5f45c50bc153143dfe56`.
-Header: `enc-main`, 37 bytes; declared ZIP:7,583,176 bytes; tag:16 bytes.
-Manifest and archived manifest are byte-identical. Manifest metadata identifies
-`songId=gulum-2`, `targetLanguage=tr`, version2; the lesson identity must STILL
-match after GCM authentication and schema validation. No password was fetched,
-requested in chat, or bundled. Manifest releasedAt is preserved verbatim; it is
-not used as trusted device time/freshness evidence.
-
-The song card now offers **Install bundled package**, an offline WorkManager
-path that copies the APK asset to staging and invokes the same password/GCM,
-ZIP, semantic, media and activation pipeline as local import. Enter the Studio
-file password in Profile first. No publisher config or document picker is needed
-for this bundled card. `bundled_packs.json` pins the source filename and identity
-in the APK; expected song and language are enforced before activation.
-
-The source repository contained no independent signer public key. The included
-manifest's signature (`sig-studio-58bd40`) has NOT been verified. Bundled installs
-are explicitly labelled in UI and use `LOCAL_PASSWORD`, not publisher `VERIFIED`;
-network signature requirements remain unchanged. Download/header/hash checks
-passed, but actual decryption, extraction and Android playback remain untested
-without the operator's password and a native/device environment. Host suite now
-has40 passing checks, including the bundled file/manifest/index consistency test.
+This direct-link route is intentionally limited to `DEBUG` builds using the
+public test key. It checks HTTPS, allowlisted redirects, exact length, pinned
+SHA-256, GCM authentication, strict ZIP contents, schema, and semantic/media
+validation. It does **not** verify an Ed25519 publisher manifest, so it makes
+no publisher-authenticity claim and must not be enabled for production. The
+file itself is downloaded at runtime and is not placed in the APK. The tiny
+cross-platform test fixture under `src/test/resources` is test-only and is not
+an app asset.

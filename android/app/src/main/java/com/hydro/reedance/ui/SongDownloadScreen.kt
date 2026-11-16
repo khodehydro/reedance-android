@@ -56,7 +56,7 @@ import kotlin.math.roundToInt
                     song = song,
                     songId = songId,
                     busy = busy,
-                    available = if(bundled) bundledReady else song.s("distributionRef").isNotEmpty(),
+                    available = if(bundled) bundledReady else song.get("remotePackReady")?.asBoolean == true,
                     bundled = bundled,
                     bundledReady = bundledReady,
                     onDownload = { if(bundled) model.installBundledPackage(songId) else model.installPackage(songId) },
@@ -194,6 +194,10 @@ import kotlin.math.roundToInt
         }
         if(bundled && bundledReady) Text(
             tr("این آهنگ همراه برنامه ارائه شده است. امضای مستقل ناشر برای فایل همراه برنامه تأیید نشده است.", "This song is included with the app. The bundled file does not have an independently verified publisher signature."),
+            Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        if(song.get("directTestPack")?.asBoolean == true) Text(
+            tr("نسخهٔ آزمایشی از GitHub دانلود می‌شود؛ اندازه و SHA-256 پیش از رمزگشایی بررسی می‌شوند. این مسیر فقط برای debug است و امضای ناشر ندارد.", "Debug test: downloaded from GitHub; size and SHA-256 are checked before decryption. This path is not publisher-signed and is disabled in release builds."),
             Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }

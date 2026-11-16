@@ -8,7 +8,6 @@
     "level": "",
     "access": "free",
     "demo": false,
-    "distributionRef": "gulum-ii",
-    "bundledPack": true
+    "distributionRef": "gulum-2"
   }
 ]

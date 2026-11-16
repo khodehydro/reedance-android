@@ -4,6 +4,7 @@ import android.content.Context
 import android.media.MediaMetadataRetriever
 import android.graphics.BitmapFactory
 import androidx.room.withTransaction
+import com.hydro.reedance.BuildConfig
 import com.hydro.reedance.contract.PackVerifier
 import com.hydro.reedance.data.*
 import com.google.gson.JsonObject
@@ -36,6 +37,13 @@ class PackInstaller(private val context: Context) {
     private fun config(): JsonObject = try {
         context.assets.open("pack_distribution.json").use { PackVerifier.strictJson(it.readBytes(), 65536) }
     } catch(_: java.io.FileNotFoundException) { error("تنظیمات آدرس انتشار و کلید عمومی ناشر موجود نیست / Publisher manifest/host/public-key configuration is missing") }
+    private fun directTestEntry(song: String): JsonObject? {
+        if(!BuildConfig.DEBUG || !BuildConfig.PACK_ENC_TEST_KEY) return null
+        val index = try {
+            context.assets.open("pack_direct_test.json").use { PackVerifier.strictJson(it.readBytes(), 65536) }
+        } catch(_: java.io.FileNotFoundException) { return null }
+        return if(index.has(song)) index.obj(song) else null
+    }
     private suspend fun download(url: String, file: File, limit: Long, hosts: Set<String>, progress: suspend (Long, Long) -> Unit) {
         var current = url.toHttpUrl()
         require(current.isHttps && current.username.isEmpty() && current.password.isEmpty() && current.fragment == null && current.query == null)
@@ -47,7 +55,7 @@ class PackInstaller(private val context: Context) {
             client.newCall(Request.Builder().url(current).build()).execute().use { response ->
                 if(response.code in 300..399) {
                     current = current.resolve(response.header("Location") ?: error("Missing redirect")) ?: error("Invalid redirect")
-                    require(current.isHttps && current.host == origin && current.port == port && current.host in hosts && current.username.isEmpty() && current.password.isEmpty() && current.query == null && current.fragment == null)
+                    require(current.isHttps && current.port == port && current.host in hosts && current.username.isEmpty() && current.password.isEmpty() && current.query == null && current.fragment == null)
                 } else {
                     require(response.isSuccessful) { "HTTP ${response.code}" }
                     val body = response.body ?: error("Empty response")
@@ -131,6 +139,7 @@ class PackInstaller(private val context: Context) {
     suspend fun install(song: String, progress: suspend (String, Long, Long) -> Unit): JsonObject = lock.withLock { withContext(Dispatchers.IO) {
         require(song.matches(Regex("[a-z0-9]+(?:-[a-z0-9]+)*")))
         recoverLocked()
+        directTestEntry(song)?.let { return@withContext installDirectTestPack(song, it, progress) }
         val config = config()
         val source = config.obj("songs").obj(song)
         require(source.has("manifestUrl")) { "آدرس latest.json این آهنگ تنظیم نشده / Signed manifest URL missing" }
@@ -162,6 +171,46 @@ class PackInstaller(private val context: Context) {
             validateAndActivate(stage, zip, payload, song, language, manifest, progress)
         } finally { withContext(NonCancellable) { stage.deleteRecursively() } }
     } }
+    /** Debug-only direct-link smoke test. The APK pins size and SHA-256; no publisher signature is claimed. */
+    private suspend fun installDirectTestPack(song: String, entry: JsonObject,
+        progress: suspend (String, Long, Long) -> Unit): JsonObject {
+        require(BuildConfig.DEBUG && BuildConfig.PACK_ENC_TEST_KEY) { "Direct test downloads are only available in an unprovisioned debug build" }
+        require(entry.s("songId") == song)
+        val language = entry.s("language"); require(language in listOf("en", "es", "ko", "tr"))
+        val name = entry.s("fileName")
+        val match = Regex("^v([0-9]{6,10})-([a-f0-9]{64})\\.rdpack$").matchEntire(name)
+            ?: error("Invalid direct test package filename")
+        val version = match.groupValues[1].toLong(); require(version in 1..Int.MAX_VALUE.toLong())
+        require(version == entry.n("contentVersionCode") && match.groupValues[2] == entry.s("sha256"))
+        val size = entry.n("sizeBytes"); require(size in 1..268435456L)
+        val url = entry.s("url").toHttpUrl()
+        val hosts = entry.strings("allowedHosts").toSet()
+        require(url.isHttps && url.host in hosts && url.encodedPath.substringAfterLast('/') == name)
+        require(url.username.isEmpty() && url.password.isEmpty() && url.query == null && url.fragment == null)
+        val stage = File(File(root, ".staging").apply { mkdirs() }, java.util.UUID.randomUUID().toString()).apply { check(mkdirs()) }
+        try {
+            val pack = File(stage, "download.part")
+            require(root.usableSpace > size * 3 + 32L * 1024 * 1024) { "Insufficient storage" }
+            progress("download", 0, size)
+            download(url.toString(), pack, size, hosts) { bytes, total -> progress("download", bytes, total) }
+            require(pack.length() == size && hash(pack) == entry.s("sha256")) { "Direct test package hash/length mismatch" }
+            val payload = JsonObject().apply {
+                addProperty("manifestVersion", 1)
+                addProperty("songId", song)
+                addProperty("targetLanguage", language)
+                addProperty("contentVersionCode", version)
+                add("package", JsonObject().apply {
+                    addProperty("sizeBytes", size)
+                    addProperty("sha256", entry.s("sha256"))
+                    addProperty("encryptionKeyId", entry.s("encryptionKeyId"))
+                })
+            }
+            progress("decrypt", pack.length(), pack.length())
+            val zip = File(stage, "authenticated.zip"); decrypt(pack, zip, payload)
+            return validateAndActivate(stage, zip, payload, song, language, null, progress, directTest = true)
+        } finally { withContext(NonCancellable) { stage.deleteRecursively() } }
+    }
+
     /** Bundled bytes are authenticated by the signed APK and use the same app key as network exports. */
     suspend fun installBundled(song: String, progress: suspend (String, Long, Long) -> Unit): JsonObject = lock.withLock { withContext(Dispatchers.IO) {
         require(song.matches(Regex("[a-z0-9]+(?:-[a-z0-9]+)*")))
@@ -216,7 +265,8 @@ class PackInstaller(private val context: Context) {
         } finally { withContext(NonCancellable) { stage.deleteRecursively() } }
     }
     private suspend fun validateAndActivate(stage: File, zip: File, payload: JsonObject,
-        expectedSong: String?, expectedLanguage: String?, manifest: File?, progress: suspend (String, Long, Long) -> Unit): JsonObject {
+        expectedSong: String?, expectedLanguage: String?, manifest: File?, progress: suspend (String, Long, Long) -> Unit,
+        directTest: Boolean = false): JsonObject {
             val output = File(stage, "content"); StrictPackZip.extract(zip, output)
             progress("validate", 0, 0)
             require(File(output, "lesson.json").length() <= 4 * 1024 * 1024)
@@ -227,14 +277,14 @@ class PackInstaller(private val context: Context) {
             require(expectedSong == null || song == expectedSong)
             require(expectedLanguage == null || language == expectedLanguage)
             val spec = payload.obj("package")
-            val bundled = manifest == null
-            if(bundled) {
-                require(dao.seen(song) == null) { "Bundled content cannot replace a signed publisher download" }
+            val bundled = manifest == null && !directTest
+            if(manifest == null) {
+                require(dao.seen(song) == null) { "Unsigned test/bundled content cannot replace a signed publisher download" }
                 val old = dao.installed(song)
-                require(old == null || payload.n("contentVersionCode") > old.activeVersionCode) { "Bundled version must increase" }
+                require(old == null || payload.n("contentVersionCode") > old.activeVersionCode) { "Test/bundled version must increase" }
             }
             val mappings = lesson.a("vocabulary").associate { it.s("lexemeId") to it.s("normalizedKey") }
-            dao.installedPackages().filter { it.state in listOf("VERIFIED", "BUNDLED", "LOCAL_PASSWORD") }.forEach { previous ->
+            dao.installedPackages().filter { it.state in listOf("VERIFIED", "BUNDLED", "DIRECT_TEST", "LOCAL_PASSWORD") }.forEach { previous ->
                 val oldFile = File(previous.activePath, "lesson.json")
                 require(oldFile.length() <= 4 * 1024 * 1024 && oldFile.isFile)
                 val old = PackVerifier.strictJson(oldFile.readBytes(), 4 * 1024 * 1024)
@@ -285,8 +335,16 @@ class PackInstaller(private val context: Context) {
                 syncDirectory(parent)
                 try {
                     database.withTransaction {
-                        dao.saveInstalled(InstalledPackage(song, version, if(bundled) "BUNDLED:${spec.s("sha256")}" else PackVerifier.sha256(PackVerifier.base64(PackVerifier.strictJson(manifest!!.readBytes(), 32768).s("payload"))), target.path, if(bundled) "BUNDLED" else "VERIFIED", System.currentTimeMillis()))
-                        if(!bundled) dao.saveSeen(SeenManifest(song, version, spec.s("sha256")))
+                        val state = when {
+                            manifest != null -> "VERIFIED"
+                            directTest -> "DIRECT_TEST"
+                            else -> "BUNDLED"
+                        }
+                        val provenance = if(manifest != null) {
+                            PackVerifier.sha256(PackVerifier.base64(PackVerifier.strictJson(manifest.readBytes(), 32768).s("payload")))
+                        } else "$state:${spec.s("sha256")}"
+                        dao.saveInstalled(InstalledPackage(song, version, provenance, target.path, state, System.currentTimeMillis()))
+                        if(manifest != null) dao.saveSeen(SeenManifest(song, version, spec.s("sha256")))
                     }
                 } catch(e: Exception) { target.deleteRecursively(); throw e }
                 File(target, ".activation-pending").delete(); syncDirectory(target)
