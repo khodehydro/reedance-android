@@ -4,6 +4,7 @@
     "language": "tr",
     "sizeBytes": 7583229,
     "sha256": "70d627f9e15aa358ddfc7c125c5d37e8e0b8e1488f7c5f45c50bc153143dfe56",
-    "sourceCommit": "7e689c2da83e5d819d6070e34710bd6d371404e2"
+    "sourceCommit": "7e689c2da83e5d819d6070e34710bd6d371404e2",
+    "requiresReexport": true
   }
 }

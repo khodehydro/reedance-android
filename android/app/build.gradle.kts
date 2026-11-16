@@ -7,6 +7,18 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.devtools.ksp")
 }
+
+val localPackKey = java.util.Properties().let { properties ->
+    rootProject.file("local.properties").takeIf { it.isFile }?.inputStream()?.use { properties.load(it) }
+    properties.getProperty("REEDANCE_ENC_MAIN_KEY", "")
+}
+val configuredPackKey = providers.gradleProperty("REEDANCE_ENC_MAIN_KEY")
+    .orElse(providers.environmentVariable("REEDANCE_ENC_MAIN_KEY"))
+    .orElse(localPackKey)
+    .getOrElse("")
+val debugTestPackKey = "BPSD3ZmhDgXDQatI9ky7znf3Gdk0A8m0p09qJErcd7U"
+fun buildConfigString(value: String) = "\"${value.replace("\\", "\\\\").replace("\"", "\\\"")}\""
+
 android {
     namespace = "com.hydro.reedance"
     compileSdk = 35
@@ -20,8 +32,18 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
-        debug { applicationIdSuffix = ".debug"; versionNameSuffix = "-demo" }
-        release { isMinifyEnabled = true; proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro") }
+        debug {
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-demo"
+            buildConfigField("String", "PACK_ENC_MAIN_KEY", buildConfigString(configuredPackKey.ifBlank { debugTestPackKey }))
+            buildConfigField("boolean", "PACK_ENC_TEST_KEY", configuredPackKey.isBlank().toString())
+        }
+        release {
+            isMinifyEnabled = true
+            buildConfigField("String", "PACK_ENC_MAIN_KEY", buildConfigString(configuredPackKey))
+            buildConfigField("boolean", "PACK_ENC_TEST_KEY", "false")
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
     }
     buildFeatures { compose = true; buildConfig = true }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }

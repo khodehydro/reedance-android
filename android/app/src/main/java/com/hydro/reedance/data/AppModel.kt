@@ -227,7 +227,6 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
     }
     fun onBackground() { updateProgress(); checkpoint(force = true) }
     private var installRequest: java.util.UUID? = null
-    val installProgress = MutableStateFlow("")
     val installTransfer = MutableStateFlow<InstallTransferProgress?>(null)
     fun cancelInstall() { installRequest?.let { WorkManager.getInstance(getApplication()).cancelWorkById(it) } }
     fun cachedLesson(id: String): JsonObject? = content.cachedLesson(id)
@@ -237,23 +236,6 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
         lesson.value = content.installedLesson(id)
     }
     suspend fun songCoverPath(id: String, data: JsonObject): String? = content.coverPath(id, data)
-    val savingPackPassword = MutableStateFlow(false)
-    fun savePackPassword(password: String) {
-        if(savingPackPassword.value || busy.value) return
-        savingPackPassword.value = true
-        viewModelScope.launch {
-        try {
-            withContext(Dispatchers.IO) { com.hydro.reedance.install.PackKeyStore(getApplication()).save(password) }
-            message.value = "رمز فایل ذخیره شد / File password saved"
-        } catch(cancelled: CancellationException) { throw cancelled } catch(error: Exception) { message.value = error.message ?: "Could not store file password" }
-        finally { savingPackPassword.value = false }
-        }
-    }
-    fun forgetPackPassword() = operation("حذف رمز ناموفق / Could not forget password") {
-        withContext(Dispatchers.IO) { com.hydro.reedance.install.PackKeyStore(getApplication()).clear() }
-        message.value = "رمز فایل حذف شد / File password forgotten"
-    }
-    fun importLocalPackage(uri: android.net.Uri) = enqueuePackWork(workDataOf("localUri" to uri.toString()))
     fun installBundledPackage(id: String) = enqueuePackWork(workDataOf("bundledSong" to id))
     fun installPackage(id: String) = enqueuePackWork(workDataOf("songId" to id))
     private fun enqueuePackWork(input: Data) {
@@ -262,7 +244,7 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
         val manager = WorkManager.getInstance(getApplication())
         val request = OneTimeWorkRequestBuilder<com.hydro.reedance.install.PackInstallWorker>()
             .setInputData(input)
-            .setConstraints(Constraints.Builder().setRequiredNetworkType(if(input.getString("localUri") == null && input.getString("bundledSong") == null) NetworkType.CONNECTED else NetworkType.NOT_REQUIRED).build()).build()
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(if(input.getString("bundledSong") == null) NetworkType.CONNECTED else NetworkType.NOT_REQUIRED).build()).build()
         installRequest = request.id
         val enqueue = manager.enqueueUniqueWork("pack-install", ExistingWorkPolicy.KEEP, request)
         viewModelScope.launch {
@@ -275,18 +257,17 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
                     val bytes = info.progress.getLong("bytes", 0)
                     val totalBytes = info.progress.getLong("totalBytes", 0)
                     installTransfer.value = InstallTransferProgress(phase, bytes, totalBytes)
-                    installProgress.value = "$phase · ${bytes / 1024} KB"
                     if(info.state.isFinished) {
                         if(info.state == WorkInfo.State.SUCCEEDED) {
                             lesson.value = content.installedLesson(info.outputData.getString("songId") ?: input.getString("songId") ?: "")
                             catalog.value = content.catalog()
-                            message.value = "بسته نصب شد؛ در فهرست آهنگ‌ها باز کنید / Package installed; open it in the song list"
+                            message.value = "دانلود کامل شد / Download complete"
                         }
                         else if(info.state == WorkInfo.State.FAILED) message.value = info.outputData.getString("error") ?: "Installation failed"
                         true
                     } else false
                 }
-            } catch(cancelled: CancellationException) { throw cancelled } catch(error: Exception) { message.value = error.message ?: "Installation failed" } finally { busy.value = false; installProgress.value = ""; installTransfer.value = null }
+            } catch(cancelled: CancellationException) { throw cancelled } catch(error: Exception) { message.value = error.message ?: "Installation failed" } finally { busy.value = false; installTransfer.value = null }
         }
     }
     fun togglePlay() {

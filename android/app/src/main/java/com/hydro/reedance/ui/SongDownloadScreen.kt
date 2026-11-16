@@ -50,13 +50,15 @@ import kotlin.math.roundToInt
                 Box(Modifier.fillMaxWidth().height(180.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             } else item(key = "download-details") {
                 val bundled = song.get("bundledPack")?.asBoolean == true
+                val bundledReady = song.get("bundledPackReady")?.asBoolean == true
                 SongDownloadDetails(
                     model = model,
                     song = song,
                     songId = songId,
                     busy = busy,
-                    available = song.s("distributionRef").isNotEmpty() || bundled,
+                    available = if(bundled) bundledReady else song.s("distributionRef").isNotEmpty(),
                     bundled = bundled,
+                    bundledReady = bundledReady,
                     onDownload = { if(bundled) model.installBundledPackage(songId) else model.installPackage(songId) },
                     onCancel = model::cancelInstall
                 )
@@ -72,6 +74,7 @@ import kotlin.math.roundToInt
     busy: Boolean,
     available: Boolean,
     bundled: Boolean,
+    bundledReady: Boolean,
     onDownload: () -> Unit,
     onCancel: () -> Unit
 ) {
@@ -182,10 +185,15 @@ import kotlin.math.roundToInt
             Action(tr("دانلود آهنگ", "Download song"), Modifier.fillMaxWidth()) { onDownload() }
         } else {
             Action(tr("این آهنگ هنوز قابل دانلود نیست", "This song isn’t available to download yet"), Modifier.fillMaxWidth(), enabled = false) {}
-            Text(tr("برای این پیش‌نمایش هنوز فایل صوتی و محتوای آموزشی منتشر نشده است.", "Audio and learning content have not been published for this preview yet."), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                if(bundled && !bundledReady) tr("نسخهٔ همراه برنامه با سازوکار رمزنگاری قدیمی ساخته شده و باید از Windows Studio دوباره صادر شود.", "The bundled copy uses the retired encryption setup and must be re-exported from Windows Studio.")
+                else tr("برای این پیش‌نمایش هنوز فایل صوتی و محتوای آموزشی منتشر نشده است.", "Audio and learning content have not been published for this preview yet."),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
-        if(bundled) Text(
-            tr("این آهنگ همراه برنامه ارائه شده است. برای دانلودش، رمز فایل را در پروفایل وارد کن؛ امضای مستقل ناشر تأیید نشده است.", "This song is included with the app. Enter its file password in Profile to download it; an independent publisher signature has not been verified."),
+        if(bundled && bundledReady) Text(
+            tr("این آهنگ همراه برنامه ارائه شده است. امضای مستقل ناشر برای فایل همراه برنامه تأیید نشده است.", "This song is included with the app. The bundled file does not have an independently verified publisher signature."),
             Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
@@ -240,4 +248,3 @@ import kotlin.math.roundToInt
     "tr" -> tr("ترکی", "Turkish")
     else -> tr("انگلیسی", "English")
 }
-

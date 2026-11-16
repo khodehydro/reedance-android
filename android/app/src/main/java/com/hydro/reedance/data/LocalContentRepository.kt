@@ -26,13 +26,17 @@ class LocalContentRepository(context: Context, private val dao: LearningDao,
         val distribution = try { parseObject(assetText("pack_distribution.json")) } catch(_: java.io.FileNotFoundException) { JsonObject() }
         val bundled = try { parseObject(assetText("bundled_packs.json")) } catch(_: java.io.FileNotFoundException) { JsonObject() }
         songs.forEach { song ->
-            val packSize = bundled.obj(song.s("id")).n("sizeBytes")
+            val bundledEntry = bundled.obj(song.s("id"))
+            val packSize = bundledEntry.n("sizeBytes")
             if(packSize > 0) song.addProperty("packageSizeBytes", packSize)
+            if(bundledEntry.s("fileName").isNotEmpty()) {
+                song.addProperty("bundledPackReady", bundledEntry.get("requiresReexport")?.asBoolean != true)
+            }
             val actualId = distribution.obj("catalogBindings").s(song.s("distributionRef"))
             if(actualId.isNotEmpty()) song.addProperty("id", actualId)
         }
         val replacedPreviewIds = mutableSetOf<String>()
-        val installed = dao.installedPackages().filter { it.state in listOf("VERIFIED", "LOCAL_PASSWORD") }.mapNotNull { row ->
+        val installed = dao.installedPackages().filter { it.state in listOf("VERIFIED", "BUNDLED", "LOCAL_PASSWORD") }.mapNotNull { row ->
             installedLesson(row.songId)?.let { data ->
                 // Metadata match is only for merging a display placeholder; identity always comes from lesson.json.
                 val preview = songs.firstOrNull { it.s("id") == row.songId } ?: songs.firstOrNull {
@@ -43,7 +47,7 @@ class LocalContentRepository(context: Context, private val dao: LearningDao,
                     addProperty("id", row.songId); addProperty("title", data.s("title")); addProperty("artist", data.s("artist"))
                     addProperty("language", data.s("targetLanguage")); addProperty("level", data.s("level"))
                     if(!has("access")) addProperty("access", "free")
-                    addProperty("localImport", row.state == "LOCAL_PASSWORD")
+                    addProperty("bundled", row.state == "BUNDLED")
                 }
             }
         }
@@ -52,7 +56,7 @@ class LocalContentRepository(context: Context, private val dao: LearningDao,
     suspend fun installedLesson(id: String): JsonObject? = withContext(io) {
         val row = dao.installed(id) ?: run { lessonCache.remove(id); return@withContext null }
         val file = File(row.activePath, "lesson.json")
-        check(file.isFile && row.state in listOf("VERIFIED", "LOCAL_PASSWORD")) { "Installed package is unavailable" }
+        check(file.isFile && row.state in listOf("VERIFIED", "BUNDLED", "LOCAL_PASSWORD")) { "Installed package is unavailable" }
         require(file.length() <= 4 * 1024 * 1024)
         com.hydro.reedance.contract.PackVerifier.strictJson(file.inputStream().use { it.readBytes() }, 4 * 1024 * 1024).also { lessonCache[id] = it }
     }

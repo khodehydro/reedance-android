@@ -20,7 +20,7 @@ internal class LibraryContentLoader(private val dao: LearningDao, private val co
 
     suspend fun load(mark: Bookmark): LibraryItemContent? = lock.withLock {
         val row = dao.installed(mark.songId)
-        if(row == null || row.state !in listOf("VERIFIED", "LOCAL_PASSWORD")) {
+        if(row == null || row.state !in listOf("VERIFIED", "BUNDLED", "LOCAL_PASSWORD")) {
             synchronized(cache) { cache.remove(mark.songId) }
             return@withLock null
         }

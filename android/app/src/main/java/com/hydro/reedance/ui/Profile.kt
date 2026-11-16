@@ -31,7 +31,6 @@ import com.hydro.reedance.data.*
             ChoiceRow(listOf(tr("کوچک", "Small"), tr("معمولی", "Default"), tr("بزرگ", "Large")), settings.textSize, List(3) { UiIcons.WordMode to UiIcons.WordModeFilled }, model::textSize)
 
         }
-        Panel { PackControls(model) }
         Panel {
             Text(tr("فضای آفلاین", "Offline storage"), style = MaterialTheme.typography.titleLarge)
             Text(if(lesson == null) tr("بسته‌ای نصب نیست.", "No package installed.") else lesson!!.s("title"))
