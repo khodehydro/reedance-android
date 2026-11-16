@@ -1,5 +1,11 @@
 package com.hydro.reedance.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.tween
 import androidx.compose.ui.input.nestedscroll.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -89,12 +95,19 @@ import kotlinx.coroutines.flow.collectLatest
     val compact = compactPages[pagerState.currentPage]
 
     Column(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Heading(tr("کتابخانهٔ تو", "Your little collection"), tr("نشان‌شده‌ها؛ از جدید به قدیم.", "Your saved items, newest first."))
-            Text(
-                tr("${bookmarks.count { it.itemType == types[pagerState.currentPage] }} مورد نشان‌شده", "${bookmarks.count { it.itemType == types[pagerState.currentPage] }} saved items"),
-                style = MaterialTheme.typography.labelMedium
-            )
+        AnimatedVisibility(
+            visible = !compact,
+            enter = fadeIn(tween(170)) + expandVertically(tween(190)),
+            exit = fadeOut(tween(120)) + shrinkVertically(tween(190))
+        ) {
+            Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Heading(tr("کتابخانهٔ تو", "Your little collection"), tr("نشان‌شده‌ها؛ از جدید به قدیم.", "Your saved items, newest first."))
+                val selectedCount = bookmarks.count { it.itemType == types[pagerState.currentPage] }
+                Text(
+                    tr("$selectedCount مورد نشان‌شده", "$selectedCount saved items"),
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
         }
         Surface(color = MaterialTheme.colorScheme.background) {
             Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
