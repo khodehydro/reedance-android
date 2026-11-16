@@ -4,6 +4,8 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -44,11 +46,20 @@ import androidx.compose.ui.unit.dp
 @Composable private fun LibraryTabStrip(items: List<PillOption>, selected: Int, iconsOnly: Boolean,
     interactive: Boolean, modifier: Modifier, onSelect: (Int) -> Unit) {
     val semantics = if(interactive) Modifier else Modifier.clearAndSetSemantics { }
-    Row(modifier.zIndex(if(interactive) 1f else 0f).then(semantics).horizontalScroll(rememberScrollState(), enabled = interactive).selectableGroup(),
+    val scrollState = rememberScrollState()
+    val selectedRequester = remember { BringIntoViewRequester() }
+    LaunchedEffect(selected, interactive) {
+        if(interactive) {
+            withFrameNanos { }
+            selectedRequester.bringIntoView()
+        }
+    }
+    Row(modifier.zIndex(if(interactive) 1f else 0f).then(semantics).horizontalScroll(scrollState, enabled = interactive).selectableGroup(),
         horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
         items.forEachIndexed { index, item ->
             val active = selected == index
-            Surface(Modifier.selectable(active, enabled = interactive, role = Role.Tab, onClick = { onSelect(index) })
+            Surface((if(active && interactive) Modifier.bringIntoViewRequester(selectedRequester) else Modifier)
+                .selectable(active, enabled = interactive, role = Role.Tab, onClick = { onSelect(index) })
                 .semantics { contentDescription = item.description }, shape = CircleShape,
                 color = if(active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
                 contentColor = if(active) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
