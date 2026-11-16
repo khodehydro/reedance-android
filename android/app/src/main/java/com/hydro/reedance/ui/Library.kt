@@ -1,6 +1,8 @@
 package com.hydro.reedance.ui
 
 import androidx.compose.ui.input.nestedscroll.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.*
@@ -77,86 +79,100 @@ import kotlinx.coroutines.flow.collectLatest
     val bookmarks by model.bookmarks.collectAsStateWithLifecycle()
     val settings by model.settings.collectAsStateWithLifecycle()
     val catalog by model.catalog.collectAsStateWithLifecycle()
-    var selected by androidx.compose.runtime.saveable.rememberSaveable(settings.targetLanguage) { mutableIntStateOf(0) }
     val types = listOf("song", "vocabulary", "grammar", "idioms", "sentences")
-    val requestKey = settings.targetLanguage to selected
-    var compact by remember(requestKey) { mutableStateOf(false) }
-    val threshold = with(LocalDensity.current) { 40.dp.toPx() }
-    val scrollConnection = remember(requestKey, threshold) {
-        LibraryScrollConnection(threshold) { compact = it }
-    }
-    val preparedEntries by produceState<PreparedLibraryEntries?>(null, bookmarks, requestKey) {
-        val rows = withContext(Dispatchers.Default) { libraryBookmarks(bookmarks, types[selected]) }
-        val initialWindow = libraryInitialWindow(rows, model::libraryItem)
-        value = PreparedLibraryEntries(requestKey, rows, initialWindow)
-    }
-    val prepared = preparedEntries?.takeIf { it.key == requestKey }
-    val preparingEntries = prepared == null
-    val entries = prepared?.entries.orEmpty()
+    val pagerState = rememberPagerState(pageCount = { types.size })
+    val scope = rememberCoroutineScope()
     val catalogById = remember(catalog) { catalog.associateBy { it.s("id") } }
-    androidx.compose.runtime.key(settings.targetLanguage, selected) {
-        val listState = androidx.compose.foundation.lazy.rememberLazyListState()
-        LaunchedEffect(listState, scrollConnection) {
-            snapshotFlow { listState.canScrollForward || listState.canScrollBackward }
-                .distinctUntilChanged().collectLatest { scrollable ->
-                    if(!scrollable) scrollConnection.reset()
-                }
+
+    HorizontalPager(
+        state = pagerState,
+        modifier = Modifier.fillMaxSize(),
+        key = { types[it] }
+    ) { page ->
+        val requestKey = settings.targetLanguage to page
+        var compact by remember(requestKey) { mutableStateOf(false) }
+        val threshold = with(LocalDensity.current) { 40.dp.toPx() }
+        val scrollConnection = remember(requestKey, threshold) {
+            LibraryScrollConnection(threshold) { compact = it }
         }
-        LaunchedEffect(listState, entries) {
-            snapshotFlow {
-                val visible = listState.layoutInfo.visibleItemsInfo.filter { it.index >= 2 }
-                val start = ((visible.firstOrNull()?.index ?: 2) - 2).coerceAtLeast(0)
-                val end = ((visible.lastOrNull()?.index ?: 2) - 2).coerceAtLeast(0)
-                start to end
-            }.distinctUntilChanged().collectLatest { (start, end) ->
-                delay(100) // Coalesce range changes during a fling instead of chasing each row.
-                // A small rolling window, never the complete saved library.
-                val from = (start - 2).coerceIn(0, entries.size)
-                val until = (end + 9).coerceIn(from, minOf(entries.size, from + 24))
-                entries.subList(from, until)
-                    .filter { it.itemType != "song" }.distinctBy { it.songId }.take(4).forEach { mark ->
-                        try { if(model.cachedLibraryItem(mark) == null) model.libraryItem(mark) }
-                        catch(cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch(_: Exception) { /* The visible card supplies the unavailable state. */ }
+        val preparedEntries by produceState<PreparedLibraryEntries?>(null, bookmarks, requestKey) {
+            val rows = withContext(Dispatchers.Default) { libraryBookmarks(bookmarks, types[page]) }
+            val initialWindow = libraryInitialWindow(rows, model::libraryItem)
+            value = PreparedLibraryEntries(requestKey, rows, initialWindow)
+        }
+        val prepared = preparedEntries?.takeIf { it.key == requestKey }
+        val preparingEntries = prepared == null
+        val entries = prepared?.entries.orEmpty()
+
+        androidx.compose.runtime.key(settings.targetLanguage, page) {
+            val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+            LaunchedEffect(listState, scrollConnection) {
+                snapshotFlow { listState.canScrollForward || listState.canScrollBackward }
+                    .distinctUntilChanged().collectLatest { scrollable ->
+                        if(!scrollable) scrollConnection.reset()
                     }
             }
-        }
-        CompositionLocalProvider(LocalItemEntranceEnabled provides false) {
-        androidx.compose.foundation.lazy.LazyColumn(Modifier.fillMaxSize().nestedScroll(scrollConnection), state = listState,
-            contentPadding = PaddingValues(top = 8.dp, bottom = 20.dp + LocalOverlayBottomInset.current),
-            verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            item(key = "library-heading", contentType = "heading") {
-                Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Heading(tr("کتابخانهٔ تو", "Your little collection"), tr("نشان‌شده‌ها؛ از جدید به قدیم.", "Your saved items, newest first."))
-                    Text(tr("${entries.size} مورد نشان‌شده", "${entries.size} saved items"), style = MaterialTheme.typography.labelMedium)
+            LaunchedEffect(listState, entries) {
+                snapshotFlow {
+                    val visible = listState.layoutInfo.visibleItemsInfo.filter { it.index >= 2 }
+                    val start = ((visible.firstOrNull()?.index ?: 2) - 2).coerceAtLeast(0)
+                    val end = ((visible.lastOrNull()?.index ?: 2) - 2).coerceAtLeast(0)
+                    start to end
+                }.distinctUntilChanged().collectLatest { (start, end) ->
+                    delay(100) // Coalesce range changes during a fling instead of chasing each row.
+                    // A small rolling window, never the complete saved library.
+                    val from = (start - 2).coerceIn(0, entries.size)
+                    val until = (end + 9).coerceIn(from, minOf(entries.size, from + 24))
+                    entries.subList(from, until)
+                        .filter { it.itemType != "song" }.distinctBy { it.songId }.take(4).forEach { mark ->
+                            try { if(model.cachedLibraryItem(mark) == null) model.libraryItem(mark) }
+                            catch(cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch(_: Exception) { /* The visible card supplies the unavailable state. */ }
+                        }
                 }
             }
-            stickyHeader(key = "library-tabs") {
-                Surface(color = MaterialTheme.colorScheme.background) {
-                    Box(Modifier.padding(horizontal = 20.dp)) {
-                        CollapsingPillTabs(listOf(
-                            PillOption(tr("آهنگ‌ها", "Songs"), UiIcons.Lyrics, filledIcon = UiIcons.LyricsFilled),
-                            PillOption(tr("لغت‌ها", "Words"), UiIcons.Words, filledIcon = UiIcons.WordsFilled),
-                            PillOption(tr("نکته‌ها", "Notes"), UiIcons.Notes, filledIcon = UiIcons.NotesFilled),
-                            PillOption(tr("اصطلاحات", "Expressions"), UiIcons.Phrases, filledIcon = UiIcons.PhrasesFilled),
-                            PillOption(tr("جمله‌ها", "Sentences"), UiIcons.Lines, filledIcon = UiIcons.LinesFilled)
-                        ), selected, compact) { selected = it }
+            CompositionLocalProvider(LocalItemEntranceEnabled provides false) {
+                androidx.compose.foundation.lazy.LazyColumn(
+                    Modifier.fillMaxSize().nestedScroll(scrollConnection),
+                    state = listState,
+                    contentPadding = PaddingValues(top = 8.dp, bottom = 20.dp + LocalOverlayBottomInset.current),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    item(key = "library-heading", contentType = "heading") {
+                        Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Heading(tr("کتابخانهٔ تو", "Your little collection"), tr("نشان‌شده‌ها؛ از جدید به قدیم.", "Your saved items, newest first."))
+                            Text(tr("${entries.size} مورد نشان‌شده", "${entries.size} saved items"), style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
+                    stickyHeader(key = "library-tabs") {
+                        Surface(color = MaterialTheme.colorScheme.background) {
+                            Box(Modifier.padding(horizontal = 20.dp)) {
+                                CollapsingPillTabs(listOf(
+                                    PillOption(tr("آهنگ‌ها", "Songs"), UiIcons.Lyrics, filledIcon = UiIcons.LyricsFilled),
+                                    PillOption(tr("لغت‌ها", "Words"), UiIcons.Words, filledIcon = UiIcons.WordsFilled),
+                                    PillOption(tr("نکته‌ها", "Notes"), UiIcons.Notes, filledIcon = UiIcons.NotesFilled),
+                                    PillOption(tr("اصطلاحات", "Expressions"), UiIcons.Phrases, filledIcon = UiIcons.PhrasesFilled),
+                                    PillOption(tr("جمله‌ها", "Sentences"), UiIcons.Lines, filledIcon = UiIcons.LinesFilled)
+                                ), pagerState.currentPage, compact) { target ->
+                                    scope.launch { pagerState.animateScrollToPage(target) }
+                                }
+                            }
+                        }
+                    }
+                    if(preparingEntries) item(key = "preparing") {
+                        LinearProgressIndicator(Modifier.fillMaxWidth())
+                    }
+                    else if(entries.isEmpty()) item(key = "empty") {
+                        Panel { Text(tr("در این بخش هنوز موردی نشان نکرده‌ای.", "No saved items in this tab yet.")) }
+                    }
+                    items(entries, key = { "${it.songId}:${it.itemType}:${it.itemId}" }, contentType = { it.itemType }) { mark ->
+                        Box(Modifier.padding(horizontal = 20.dp)) {
+                            LibraryBookmarkCard(model, mark, catalogById[mark.songId], song,
+                                preloaded = prepared?.initialWindow?.containsKey(mark) == true,
+                                preloadedContent = prepared?.initialWindow?.get(mark))
+                        }
                     }
                 }
             }
-            if(preparingEntries) item(key = "preparing") {
-                LinearProgressIndicator(Modifier.fillMaxWidth())
-            }
-            else if(entries.isEmpty()) item(key = "empty") {
-                Panel { Text(tr("در این بخش هنوز موردی نشان نکرده‌ای.", "No saved items in this tab yet.")) }
-            }
-            items(entries, key = { "${it.songId}:${it.itemType}:${it.itemId}" }, contentType = { it.itemType }) { mark ->
-                Box(Modifier.padding(horizontal = 20.dp)) {
-                    LibraryBookmarkCard(model, mark, catalogById[mark.songId], song,
-                        preloaded = prepared?.initialWindow?.containsKey(mark) == true,
-                        preloadedContent = prepared?.initialWindow?.get(mark))
-                }
-            }
-        }
         }
     }
 }
