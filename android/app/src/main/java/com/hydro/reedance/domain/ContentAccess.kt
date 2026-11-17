@@ -12,9 +12,18 @@ fun latestSongs(songs: List<JsonObject>): List<JsonObject> = songs.sortedByDesce
 /** Audio availability is deliberately independent of the educational preview. */
 data class LessonAccess(val premium: Boolean, val subscribed: Boolean = false) {
     val preview: Boolean get() = premium && !subscribed
+    val allowsBackgroundPlayback: Boolean get() = subscribed
+
+    fun canBookmarkContent(): Boolean = !premium || subscribed
+    fun canAddBookmark(sectionCount: Int): Boolean = subscribed || sectionCount < FREE_BOOKMARKS_PER_SECTION
+
     fun limit(section: String): Int = if(!preview) Int.MAX_VALUE else when(section) {
         "vocabulary" -> 5
         "lyrics" -> 3
         else -> 2
+    }
+
+    companion object {
+        const val FREE_BOOKMARKS_PER_SECTION = 30
     }
 }

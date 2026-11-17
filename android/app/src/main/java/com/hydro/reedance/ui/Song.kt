@@ -11,17 +11,20 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.blur
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.gson.JsonObject
 import com.hydro.reedance.data.*
 import com.hydro.reedance.domain.LessonAccess
+import com.hydro.reedance.domain.PremiumEntitlement
 import com.hydro.reedance.domain.SongEntryState
 import com.hydro.reedance.domain.songEntryState
 
@@ -38,8 +41,9 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     val playing by model.playing.collectAsStateWithLifecycle()
     val activePlayback by model.activePlayback.collectAsStateWithLifecycle()
     val bookmarks by model.bookmarks.collectAsStateWithLifecycle()
+    val subscribed by PremiumEntitlement.active.collectAsStateWithLifecycle()
     val song = catalog.find { it.s("id") == songId } ?: JsonObject()
-    val access = LessonAccess(premium = song.s("access") == "paid")
+    val access = LessonAccess(premium = song.s("access") == "paid", subscribed = subscribed)
     var subscriptionInfo by remember { mutableStateOf(false) }
     val openQuiz = { if(access.preview) subscriptionInfo = true else quiz() }
     val fa = LearningLanguage.persian
@@ -127,29 +131,44 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                             item(key = "single-lyric", contentType = "single-lyric") {
                                 TimedLyricBox(model, songId, visibleLines, renderLine)
                             }
+                            items(lines.drop(access.limit("lyrics")), key = { "locked-lyric-${it.s("id")}" }, contentType = { "lyric" }) { line ->
+                                LockedLessonItem { subscriptionInfo = true } { renderLine(line) }
+                            }
                         } else {
-                            items(lines.take(access.limit("lyrics")), key = { "lyric-${it.s("id")}" }, contentType = { "lyric" }) { line -> renderLine(line) }
+                            itemsIndexed(lines, key = { _, line -> "lyric-${line.s("id")}" }, contentType = { _, _ -> "lyric" }) { index, line ->
+                                if(index < access.limit("lyrics")) renderLine(line)
+                                else LockedLessonItem { subscriptionInfo = true } { renderLine(line) }
+                            }
                         }
                         if(lines.size > access.limit("lyrics")) item(key = "lyrics-preview") { PremiumPreview() }
                         item(key = "lyric-quiz") { SongQuizInvitation(openQuiz) }
                     }
-                    1 -> { items(data.a("grammar").take(access.limit("grammar")), key = { "grammar-${it.s("id")}" }, contentType = { "note" }) { note -> LearningNote(note) { SaveAction(model, "grammar", note.s("id")) } }
+                    1 -> { itemsIndexed(data.a("grammar"), key = { _, it -> "grammar-${it.s("id")}" }, contentType = { _, _ -> "note" }) { index, note ->
+                            val content: @Composable () -> Unit = { LearningNote(note) { SaveAction(model, "grammar", note.s("id")) } }
+                            if(index < access.limit("grammar")) content() else LockedLessonItem { subscriptionInfo = true } { content() }
+                        }
                         if(data.a("grammar").size > access.limit("grammar")) item(key = "grammar-preview") { PremiumPreview() }
                     }
                     2 -> {
                         if(!access.preview) items(data.a("vocabularyTables"), contentType = { "table" }) { Panel { LearningTable(it) } }
-                        items(data.a("vocabulary").take(access.limit("vocabulary")), key = { "word-${it.s("lexemeId")}" }, contentType = { "word" }) { word -> Panel {
-                            WordLearningContent(word)
-                            SaveAction(model, "vocabulary", word.s("lexemeId"))
-                        } }
+                        itemsIndexed(data.a("vocabulary"), key = { _, it -> "word-${it.s("lexemeId")}" }, contentType = { _, _ -> "word" }) { index, word ->
+                            val content: @Composable () -> Unit = { Panel {
+                                WordLearningContent(word)
+                                SaveAction(model, "vocabulary", word.s("lexemeId"))
+                            } }
+                            if(index < access.limit("vocabulary")) content() else LockedLessonItem { subscriptionInfo = true } { content() }
+                        }
                         if(data.a("vocabulary").size > access.limit("vocabulary") || (access.preview && data.a("vocabularyTables").isNotEmpty())) item(key = "words-preview") { PremiumPreview() }
                     }
                     3 -> listOf("idioms", "sentences").forEach { type ->
                         item(key = "$type-heading") { Text(if(type == "idioms") tr("اصطلاحات", "Expressions") else tr("جمله‌های کاربردی", "Useful sentences"), style = MaterialTheme.typography.titleLarge) }
-                        items(data.a(type).take(access.limit(type)), key = { "$type-${it.s("id")}" }, contentType = { "phrase" }) { item -> Panel {
-                            PhraseLearningContent(item)
-                            SaveAction(model, type, item.s("id"))
-                        } }
+                        itemsIndexed(data.a(type), key = { _, it -> "$type-${it.s("id")}" }, contentType = { _, _ -> "phrase" }) { index, item ->
+                            val content: @Composable () -> Unit = { Panel {
+                                PhraseLearningContent(item)
+                                SaveAction(model, type, item.s("id"))
+                            } }
+                            if(index < access.limit(type)) content() else LockedLessonItem { subscriptionInfo = true } { content() }
+                        }
                         if(data.a(type).size > access.limit(type)) item(key = "$type-preview") { PremiumPreview() }
                     }
                 }
@@ -172,6 +191,16 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
         }
     } }
 }
+@Composable private fun LockedLessonItem(onUnlock: () -> Unit, content: @Composable () -> Unit) {
+    val hasNativeBlur = android.os.Build.VERSION.SDK_INT >= 31
+    Box {
+        Box(Modifier.clearAndSetSemantics { }.then(if(hasNativeBlur) Modifier.blur(8.dp) else Modifier)) { content() }
+        Box(Modifier.matchParentSize().background(Color.White.copy(alpha = if(hasNativeBlur) .38f else .94f)).clickable(onClick = onUnlock), contentAlignment = Alignment.Center) {
+            Text(tr("ادامه با اشتراک", "Unlock with Premium"), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+        }
+    }
+}
+
 @Composable fun SaveAction(model: AppModel, type: String, id: String) {
     val bookmarks by model.bookmarks.collectAsStateWithLifecycle()
     val lesson by model.lesson.collectAsStateWithLifecycle()

@@ -19,6 +19,19 @@ class ContentAccessTest {
         assertEquals(Int.MAX_VALUE, LessonAccess(false).limit("lyrics"))
         assertEquals(Int.MAX_VALUE, LessonAccess(true, true).limit("vocabulary"))
     }
+    @Test fun freeBookmarkAndBackgroundLimitsLiftOnlyForPremium() {
+        val free = LessonAccess(premium = false)
+        val paidTrackOnFreePlan = LessonAccess(premium = true)
+        val subscribed = LessonAccess(premium = true, subscribed = true)
+        assertTrue(free.canBookmarkContent())
+        assertFalse(paidTrackOnFreePlan.canBookmarkContent())
+        assertTrue(subscribed.canBookmarkContent())
+        assertTrue(free.canAddBookmark(29))
+        assertFalse(free.canAddBookmark(30))
+        assertTrue(subscribed.canAddBookmark(500))
+        assertFalse(free.allowsBackgroundPlayback)
+        assertTrue(subscribed.allowsBackgroundPlayback)
+    }
     @Test fun homeCapsAtFortyNewestPublications() {
         val songs = (1..45).map { day -> JsonObject().apply {
             addProperty("id", "$day")

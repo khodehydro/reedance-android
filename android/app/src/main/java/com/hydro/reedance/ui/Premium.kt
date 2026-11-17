@@ -139,6 +139,12 @@ private val PremiumColors = lightColorScheme(
             )
             PremiumBenefit(
                 UiIcons.BookmarkFilled,
+                tr("آموزش کامل همهٔ آهنگ‌ها", "Full lessons for every song"),
+                tr("همهٔ خط‌های ترانه، نکته‌ها و لغت‌ها بدون محو شدن ببین.", "Read every lyric, note and vocabulary item without blurred previews."),
+                tr("رایگان: ۳ خط، ۲ نکته و ۵ لغت", "Free: 3 lyrics, 2 notes and 5 words")
+            )
+            PremiumBenefit(
+                UiIcons.BookmarkFilled,
                 tr("نشان‌گذاری نامحدود", "Unlimited saved items"),
                 tr("لغت‌ها، نکته‌های گرامری و بقیهٔ موارد آموزشی را بدون سقف ذخیره کن.", "Save vocabulary, grammar notes and other learning items without a cap."),
                 tr("رایگان: ۳۰ مورد از هر دسته", "Free: 30 per category")

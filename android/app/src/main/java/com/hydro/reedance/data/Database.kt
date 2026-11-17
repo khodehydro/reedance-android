@@ -17,6 +17,7 @@ data class QuizResult(val songId: String, val questionId: String, val versionCod
 @Dao interface LearningDao {
     @Query("SELECT * FROM Bookmark ORDER BY createdAt DESC") fun bookmarks(): Flow<List<Bookmark>>
     @Query("SELECT * FROM Bookmark WHERE songId = :song AND itemType = :type AND itemId = :id") suspend fun bookmark(song: String, type: String, id: String): Bookmark?
+    @Query("SELECT COUNT(*) FROM Bookmark WHERE itemType = :type") suspend fun bookmarkCount(type: String): Int
     @Upsert suspend fun saveBookmark(value: Bookmark)
     @Delete suspend fun deleteBookmark(value: Bookmark)
     @Query("SELECT * FROM ReviewCard ORDER BY dueAt") fun reviews(): Flow<List<ReviewCard>>

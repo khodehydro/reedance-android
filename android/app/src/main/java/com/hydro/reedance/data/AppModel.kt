@@ -225,7 +225,11 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
         val ms = p.currentPosition.coerceAtLeast(0)
         if(checkpointPolicy.shouldSave(ms, SystemClock.elapsedRealtime(), force)) checkpoints.trySend(SongPlayback(p.currentMediaItem?.mediaId ?: return, ms))
     }
-    fun onBackground() { updateProgress(); checkpoint(force = true) }
+    fun onBackground() {
+        updateProgress()
+        checkpoint(force = true)
+        if(!PremiumEntitlement.active.value) pause()
+    }
     private var installRequest: java.util.UUID? = null
     val installTransfer = MutableStateFlow<InstallTransferProgress?>(null)
     fun cancelInstall() { installRequest?.let { WorkManager.getInstance(getApplication()).cancelWorkById(it) } }
@@ -314,7 +318,20 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
     fun toggleBookmark(type: String, id: String, songId: String? = lesson.value?.s("songId")) { mutation {
         val song = songId ?: return@mutation
         val old = dao.bookmark(song, type, id)
-        if(old != null) dao.deleteBookmark(old) else {
+        if(old != null) {
+            dao.deleteBookmark(old)
+        } else {
+            val subscribed = PremiumEntitlement.active.value
+            val isPremiumSong = catalog.value.any { it.s("id") == song && it.s("access") == "paid" }
+            val access = LessonAccess(premium = isPremiumSong, subscribed = subscribed)
+            if(!access.canBookmarkContent()) {
+                message.value = "برای نشان‌کردن محتوای آهنگ پریمیوم، اشتراک لازم است / Premium subscription required to bookmark this song"
+                return@mutation
+            }
+            if(!access.canAddBookmark(dao.bookmarkCount(type))) {
+                message.value = "سقف ۳۰ نشان برای این بخش پر شده است / Free limit of 30 bookmarks for this section reached"
+                return@mutation
+            }
             dao.saveBookmark(Bookmark(song, type, id))
             if(type == "vocabulary" && dao.review(id, song) == null) dao.saveReview(ReviewCard(id, songId = song))
         }
