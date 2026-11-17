@@ -132,12 +132,12 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                                 TimedLyricBox(model, songId, visibleLines, renderLine)
                             }
                             items(lines.drop(access.limit("lyrics")), key = { "locked-lyric-${it.s("id")}" }, contentType = { "lyric" }) { line ->
-                                LockedLessonItem { subscriptionInfo = true } { renderLine(line) }
+                                LockedLessonItem(onUnlock = { subscriptionInfo = true }) { renderLine(line) }
                             }
                         } else {
                             itemsIndexed(lines, key = { _, line -> "lyric-${line.s("id")}" }, contentType = { _, _ -> "lyric" }) { index, line ->
                                 if(index < access.limit("lyrics")) renderLine(line)
-                                else LockedLessonItem { subscriptionInfo = true } { renderLine(line) }
+                                else LockedLessonItem(onUnlock = { subscriptionInfo = true }) { renderLine(line) }
                             }
                         }
                         if(lines.size > access.limit("lyrics")) item(key = "lyrics-preview") { PremiumPreview() }
@@ -145,7 +145,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                     }
                     1 -> { itemsIndexed(data.a("grammar"), key = { _, it -> "grammar-${it.s("id")}" }, contentType = { _, _ -> "note" }) { index, note ->
                             val content: @Composable () -> Unit = { LearningNote(note) { SaveAction(model, "grammar", note.s("id")) } }
-                            if(index < access.limit("grammar")) content() else LockedLessonItem { subscriptionInfo = true } { content() }
+                            if(index < access.limit("grammar")) content() else LockedLessonItem(onUnlock = { subscriptionInfo = true }) { content() }
                         }
                         if(data.a("grammar").size > access.limit("grammar")) item(key = "grammar-preview") { PremiumPreview() }
                     }
@@ -156,7 +156,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                                 WordLearningContent(word)
                                 SaveAction(model, "vocabulary", word.s("lexemeId"))
                             } }
-                            if(index < access.limit("vocabulary")) content() else LockedLessonItem { subscriptionInfo = true } { content() }
+                            if(index < access.limit("vocabulary")) content() else LockedLessonItem(onUnlock = { subscriptionInfo = true }) { content() }
                         }
                         if(data.a("vocabulary").size > access.limit("vocabulary") || (access.preview && data.a("vocabularyTables").isNotEmpty())) item(key = "words-preview") { PremiumPreview() }
                     }
@@ -167,7 +167,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                                 PhraseLearningContent(item)
                                 SaveAction(model, type, item.s("id"))
                             } }
-                            if(index < access.limit(type)) content() else LockedLessonItem { subscriptionInfo = true } { content() }
+                            if(index < access.limit(type)) content() else LockedLessonItem(onUnlock = { subscriptionInfo = true }) { content() }
                         }
                         if(data.a(type).size > access.limit(type)) item(key = "$type-preview") { PremiumPreview() }
                     }
