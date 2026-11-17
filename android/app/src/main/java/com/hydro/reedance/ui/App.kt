@@ -105,6 +105,7 @@ import com.hydro.reedance.data.*
     var songTab by rememberSaveable { mutableIntStateOf(0) }
     var reviewQuiz by rememberSaveable { mutableStateOf(false) }
     var premiumReturnPage by rememberSaveable { mutableStateOf("profile") }
+    val currentPage by rememberUpdatedState(page)
     val snackbar = remember { SnackbarHostState() }
     val message by model.message.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -144,6 +145,12 @@ import com.hydro.reedance.data.*
     }
     LaunchedEffect(message) { if(message.isNotEmpty()) { snackbar.showSnackbar(message); model.message.value = "" } }
     fun navigate(to: String) { if(to == "quiz") model.pause(); page = to }
+    LaunchedEffect(model) {
+        model.premiumRequired.collect {
+            premiumReturnPage = if(currentPage == "song-playback") "song-playback" else "profile"
+            page = "premium"
+        }
+    }
     fun openSong(id: String) {
         songId = id
         navigate(if(id in installedIds) "song-playback" else "song-download")

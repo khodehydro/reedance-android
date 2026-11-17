@@ -80,6 +80,7 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
     val lesson = MutableStateFlow<JsonObject?>(null)
     val busy = MutableStateFlow(false)
     val message = MutableStateFlow("")
+    val premiumRequired = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val playing = MutableStateFlow(false)
     val activePlayback = MutableStateFlow<ActivePlayback?>(null)
     val position = MutableStateFlow(0L)
@@ -324,12 +325,8 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
             val subscribed = PremiumEntitlement.active.value
             val isPremiumSong = catalog.value.any { it.s("id") == song && it.s("access") == "paid" }
             val access = LessonAccess(premium = isPremiumSong, subscribed = subscribed)
-            if(!access.canBookmarkContent()) {
-                message.value = "برای نشان‌کردن محتوای آهنگ پریمیوم، اشتراک لازم است / Premium subscription required to bookmark this song"
-                return@mutation
-            }
-            if(!access.canAddBookmark(dao.bookmarkCount(type))) {
-                message.value = "سقف ۳۰ نشان برای این بخش پر شده است / Free limit of 30 bookmarks for this section reached"
+            if(!access.canBookmarkContent() || !access.canAddBookmark(dao.bookmarkCount(type))) {
+                premiumRequired.tryEmit(Unit)
                 return@mutation
             }
             dao.saveBookmark(Bookmark(song, type, id))
