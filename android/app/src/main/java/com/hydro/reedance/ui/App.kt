@@ -258,7 +258,6 @@ import com.hydro.reedance.data.*
     }, bottomBar = {
         if(!independent) Column(
             Modifier.fillMaxWidth()
-                .background(MaterialTheme.colorScheme.background)
                 .navigationBarsPadding()
                 .padding(top = 6.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -277,12 +276,12 @@ import com.hydro.reedance.data.*
                     start = padding.calculateStartPadding(LocalLayoutDirection.current),
                     end = padding.calculateEndPadding(LocalLayoutDirection.current),
                     top = padding.calculateTopPadding(),
-                    bottom = if(independent) padding.calculateBottomPadding() else 0.dp
+                    bottom = 0.dp
                 )
                 .nestedScroll(scrollConnection)
                 .clipToBounds()
         ) {
-            CompositionLocalProvider(LocalOverlayBottomInset provides if(independent) 0.dp else padding.calculateBottomPadding()) {
+            CompositionLocalProvider(LocalOverlayBottomInset provides padding.calculateBottomPadding()) {
                 mountedPages.forEach { mountedPage ->
                         val active = page == mountedPage
                         key(mountedPage) {
