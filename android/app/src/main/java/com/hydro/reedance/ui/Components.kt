@@ -148,9 +148,11 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
         table.tr("footer", fa).takeIf { it.isNotEmpty() }?.let { PersianText(it, style = MaterialTheme.typography.bodySmall) }
     }
 }
-@Composable fun LearningNote(note: JsonObject, save: (@Composable () -> Unit)? = null) {
+@Composable fun LearningNote(note: JsonObject, tablesInDialog: Boolean = false, save: (@Composable () -> Unit)? = null) {
     val fa = LearningLanguage.persian
     var answer by remember(note) { mutableStateOf(false) }
+    var showTables by remember(note) { mutableStateOf(false) }
+    val tables = remember(note) { note.a("tables") }
     val color = when(note.s("tone")) {
         "mint" -> Color(0xFFDEEFE7); "amber" -> Color(0xFFFFEBCB); "coral" -> Color(0xFFFFE0D8); "rose" -> Color(0xFFF8DFE8); "apricot" -> Color(0xFFFFE6CF); else -> Color(0xFFE3EEFF)
     }
@@ -173,7 +175,11 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
                 }
             }
         }
-        note.a("tables").forEach { LearningTable(it) }
+        if(tablesInDialog && tables.isNotEmpty()) {
+            PressOutlinedButton({ showTables = true }, shape = CircleShape) {
+                Text(tr("نمایش جدول‌ها", "View tables"))
+            }
+        } else tables.forEach { LearningTable(it) }
         note.tr("takeaway", fa).takeIf { it.isNotEmpty() }?.let { PersianText(it, style = MaterialTheme.typography.titleSmall) }
         if(note.has("check")) {
             PersianText(note.obj("check").tr("prompt", fa))
@@ -182,6 +188,18 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
         }
         save?.invoke()
     }
+    // In the library pager, keep horizontally draggable tables out of the swipe surface.
+    if(showTables) AlertDialog(
+        onDismissRequest = { showTables = false },
+        title = { Text(tr("جدول‌های نکته", "Note tables")) },
+        text = {
+            Column(Modifier.fillMaxWidth().heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                tables.forEach { LearningTable(it) }
+            }
+        },
+        confirmButton = { PressTextButton({ showTables = false }) { Text(tr("بستن", "Close")) } }
+    )
 }
 
 // Match the title font scale, keep the crown adjacent to short titles, and reserve

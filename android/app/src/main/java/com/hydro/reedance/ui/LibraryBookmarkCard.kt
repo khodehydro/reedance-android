@@ -42,7 +42,7 @@ internal fun libraryBookmarks(rows: List<Bookmark>, type: String): List<Bookmark
         }
     }
     if(mark.itemType == "grammar" && item != null) {
-        LearningNote(item, save = remove)
+        LearningNote(item, tablesInDialog = true, save = remove)
     } else Panel {
         when {
             mark.itemType == "song" -> {
