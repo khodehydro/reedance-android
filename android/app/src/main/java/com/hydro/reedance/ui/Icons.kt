@@ -40,6 +40,7 @@ object UiIcons {
     val ReviewFilled = R.drawable.uicon_review_filled
     val LibraryFilled = R.drawable.uicon_library_filled
     val Back = R.drawable.uicon_back
+    val Backspace = R.drawable.uicon_backspace
     val Home = R.drawable.uicon_home
     val Explore = R.drawable.uicon_explore
     val Review = R.drawable.uicon_review

@@ -31,7 +31,7 @@ private data class Destination(val id: String, val label: String, val outline: I
     val destinations = listOf(
         Destination("home", tr("خانه", "Home"), UiIcons.Home, UiIcons.HomeFilled),
         Destination("explore", tr("کشف", "Explore"), UiIcons.Explore, UiIcons.ExploreFilled),
-        Destination("game", tr("گیم", "Game"), UiIcons.Words, UiIcons.WordsFilled),
+        Destination("game", tr("گیم", "Game"), UiIcons.Quiz, UiIcons.Quiz),
         Destination("review", tr("لایتنر", "Review"), UiIcons.Review, UiIcons.ReviewFilled),
         Destination("library", tr("کتابخانه", "Library"), UiIcons.Library, UiIcons.LibraryFilled)
     )
