@@ -10,7 +10,10 @@ plugins {
 }
 
 val localPackKey: String = Properties().let { properties ->
-    rootProject.file("local.properties").takeIf { it.isFile }?.inputStream()?.use { properties.load(it) }
+    rootProject.file("local.properties")
+        .takeIf { it.isFile }
+        ?.inputStream()
+        ?.use { properties.load(it) }
     properties.getProperty("REEDANCE_ENC_MAIN_KEY", "")
 }
 val configuredPackKey = providers.gradleProperty("REEDANCE_ENC_MAIN_KEY")
