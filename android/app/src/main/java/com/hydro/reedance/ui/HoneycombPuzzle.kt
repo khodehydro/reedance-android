@@ -1,6 +1,7 @@
 package com.hydro.reedance.ui
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,7 +15,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.hydro.reedance.data.AppModel
@@ -67,7 +71,7 @@ import kotlinx.coroutines.delay
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
             Column(Modifier.weight(1f)) {
                 Text(tr("حروف را به هم وصل کن", "Connect the letters"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Text(tr("خانه‌های مجاور را به‌ترتیب انتخاب کن", "Choose neighboring hexes in order"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(tr("واژه‌ها را به هر ترتیبی پیدا کن؛ خانه‌های مجاور را لمس کن", "Find words in any order by tapping neighboring hexes"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             PressIconButton(
                 onClick = {
@@ -166,6 +170,14 @@ import kotlinx.coroutines.delay
 ) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val columns = board.columns
+        val lightTheme = MaterialTheme.colorScheme.background.luminance() > .5f
+        val blueRange = if(lightTheme) listOf(
+            Color(0xFFDCEBFF), Color(0xFFCBE0FB), Color(0xFFBBD7F5), Color(0xFFE7F1FF)
+        ) else listOf(
+            Color(0xFF284A70), Color(0xFF315987), Color(0xFF3B6794), Color(0xFF244366)
+        )
+        val idleLetterColor = if(lightTheme) Color(0xFF183653) else Color(0xFFEAF3FF)
+        val solvedColor = if(lightTheme) Color(0xFF287B55) else Color(0xFF398D66)
         val tileWidth = minOf(42.dp, (maxWidth - 8.dp) / (columns + .5f))
         val tileHeight = tileWidth * 1.12f
         val rowStep = tileHeight * .75f
@@ -181,28 +193,31 @@ import kotlinx.coroutines.delay
                     val winning = index in winningCells
                     val color by animateColorAsState(
                         targetValue = when {
-                            winning -> Color(0xFF71850B)
-                            locked -> Color(0xFF71850B)
+                            winning || locked -> solvedColor
                             selected -> MaterialTheme.colorScheme.primary
-                            else -> Color(0xFFB9E914)
+                            else -> blueRange[index % blueRange.size]
                         },
                         label = "honeycomb-cell-$index"
                     )
                     val textColor by animateColorAsState(
                         targetValue = when {
-                            winning || locked || selected -> Color.White
-                            else -> Color(0xFF293704)
+                            winning || locked -> Color.White
+                            selected -> MaterialTheme.colorScheme.onPrimary
+                            else -> idleLetterColor
                         },
                         label = "honeycomb-letter-$index"
                     )
+                    val scale by animateFloatAsState(if(selected || winning) 1.035f else 1f, label = "honeycomb-scale-$index")
                     Box(
                         Modifier.offset(
                             x = tileWidth * column.toFloat() + if(row % 2 == 1) tileWidth * .5f else 0.dp,
                             y = rowStep * row.toFloat()
                         ).size(tileWidth, tileHeight)
+                            .graphicsLayer { scaleX = scale; scaleY = scale }
+                            .shadow(if(selected || winning) 5.dp else 2.dp, HexagonShape)
                             .clip(HexagonShape)
                             .background(color)
-                            .border(2.dp, Color.White, HexagonShape)
+                            .border(1.5.dp, Color.White.copy(alpha = if(lightTheme) .95f else .78f), HexagonShape)
                             .clickable(enabled = canInteract && !locked) { onTap(index) },
                         contentAlignment = Alignment.Center
                     ) {
@@ -215,11 +230,22 @@ import kotlinx.coroutines.delay
 }
 
 private val HexagonShape = GenericShape { size, _ ->
-    moveTo(size.width * .5f, 0f)
-    lineTo(size.width * .94f, size.height * .25f)
-    lineTo(size.width * .94f, size.height * .75f)
-    lineTo(size.width * .5f, size.height)
-    lineTo(size.width * .06f, size.height * .75f)
-    lineTo(size.width * .06f, size.height * .25f)
+    val w = size.width
+    val h = size.height
+    moveTo(w * .5f, h * .035f)
+    cubicTo(w * .535f, h * .035f, w * .56f, h * .05f, w * .59f, h * .07f)
+    lineTo(w * .91f, h * .25f)
+    cubicTo(w * .96f, h * .28f, w * .975f, h * .31f, w * .975f, h * .36f)
+    lineTo(w * .975f, h * .64f)
+    cubicTo(w * .975f, h * .69f, w * .96f, h * .72f, w * .91f, h * .75f)
+    lineTo(w * .59f, h * .93f)
+    cubicTo(w * .56f, h * .95f, w * .535f, h * .965f, w * .5f, h * .965f)
+    cubicTo(w * .465f, h * .965f, w * .44f, h * .95f, w * .41f, h * .93f)
+    lineTo(w * .09f, h * .75f)
+    cubicTo(w * .04f, h * .72f, w * .025f, h * .69f, w * .025f, h * .64f)
+    lineTo(w * .025f, h * .36f)
+    cubicTo(w * .025f, h * .31f, w * .04f, h * .28f, w * .09f, h * .25f)
+    lineTo(w * .41f, h * .07f)
+    cubicTo(w * .44f, h * .05f, w * .465f, h * .035f, w * .5f, h * .035f)
     close()
 }

@@ -144,7 +144,6 @@ internal object GameSounds {
                 Action(tr("دیدن اشتراک پریمیوم", "Explore Premium"), Modifier.fillMaxWidth(), onClick = premium)
             }
             else -> {
-                val appIsPersian = LocalFa.current
                 val playableCount = availableProgress.count { it.levelIndex != null }
                 val solvedCount = availableProgress.count { it.solved }
                 Panel {
@@ -155,6 +154,14 @@ internal object GameSounds {
                     LinearProgressIndicator(progress = { if(words.isEmpty()) 0f else words.count { it.solved }.toFloat() / words.size }, modifier = Modifier.fillMaxWidth())
                 }
                 if(current != null && roundTargets.isNotEmpty()) {
+                    HoneycombPuzzle(
+                        model = model,
+                        targetLanguage = settings.targetLanguage,
+                        board = letterBoard,
+                        targets = roundTargets,
+                        solvedTargetKeys = solvedTargetKeys,
+                        solvedCellIndices = solvedCellIndices
+                    )
                     Panel {
                         Text(tr("واژه‌های این مرحله", "Words in this level"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                         words.forEach { word ->
@@ -173,7 +180,7 @@ internal object GameSounds {
                                 )
                                 Spacer(Modifier.width(10.dp))
                                 Text(
-                                    if(appIsPersian) target.translationFa.ifBlank { target.translationEn } else target.translationEn.ifBlank { target.translationFa },
+                                    target.translationFa.ifBlank { "—" },
                                     modifier = Modifier.weight(1f)
                                 )
                                 Text(
@@ -185,14 +192,6 @@ internal object GameSounds {
                             }
                         }
                     }
-                    HoneycombPuzzle(
-                        model = model,
-                        targetLanguage = settings.targetLanguage,
-                        board = letterBoard,
-                        targets = roundTargets,
-                        solvedTargetKeys = solvedTargetKeys,
-                        solvedCellIndices = solvedCellIndices
-                    )
                 } else if(busy) {
                     Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
                 } else if(playableCount == 0) {
