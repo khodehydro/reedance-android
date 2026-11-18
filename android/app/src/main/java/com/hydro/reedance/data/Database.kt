@@ -22,7 +22,8 @@ data class GameWordProgress(
     val levelIndex: Int? = null,
     val positionInLevel: Int = 0,
     val solved: Boolean = false,
-    val addedAt: Long = System.currentTimeMillis()
+    val addedAt: Long = System.currentTimeMillis(),
+    @ColumnInfo(defaultValue = "''") val solvedCellIndices: String = ""
 )
 @Dao interface LearningDao {
     @Query("SELECT * FROM Bookmark ORDER BY createdAt DESC") fun bookmarks(): Flow<List<Bookmark>>
@@ -60,10 +61,10 @@ data class GameWordProgress(
     @Query("SELECT MAX(levelIndex) FROM GameWordProgress WHERE targetLanguage = :language") suspend fun maxGameLevel(language: String): Int?
     @Query("UPDATE GameWordProgress SET levelIndex = :level, positionInLevel = :position WHERE targetLanguage = :language AND songId = :song AND lexemeId = :lexeme AND levelIndex IS NULL")
     suspend fun placeGameWord(language: String, song: String, lexeme: String, level: Int, position: Int)
-    @Query("UPDATE GameWordProgress SET solved = 1 WHERE targetLanguage = :language AND songId = :song AND lexemeId = :lexeme")
-    suspend fun solveGameWord(language: String, song: String, lexeme: String)
+    @Query("UPDATE GameWordProgress SET solved = 1, solvedCellIndices = :cellIndices WHERE targetLanguage = :language AND songId = :song AND lexemeId = :lexeme")
+    suspend fun solveGameWord(language: String, song: String, lexeme: String, cellIndices: String)
 }
-@Database(entities = [Bookmark::class, ReviewCard::class, StarterProgress::class, SongPlayback::class, QuizResult::class, InstalledPackage::class, SeenManifest::class, GameWordProgress::class], version = 3, exportSchema = false)
+@Database(entities = [Bookmark::class, ReviewCard::class, StarterProgress::class, SongPlayback::class, QuizResult::class, InstalledPackage::class, SeenManifest::class, GameWordProgress::class], version = 4, exportSchema = false)
 abstract class LearningDatabase: RoomDatabase() {
     abstract fun learning(): LearningDao
     companion object {
@@ -82,10 +83,15 @@ abstract class LearningDatabase: RoomDatabase() {
                 db.execSQL("CREATE TABLE IF NOT EXISTS GameWordProgress (targetLanguage TEXT NOT NULL, songId TEXT NOT NULL, lexemeId TEXT NOT NULL, levelIndex INTEGER, positionInLevel INTEGER NOT NULL, solved INTEGER NOT NULL, addedAt INTEGER NOT NULL, PRIMARY KEY(targetLanguage, songId, lexemeId))")
             }
         }
+        val MIGRATION_3_4 = object : androidx.room.migration.Migration(3, 4) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE GameWordProgress ADD COLUMN solvedCellIndices TEXT NOT NULL DEFAULT ''")
+            }
+        }
         @Volatile private var instance: LearningDatabase? = null
         fun get(context: Context): LearningDatabase = instance ?: synchronized(this) {
             instance ?: Room.databaseBuilder(context.applicationContext, LearningDatabase::class.java, "learning.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3).build().also { instance = it }
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build().also { instance = it }
         }
     }
 }

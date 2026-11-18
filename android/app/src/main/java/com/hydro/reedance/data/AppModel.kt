@@ -360,9 +360,15 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
 
     fun gameWordProgress(targetLanguage: String): Flow<List<GameWordProgress>> = dao.gameWords(targetLanguage)
 
-    fun solveGameWord(targetLanguage: String, songId: String, lexemeId: String, revealDelayMs: Long = 0L) = operation("ذخیرهٔ پیشرفت ناموفق / Could not save game progress") {
+    fun solveGameWord(
+        targetLanguage: String,
+        songId: String,
+        lexemeId: String,
+        revealDelayMs: Long = 0L,
+        usedCellIndices: List<Int> = emptyList()
+    ) = operation("ذخیرهٔ پیشرفت ناموفق / Could not save game progress") {
         if(revealDelayMs > 0) delay(revealDelayMs)
-        withContext(Dispatchers.IO) { dao.solveGameWord(targetLanguage, songId, lexemeId) }
+        withContext(Dispatchers.IO) { dao.solveGameWord(targetLanguage, songId, lexemeId, usedCellIndices.joinToString(",")) }
     }
 
     /** Index new installed-song vocabulary once; assigned levels and solved words survive restarts. */
