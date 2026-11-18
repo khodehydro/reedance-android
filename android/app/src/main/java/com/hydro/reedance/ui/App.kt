@@ -43,8 +43,13 @@ import com.hydro.reedance.data.*
             SideEffect {
                 (context as? android.app.Activity)?.window?.let { window ->
                     @Suppress("DEPRECATION")
+                    window.statusBarColor = android.graphics.Color.TRANSPARENT
+                    @Suppress("DEPRECATION")
                     window.navigationBarColor = android.graphics.Color.TRANSPARENT
-                    if(android.os.Build.VERSION.SDK_INT >= 29) window.isNavigationBarContrastEnforced = false
+                    if(android.os.Build.VERSION.SDK_INT >= 29) {
+                        window.isStatusBarContrastEnforced = false
+                        window.isNavigationBarContrastEnforced = false
+                    }
                     WindowCompat.getInsetsController(window, window.decorView).apply {
                         isAppearanceLightStatusBars = lightBars
                         isAppearanceLightNavigationBars = lightBars
