@@ -23,9 +23,6 @@ import androidx.compose.ui.unit.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hydro.reedance.R
 import com.hydro.reedance.data.*
-import dev.chrisbanes.haze.ExperimentalHazeApi
-import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.rememberHazeState
 
 @Composable fun ReedanceApp(model: AppModel, destination: (@Composable () -> Unit)? = null) {
     val settings by model.settings.collectAsStateWithLifecycle()
@@ -102,7 +99,6 @@ import dev.chrisbanes.haze.rememberHazeState
         }
     }
 }
-@OptIn(ExperimentalHazeApi::class)
 @Composable internal fun MainShell(model: AppModel) {
     var page by rememberSaveable { mutableStateOf("home") }
     var songId by rememberSaveable { mutableStateOf("") }
@@ -111,7 +107,6 @@ import dev.chrisbanes.haze.rememberHazeState
     var premiumReturnPage by rememberSaveable { mutableStateOf("profile") }
     val currentPage by rememberUpdatedState(page)
     val snackbar = remember { SnackbarHostState() }
-    val hazeState = rememberHazeState()
     val message by model.message.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val settings by model.settings.collectAsStateWithLifecycle()
@@ -181,13 +176,13 @@ import dev.chrisbanes.haze.rememberHazeState
             if(started) activePlayback?.let { active ->
                 MiniPlayer(active, playing, model::toggleActivePlayback, { openSong(active.songId) }, compact = compactNavigation)
             }
-            FloatingNavigation(page, compactNavigation, hazeState, ::navigate)
+            FloatingNavigation(page, compactNavigation, ::navigate)
         }
     }) { padding ->
         // Isolate destination identity so Home effects/state are not reused in another page.
         // The bottom bar floats over the scroll viewport. Its measured height is
         // trailing *content* space, not viewport padding, so rows pass underneath.
-        Box(Modifier.padding(start = padding.calculateStartPadding(LocalLayoutDirection.current), end = padding.calculateEndPadding(LocalLayoutDirection.current), top = padding.calculateTopPadding(), bottom = if(independent) padding.calculateBottomPadding() else 0.dp).nestedScroll(scrollConnection).hazeSource(hazeState)) {
+        Box(Modifier.padding(start = padding.calculateStartPadding(LocalLayoutDirection.current), end = padding.calculateEndPadding(LocalLayoutDirection.current), top = padding.calculateTopPadding(), bottom = if(independent) padding.calculateBottomPadding() else 0.dp).nestedScroll(scrollConnection)) {
          CompositionLocalProvider(LocalOverlayBottomInset provides if(independent) 0.dp else padding.calculateBottomPadding()) {
          key(page) {
           pageStates.SaveableStateProvider(page) {

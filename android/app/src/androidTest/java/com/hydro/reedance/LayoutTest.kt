@@ -1,10 +1,6 @@
 package com.hydro.reedance
 
 import androidx.compose.runtime.*
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.Modifier
-import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.rememberHazeState
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -74,15 +70,11 @@ class LayoutTest {
         compose.setContent {
             var compact by remember { mutableStateOf(false) }
             var page by remember { mutableStateOf("home") }
-            val hazeState = rememberHazeState()
             CompositionLocalProvider(LocalFa provides false, LocalReducedMotion provides true) {
                 ReedanceTheme(Settings(language = "en")) {
-                    androidx.compose.foundation.layout.Box {
-                        androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().hazeSource(hazeState))
-                        androidx.compose.foundation.layout.Column {
-                            androidx.compose.material3.Button(onClick = { compact = !compact }) { androidx.compose.material3.Text("Toggle size") }
-                            FloatingNavigation(page, compact, hazeState) { page = it }
-                        }
+                    androidx.compose.foundation.layout.Column {
+                        androidx.compose.material3.Button(onClick = { compact = !compact }) { androidx.compose.material3.Text("Toggle size") }
+                        FloatingNavigation(page, compact) { page = it }
                     }
                 }
             }
