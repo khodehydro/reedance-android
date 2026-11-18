@@ -17,7 +17,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.hydro.reedance.R
 import com.hydro.reedance.data.AppModel
-import kotlinx.coroutines.launch
 
 private data class IntroPage(val art: Int, val title: String, val detail: String)
 
@@ -37,8 +36,7 @@ private data class IntroPage(val art: Int, val title: String, val detail: String
             tr("بعضی ترانه‌ها عبارت‌های رکیک دارند. معنی و لحن اصلی را یاد بگیر تا بدانی کجا نباید از آن‌ها استفاده کنی.", "Some songs use crude language. Learn what it means and how it sounds so you know when not to use it."))
     )
     val pager = rememberPagerState { pages.size }
-    val scope = rememberCoroutineScope()
-    val last = pager.currentPage == pages.lastIndex
+    val last = pager.settledPage == pages.lastIndex && !pager.isScrollInProgress
     WelcomeBackdrop(animate = true, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().safeDrawingPadding().padding(vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally) {
@@ -50,10 +48,10 @@ private data class IntroPage(val art: Int, val title: String, val detail: String
                     Column(Modifier.widthIn(max = 480.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Box(Modifier.size(artSize).background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+                        Box(Modifier.size(artSize).background(Color.Black.copy(alpha = .32f), CircleShape),
                             contentAlignment = Alignment.Center) {
                             Icon(painterResource(page.art), null, Modifier.size(artSize * .48f),
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                                tint = Color.White)
                         }
                         Text(page.title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center, color = Color.White)
                         Text(page.detail, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center,
@@ -69,11 +67,16 @@ private data class IntroPage(val art: Int, val title: String, val detail: String
                 }
             }
             Spacer(Modifier.height(16.dp))
-            Action(tr(if(last) "شروع یادگیری" else "بعدی", if(last) "Start learning" else "Next"),
-                Modifier.widthIn(max = 480.dp).fillMaxWidth().padding(horizontal = 24.dp),
-                enabled = !pager.isScrollInProgress) {
-                if(last) model.completePermissionSetup()
-                else scope.launch { pager.animateScrollToPage(pager.currentPage + 1) }
+            Box(Modifier.height(52.dp), contentAlignment = Alignment.Center) {
+                if(last) {
+                    PressButton(
+                        onClick = model::completePermissionSetup,
+                        modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth().padding(horizontal = 24.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+                    ) {
+                        Text(tr("شروع یادگیری", "Start learning"))
+                    }
+                }
             }
         }
     }
