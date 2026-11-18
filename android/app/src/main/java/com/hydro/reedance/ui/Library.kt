@@ -93,9 +93,7 @@ import kotlinx.coroutines.flow.collectLatest
     val pagerState = rememberPagerState(pageCount = { types.size })
     val scope = rememberCoroutineScope()
     val catalogById = remember(catalog) { catalog.associateBy { it.s("id") } }
-    val compactPages = remember(types.size) {
-        mutableStateListOf<Boolean>().apply { repeat(types.size) { add(false) } }
-    }
+    var compact by rememberSaveable(settings.targetLanguage) { mutableStateOf(false) }
     val selectedPage = pagerState.currentPage.coerceAtMost(types.lastIndex)
     var query by rememberSaveable(settings.targetLanguage) { mutableStateOf("") }
     var sourceFilter by rememberSaveable(settings.targetLanguage) { mutableStateOf("") }
@@ -105,7 +103,6 @@ import kotlinx.coroutines.flow.collectLatest
             .map { id -> id to catalogById[id]?.s("title").orEmpty().ifBlank { id } }
             .sortedBy { it.second.lowercase() }.toList()
     }
-    val compact = compactPages[selectedPage]
 
     Column(Modifier.fillMaxSize()) {
         AnimatedVisibility(
@@ -147,7 +144,9 @@ import kotlinx.coroutines.flow.collectLatest
             val requestKey = LibraryRequest(settings.targetLanguage, page, query.trim(), sourceFilter, order)
             val threshold = with(LocalDensity.current) { 40.dp.toPx() }
             val scrollConnection = remember(settings.targetLanguage, page, threshold) {
-                LibraryScrollConnection(threshold) { compactPages[page] = it }
+                LibraryScrollConnection(threshold) { collapsed ->
+                    if(page == pagerState.settledPage && !pagerState.isScrollInProgress) compact = collapsed
+                }
             }
             val preparedEntries by produceState<PreparedLibraryEntries?>(null, bookmarks, requestKey, catalogById) {
                 if(requestKey.query.isNotBlank()) delay(280)
@@ -160,13 +159,13 @@ import kotlinx.coroutines.flow.collectLatest
             val entries = prepared?.entries.orEmpty()
 
             androidx.compose.runtime.key(settings.targetLanguage, page) {
-                val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+                // A tab starts at the top on revisit, but the header belongs to the whole pager.
+                val listState = remember { androidx.compose.foundation.lazy.LazyListState() }
                 LaunchedEffect(requestKey) { listState.scrollToItem(0) }
-                LaunchedEffect(listState, scrollConnection) {
-                    snapshotFlow { listState.canScrollForward || listState.canScrollBackward }
-                        .distinctUntilChanged().collectLatest { scrollable ->
-                            if(!scrollable) scrollConnection.reset()
-                        }
+                LaunchedEffect(listState, pagerState) {
+                    snapshotFlow { pagerState.settledPage == page }.collectLatest { active ->
+                        if(!active) listState.scrollToItem(0)
+                    }
                 }
                 LaunchedEffect(listState, entries) {
                     snapshotFlow {
