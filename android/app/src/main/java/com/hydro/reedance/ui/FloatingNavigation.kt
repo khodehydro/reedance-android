@@ -35,7 +35,7 @@ internal fun navigationMenuWidth(compact: Boolean) = if(compact) 270.dp else 344
     val destinations = listOf(
         Destination("home", tr("خانه", "Home"), UiIcons.Home, UiIcons.HomeFilled),
         Destination("explore", tr("کشف", "Explore"), UiIcons.Explore, UiIcons.ExploreFilled),
-        Destination("game", tr("گیم", "Game"), UiIcons.Quiz, UiIcons.Quiz),
+        Destination("game", tr("گیم", "Game"), UiIcons.Game, UiIcons.GameFilled),
         Destination("review", tr("لایتنر", "Review"), UiIcons.Review, UiIcons.ReviewFilled),
         Destination("library", tr("کتابخانه", "Library"), UiIcons.Library, UiIcons.LibraryFilled)
     )
