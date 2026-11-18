@@ -26,10 +26,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,9 +50,11 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import java.util.Locale
+import java.text.BreakIterator
 
 internal data class StoryGloss(val text: String, val meaningFa: String, val meaningEn: String) {
     fun meaning(fa: Boolean) = if(fa) meaningFa.ifBlank { meaningEn } else meaningEn.ifBlank { meaningFa }
@@ -99,26 +103,69 @@ private val sampleStory = LessonStory("Bir fincan çay", "tr-TR", listOf(
         sampleLine("İki çay söylediler ve uzun uzun konuştular.", "دو چای سفارش دادند و مدت زیادی گپ زدند.", "They ordered two teas and talked for a long time.",
             "İki/دو/two|çay/چای/teas|söylediler/سفارش دادند/ordered|ve/و/and|uzun uzun/مدت زیادی/for a long time|konuştular./گپ زدند/talked"),
         sampleLine("Deniz eve dönerken aynı şarkıyı yeniden açtı.", "دنیز در راه خانه دوباره همان آهنگ را پخش کرد.", "On the way home, Deniz put on the same song again.",
-            "Deniz/دنیز/Deniz|eve dönerken/در راه خانه/on the way home|aynı şarkıyı/همان آهنگ را/the same song|yeniden/دوباره/again|açtı./پخش کرد/put on")
+            "Deniz/دنیز/Deniz|eve dönerken/در راه خانه/on the way home|aynı şarkıyı/همان آهنگ را/the same song|yeniden/دوباره/again|açtı./پخش کرد/put on"),
+        sampleLine("Bu kez şarkıyı yarıda kapatmadı.", "این بار آهنگ را نیمه‌کاره قطع نکرد.", "This time Deniz did not stop the song halfway through.",
+            "Bu kez/این بار/this time|şarkıyı/آهنگ را/the song|yarıda/نیمه‌کاره/halfway through|kapatmadı./قطع نکرد/did not stop"),
+        sampleLine("Durağa vardığında güneş batmak üzereydi.", "وقتی به ایستگاه رسید، خورشید نزدیک غروب بود.", "When Deniz reached the stop, the sun was about to set.",
+            "Durağa/به ایستگاه/to the stop|vardığında/وقتی رسید/when they arrived|güneş/خورشید/the sun|batmak üzereydi./نزدیک غروب بود/was about to set"),
+        sampleLine("Telefonuna yeni bir mesaj geldi.", "یک پیام تازه روی گوشی‌اش آمد.", "A new message arrived on Deniz’s phone.",
+            "Telefonuna/روی گوشی‌اش/on their phone|yeni/تازه/new|bir/یک/a|mesaj/پیام/message|geldi./آمد/arrived"),
+        sampleLine("Arkadaşı eski bir fotoğraf göndermişti.", "دوستش یک عکس قدیمی فرستاده بود.", "The friend had sent an old photo.",
+            "Arkadaşı/دوستش/the friend|eski/قدیمی/old|bir/یک/an|fotoğraf/عکس/photo|göndermişti./فرستاده بود/had sent"),
+        sampleLine("Fotoğrafta ikisi de yağmur altında gülüyordu.", "در عکس هر دو زیر باران می‌خندیدند.", "In the photo, both of them were laughing in the rain.",
+            "Fotoğrafta/در عکس/in the photo|ikisi de/هر دو/both of them|yağmur altında/زیر باران/in the rain|gülüyordu./می‌خندیدند/were laughing"),
+        sampleLine("Deniz fotoğrafı sakladı ve kısa bir cevap yazdı.", "دنیز عکس را ذخیره کرد و جواب کوتاهی نوشت.", "Deniz saved the photo and wrote a short reply.",
+            "Deniz/دنیز/Deniz|fotoğrafı/عکس را/the photo|sakladı/ذخیره کرد/saved|ve/و/and|kısa/کوتاه/short|bir/یک/a|cevap/جواب/reply|yazdı./نوشت/wrote"),
+        sampleLine("‘Haftaya çaylar benden,’ dedi.", "گفت: «هفتهٔ بعد چای‌ها مهمان من.»", "‘Tea is on me next week,’ Deniz said.",
+            "‘Haftaya/هفتهٔ بعد/next week|çaylar/چای‌ها/tea|benden,’/مهمان من/on me|dedi./گفت/said"),
+        sampleLine("Otobüs geldiğinde şarkının son notası duyuldu.", "وقتی اتوبوس رسید، آخرین نت آهنگ شنیده شد.", "When the bus arrived, the last note of the song played.",
+            "Otobüs/اتوبوس/the bus|geldiğinde/وقتی رسید/when it arrived|şarkının/آهنگ/of the song|son notası/آخرین نت/the last note|duyuldu./شنیده شد/was heard"),
+        sampleLine("Deniz kulaklığını çıkardı ve açık kapıya doğru yürüdü.", "دنیز هدفونش را درآورد و به سمت در باز رفت.", "Deniz took off the headphones and walked toward the open door.",
+            "Deniz/دنیز/Deniz|kulaklığını/هدفونش/the headphones|çıkardı/درآورد/took off|ve/و/and|açık kapıya doğru/به سمت در باز/toward the open door|yürüdü./رفت/walked")
     )
 ))
+
+private fun storyProse(text: String, locale: String): List<StoryLine> {
+    val sentences = BreakIterator.getSentenceInstance(Locale.forLanguageTag(locale))
+    return text.lineSequence().flatMap { paragraph ->
+        sentences.setText(paragraph)
+        buildList {
+            var start = sentences.first()
+            var end = sentences.next()
+            while(end != BreakIterator.DONE) {
+                val sentence = paragraph.substring(start, end).trim()
+                if(sentence.isNotEmpty()) {
+                    var remainder = sentence
+                    while(remainder.length > 220) {
+                        val split = remainder.lastIndexOf(' ', 220).takeIf { it > 0 } ?: break
+                        add(StoryLine(remainder.substring(0, split)))
+                        remainder = remainder.substring(split + 1).trimStart()
+                    }
+                    add(StoryLine(remainder))
+                }
+                start = end
+                end = sentences.next()
+            }
+        }.asSequence()
+    }.toList()
+}
 
 internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
     if(lesson == null || lesson.s("songId") != songId) return null
     val story = lesson.get("story")?.takeIf { it.isJsonObject }?.asJsonObject
     val title = story?.s("title").orEmpty()
+    val locale = lesson.s("locale").ifBlank { lesson.s("targetLanguage") }
     val pages = story?.get("pages")?.takeIf { it.isJsonArray }?.asJsonArray
         ?.mapNotNull { page ->
             when {
-                page.isJsonPrimitive && page.asJsonPrimitive.isString -> listOf(StoryLine(page.asString))
+                page.isJsonPrimitive && page.asJsonPrimitive.isString -> storyProse(page.asString, locale)
                 page.isJsonObject -> page.asJsonObject.a("lines").map { line ->
                     StoryLine(line.s("text"), line.tr("meaning", true), line.tr("meaning", false),
                         line.a("words").map { StoryGloss(it.s("text"), it.tr("meaning", true), it.tr("meaning", false)) })
                 }
                 else -> emptyList()
             }.filter { it.text.isNotBlank() }.takeIf { it.isNotEmpty() }
-        }.orEmpty()
-    val locale = lesson.s("locale").ifBlank { lesson.s("targetLanguage") }
+        }.orEmpty().ifEmpty { listOf(storyProse(story?.s("text").orEmpty(), locale)).filter { it.isNotEmpty() } }
     return if(title.isNotBlank() && pages.isNotEmpty() && locale.isNotBlank()) LessonStory(title, locale, pages)
     else sampleStory.takeIf { songId == "gulum-2" }
 }
@@ -155,7 +202,21 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
     val ink = if(paperIndex == 2) Color.White else Color(0xFF252322)
     val nextPaper = (paperIndex + 1) % papers.size
     val paperNames = listOf(tr("سفید", "White"), tr("کاهی", "Sepia"), tr("خاکستری تیره", "Dark gray"))
-    val pager = rememberPagerState { story.pages.size }
+    val lines = remember(story) { story.pages.flatten() }
+    var pageStarts by remember(story) { mutableStateOf(listOf(0)) }
+    var readingAnchor by rememberSaveable { mutableIntStateOf(0) }
+    val pager = rememberPagerState { pageStarts.size }
+    fun applyPagination(starts: List<Int>) {
+        if(pageStarts == starts) return
+        val target = starts.indexOfLast { it <= readingAnchor }.coerceAtLeast(0)
+        pageStarts = starts
+        pager.requestScrollToPage(target)
+    }
+    LaunchedEffect(pager) {
+        snapshotFlow { pager.settledPage }.drop(1).collect { settled ->
+            if(!pager.isScrollInProgress) pageStarts.getOrNull(settled)?.let { readingAnchor = it }
+        }
+    }
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val reduced = LocalReducedMotion.current
     val scope = rememberCoroutineScope()
@@ -169,14 +230,17 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
             }
         }
     }
-    val page = pager.settledPage
-    var request by remember(page) { mutableStateOf(false) }
-    var player by remember(page) { mutableStateOf<MediaPlayer?>(null) }
-    var playing by remember(page) { mutableStateOf(false) }
-    var failed by remember(page) { mutableStateOf(false) }
-    var position by remember(page) { mutableIntStateOf(0) }
-    var duration by remember(page) { mutableIntStateOf(0) }
-    var dragging by remember(page) { mutableStateOf<Float?>(null) }
+    val page = pager.settledPage.coerceIn(0, pageStarts.lastIndex)
+    val start = pageStarts[page]
+    val end = pageStarts.getOrElse(page + 1) { lines.size }
+    val narration = remember(lines, start, end) { lines.subList(start, end).joinToString(" ") { it.text } }
+    var request by remember(start, end) { mutableStateOf(false) }
+    var player by remember(start, end) { mutableStateOf<MediaPlayer?>(null) }
+    var playing by remember(start, end) { mutableStateOf(false) }
+    var failed by remember(start, end) { mutableStateOf(false) }
+    var position by remember(start, end) { mutableIntStateOf(0) }
+    var duration by remember(start, end) { mutableIntStateOf(0) }
+    var dragging by remember(start, end) { mutableStateOf<Float?>(null) }
     val scrolling by rememberUpdatedState(pager.isScrollInProgress)
     fun pause() {
         val current = player
@@ -207,13 +271,13 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
         }
     }
     LaunchedEffect(speedIndex) { if(playing) player?.let(::play) }
-    LaunchedEffect(story, page, request) {
+    LaunchedEffect(story, start, end, request) {
         if(!request) return@LaunchedEffect
         var output: File? = null
         var audio: MediaPlayer? = null
         try {
             val file = File.createTempFile("story-", ".wav", context.cacheDir).also { output = it }
-            check(synthesizeStoryPage(context, story.locale, story.pages[page].joinToString(" ") { it.text }, file))
+            check(synthesizeStoryPage(context, story.locale, narration, file))
             val prepared = MediaPlayer().also { audio = it }
             prepared.setDataSource(file.absolutePath)
             val ready = CompletableDeferred<Boolean>()
@@ -258,33 +322,37 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
                     maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 PressIconButton(back, Modifier.align(Alignment.CenterStart)) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
             }
-            HorizontalPager(pager, modifier = Modifier.fillMaxWidth().weight(1f).background(papers[paperIndex])) { index ->
-                val paper = papers[paperIndex]
-                val pageTurn = Modifier.drawWithContent {
-                    drawContent()
-                    val offset = pager.currentPage - index + pager.currentPageOffsetFraction
-                    val strength = kotlin.math.sin(kotlin.math.abs(offset).coerceIn(0f, 1f) * Math.PI).toFloat()
-                    if(!reduced && strength > .001f && size.width > 0f) {
-                        val rightEdge = if(rtl) offset < 0f else offset > 0f
-                        val width = minOf(42.dp.toPx(), size.width)
-                        val edge = if(rightEdge) size.width else 0f
-                        val inner = if(rightEdge) edge - width else width
-                        drawRect(
-                            brush = Brush.linearGradient(
-                                listOf(Color.Black.copy(alpha = .19f * strength), Color.Transparent),
-                                start = Offset(edge, 0f), end = Offset(inner, 0f)
-                            ),
-                            topLeft = Offset(minOf(edge, inner), 0f),
-                            size = androidx.compose.ui.geometry.Size(width, size.height)
-                        )
+            StoryViewport(lines, meaningMode, fontIndex, fa, ink, ::applyPagination,
+                Modifier.fillMaxWidth().weight(1f).background(papers[paperIndex])) {
+                HorizontalPager(pager, modifier = Modifier.fillMaxSize()) { index ->
+                    val paper = papers[paperIndex]
+                    val pageTurn = Modifier.drawWithContent {
+                        drawContent()
+                        val offset = pager.currentPage - index + pager.currentPageOffsetFraction
+                        val strength = kotlin.math.sin(kotlin.math.abs(offset).coerceIn(0f, 1f) * Math.PI).toFloat()
+                        if(!reduced && strength > .001f && size.width > 0f) {
+                            val rightEdge = if(rtl) offset < 0f else offset > 0f
+                            val width = minOf(42.dp.toPx(), size.width)
+                            val edge = if(rightEdge) size.width else 0f
+                            val inner = if(rightEdge) edge - width else width
+                            drawRect(
+                                brush = Brush.linearGradient(
+                                    listOf(Color.Black.copy(alpha = .19f * strength), Color.Transparent),
+                                    start = Offset(edge, 0f), end = Offset(inner, 0f)
+                                ),
+                                topLeft = Offset(minOf(edge, inner), 0f),
+                                size = androidx.compose.ui.geometry.Size(width, size.height)
+                            )
+                        }
                     }
-                }
-                Box(Modifier.fillMaxSize().then(pageTurn)) {
-                    Surface(color = paper, contentColor = ink, modifier = Modifier.fillMaxSize()) {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-                            Column(Modifier.widthIn(max = 620.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                                StoryPageText(story.pages[index], meaningMode, fontIndex, fa, ink)
+                    Box(Modifier.fillMaxSize().then(pageTurn)) {
+                        Surface(color = paper, contentColor = ink, modifier = Modifier.fillMaxSize()) {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                                Column(Modifier.widthIn(max = 620.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(StoryPagePadding),
+                                    horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(StoryLineSpacing)) {
+                                    StoryPageText(lines.subList(pageStarts[index], pageStarts.getOrElse(index + 1) { lines.size }),
+                                        meaningMode, fontIndex, fa, ink)
+                                }
                             }
                         }
                     }
@@ -295,9 +363,9 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
                     PressTextButton({ scope.launch { pager.animateScrollToPage(page - 1) } }, enabled = page > 0 && !pager.isScrollInProgress) {
                         Text(tr("قبلی", "Previous"), color = ink.copy(alpha = if(page > 0) 1f else .4f))
                     }
-                    Text("${page + 1} / ${story.pages.size}", style = MaterialTheme.typography.labelMedium)
-                    PressTextButton({ scope.launch { pager.animateScrollToPage(page + 1) } }, enabled = page < story.pages.lastIndex && !pager.isScrollInProgress) {
-                        Text(tr("بعدی", "Next"), color = ink.copy(alpha = if(page < story.pages.lastIndex) 1f else .4f))
+                    Text("${page + 1} / ${pageStarts.size}", style = MaterialTheme.typography.labelMedium)
+                    PressTextButton({ scope.launch { pager.animateScrollToPage(page + 1) } }, enabled = page < pageStarts.lastIndex && !pager.isScrollInProgress) {
+                        Text(tr("بعدی", "Next"), color = ink.copy(alpha = if(page < pageStarts.lastIndex) 1f else .4f))
                     }
                 }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -309,7 +377,8 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
                         }
                     }) {
                         val stop = playing || (request && player == null)
-                        AppIcon(if(stop) UiIcons.PauseFilled else UiIcons.PlayFilled,
+                        if(request && player == null) CircularProgressIndicator(Modifier.size(20.dp), color = ink, strokeWidth = 2.dp)
+                        else AppIcon(if(stop) UiIcons.PauseFilled else UiIcons.PlayFilled,
                             if(stop) tr("مکث روایت", "Pause narration") else tr("پخش روایت", "Play narration"), tint = ink)
                     }
                     Box(Modifier.weight(1f)) {
@@ -330,8 +399,12 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
                     }
                     PressTextButton({ speedIndex = (speedIndex + 1) % speeds.size }) { Text("${speeds[speedIndex]}×", color = ink) }
                 }
-                if(request && player == null) Text(tr("در حال آماده‌سازی…", "Preparing…"), style = MaterialTheme.typography.bodySmall)
-                if(failed) Text(tr("صدا در دسترس نیست. صدای این زبان را در تنظیمات گفتار اندروید نصب کن.", "Narration unavailable. Install an offline voice for this language in Android text-to-speech settings."), style = MaterialTheme.typography.bodySmall)
+                if(failed) AlertDialog(
+                    onDismissRequest = { failed = false },
+                    title = { Text(tr("صدا در دسترس نیست", "Narration unavailable")) },
+                    text = { Text(tr("صدای این زبان را در تنظیمات گفتار اندروید نصب کن.", "Install an offline voice for this language in Android text-to-speech settings.")) },
+                    confirmButton = { PressTextButton({ failed = false }) { Text(tr("باشه", "OK")) } }
+                )
                 val smaller = tr("کوچک کردن نوشته", "Decrease text size")
                 val larger = tr("بزرگ کردن نوشته", "Increase text size")
                 val changePaper = tr("رنگ بعدی کاغذ", "Next paper color")
@@ -354,6 +427,42 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
                 }
             }
         }
+    }
+}
+
+private val StoryPagePadding = 24.dp
+private val StoryLineSpacing = 12.dp
+
+internal fun storyPageStarts(heights: List<Int>, availableHeight: Int, spacing: Int): List<Int> = buildList {
+    add(0)
+    var used = 0
+    heights.forEachIndexed { index, height ->
+        if(index > last() && used + spacing + height > availableHeight) {
+            add(index)
+            used = 0
+        }
+        used += if(index == last()) height else spacing + height
+    }
+}
+
+@Composable private fun StoryViewport(lines: List<StoryLine>, mode: Int, font: Int, fa: Boolean,
+    ink: Color, onPages: (List<Int>) -> Unit, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    SubcomposeLayout(modifier) { constraints ->
+        val width = constraints.maxWidth
+        val height = constraints.maxHeight
+        val padding = StoryPagePadding.roundToPx() * 2
+        val readingWidth = (minOf(width, 620.dp.roundToPx()) - padding).coerceAtLeast(0)
+        // Measure the same content used in the reader, without placing a duplicate on screen.
+        val probes = subcompose("measure") {
+            lines.forEach { line -> Box { StoryPageText(listOf(line), mode, font, fa, ink) } }
+        }
+        val heights = probes.map { it.measure(Constraints.fixedWidth(readingWidth)).height }
+        val starts = storyPageStarts(heights, (height - padding).coerceAtLeast(1), StoryLineSpacing.roundToPx())
+        val reader = subcompose("reader") {
+            SideEffect { onPages(starts) }
+            content()
+        }.single().measure(Constraints.fixed(width, height))
+        layout(width, height) { reader.placeRelative(0, 0) }
     }
 }
 
