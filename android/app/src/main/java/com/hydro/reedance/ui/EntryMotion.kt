@@ -16,14 +16,16 @@ import androidx.compose.ui.unit.dp
 
 /** Disable per-card entrance work in dense, continuously recycled lists; page motion is separate. */
 internal val LocalItemEntranceEnabled = staticCompositionLocalOf { true }
+internal val LocalPageActive = staticCompositionLocalOf { true }
 
 /** Render-only page entry: no per-frame placement invalidation or full-window alpha layer. */
 @Composable internal fun PageEntrance(destination: String, content: @Composable BoxScope.() -> Unit) {
     val reduced = LocalReducedMotion.current
-    val progress = remember(destination) { Animatable(if(reduced) 1f else 0f) }
+    val active = LocalPageActive.current
+    val progress = remember(destination) { Animatable(if(reduced || !active) 1f else 0f) }
     val distance = with(LocalDensity.current) { 12.dp.toPx() }
-    LaunchedEffect(destination, reduced) {
-        if(reduced) progress.snapTo(1f) else progress.animateTo(1f, tween(230, easing = FastOutSlowInEasing))
+    LaunchedEffect(destination, reduced, active) {
+        if(reduced || !active) progress.snapTo(1f) else progress.animateTo(1f, tween(230, easing = FastOutSlowInEasing))
     }
     Box(Modifier.fillMaxSize().graphicsLayer {
         translationY = distance * (1f - progress.value)

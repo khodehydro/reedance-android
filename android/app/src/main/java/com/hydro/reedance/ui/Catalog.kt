@@ -97,7 +97,9 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
     val lesson by model.lesson.collectAsStateWithLifecycle()
     val installedIds by model.installedIds.collectAsStateWithLifecycle()
     val searchFocus = LocalSearchFocus.current
+    val pageActive = LocalPageActive.current
     DisposableEffect(searchFocus) { onDispose { searchFocus?.focused = false } }
+    LaunchedEffect(pageActive) { if(!pageActive) searchFocus?.dismiss?.invoke() }
     val reduced = LocalReducedMotion.current
     val filtered = remember(catalog, targetLanguage, home, access, installedIds, query) { catalog.filter { s ->
         (s.s("language") == targetLanguage) &&
@@ -166,11 +168,13 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
     val pagerState = rememberPagerState(pageCount = { filters.size })
     val scope = rememberCoroutineScope()
     val searchFocus = LocalSearchFocus.current
+    val pageActive = LocalPageActive.current
     val compactPages = remember(filters.size) {
         mutableStateListOf<Boolean>().apply { repeat(filters.size) { add(false) } }
     }
     val compact = compactPages[pagerState.currentPage]
     DisposableEffect(searchFocus) { onDispose { searchFocus?.focused = false } }
+    LaunchedEffect(pageActive) { if(!pageActive) searchFocus?.dismiss?.invoke() }
     LaunchedEffect(compact) { if(compact) searchFocus?.dismiss?.invoke() }
 
     Column(Modifier.fillMaxSize()) {
@@ -266,7 +270,8 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
 }
 
 @Composable private fun SongTile(song: JsonObject, modifier: Modifier, onClick: () -> Unit) {
-    Column(modifier.itemEntrance().clickable(onClick = onClick), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    val entrance = if(LocalItemEntranceEnabled.current) modifier.itemEntrance() else modifier
+    Column(entrance.clickable(onClick = onClick), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Box {
             CoverImage(if(song.s("distributionRef") == "gulum-ii") "pending-gulum-ii" else song.s("id"), song.s("title"), Modifier.fillMaxWidth().aspectRatio(1f))
         }

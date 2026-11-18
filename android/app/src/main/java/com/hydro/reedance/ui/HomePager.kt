@@ -51,11 +51,13 @@ internal fun currentPersianMonth(now: Long = System.currentTimeMillis()): Persia
     val pager = rememberPagerState(pageCount = { 2 })
     val scope = rememberCoroutineScope()
     val reduced = LocalReducedMotion.current
+    val pageActive = LocalPageActive.current
     var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(pageActive) { if(!pageActive) visible = false }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         HorizontalPager(state = pager, modifier = Modifier.fillMaxWidth().height(420.dp).onGloballyPositioned {
                 val bounds = it.boundsInWindow()
-                visible = bounds.width > 0f && bounds.height > 0f
+                visible = pageActive && bounds.width > 0f && bounds.height > 0f
             }, pageSpacing = 12.dp,
             key = { if(it == 0) "welcome" else "activity" }) { page ->
             if(page == 0) WelcomeBanner(explore, animate = visible && pager.currentPage == 0) else ActivityCalendar(model)
@@ -80,8 +82,9 @@ internal fun currentPersianMonth(now: Long = System.currentTimeMillis()): Persia
 @Composable private fun ActivityCalendar(model: AppModel) {
     val ledger by model.activityDays.collectAsStateWithLifecycle()
     val initialMonth = remember { currentPersianMonth() }
-    val month by produceState(initialMonth) {
-        while(true) { value = currentPersianMonth(); delay(30_000) }
+    val pageActive = LocalPageActive.current
+    val month by produceState(initialMonth, pageActive) {
+        if(pageActive) while(true) { value = currentPersianMonth(); delay(30_000) }
     }
     val names = listOf("فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند")
     val english = listOf("Farvardin", "Ordibehesht", "Khordad", "Tir", "Mordad", "Shahrivar", "Mehr", "Aban", "Azar", "Dey", "Bahman", "Esfand")

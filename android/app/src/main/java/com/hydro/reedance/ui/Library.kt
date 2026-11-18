@@ -29,8 +29,11 @@ import kotlinx.coroutines.flow.collectLatest
 
 @Composable fun ReviewScreen(model: AppModel, quiz: () -> Unit) {
     val reviews by model.reviews.collectAsStateWithLifecycle()
+    val pageActive = LocalPageActive.current
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    LaunchedEffect(Unit) { while(true) { delay(1000); now = System.currentTimeMillis() } }
+    LaunchedEffect(pageActive) {
+        if(pageActive) while(true) { delay(1000); now = System.currentTimeMillis() }
+    }
     val due = reviews.filter { it.dueAt <= now }
     val card = due.firstOrNull()
     val reviewLesson by produceState<com.google.gson.JsonObject?>(null, card?.songId) {

@@ -7,6 +7,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.input.nestedscroll.*
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import kotlinx.coroutines.delay
 import kotlin.math.abs
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -124,6 +127,11 @@ import com.hydro.reedance.data.*
     val activePlayback by model.activePlayback.collectAsStateWithLifecycle()
     val installedIds by model.installedIds.collectAsStateWithLifecycle()
     val pageStates = rememberSaveableStateHolder()
+    val preloadablePages = remember { setOf("home", "explore", "game", "review", "library", "profile", "quiz", "premium") }
+    val songPageTypes = remember { setOf("song-download", "song-playback") }
+    val mountedPages = remember { mutableStateListOf("home") }
+    val mountedSongPages = remember { mutableStateListOf<Pair<String, String>>() }
+    var pendingRoute by remember { mutableStateOf<Pair<String, String>?>(null) }
     var compactNavigation by remember(page) { mutableStateOf(false) }
     val threshold = with(LocalDensity.current) { 36.dp.toPx() }
     val scrollConnection = remember(page, threshold) {
@@ -144,27 +152,69 @@ import com.hydro.reedance.data.*
         }
     }
     LaunchedEffect(message) { if(message.isNotEmpty()) { snackbar.showSnackbar(message); model.message.value = "" } }
-    fun navigate(to: String) { if(to == "quiz") model.pause(); page = to }
+    LaunchedEffect(Unit) {
+        // Warm the common navigation destinations gradually after the first screen settles.
+        delay(1_000)
+        listOf("explore", "game", "review", "library", "profile", "quiz", "premium").forEach { destination ->
+            if(destination !in mountedPages) mountedPages += destination
+            delay(700)
+        }
+    }
+    fun navigate(to: String) {
+        if(to == "quiz") model.pause()
+        if(to in preloadablePages) {
+            if(to !in mountedPages) {
+                pendingRoute = to to ""
+                mountedPages += to
+                return
+            }
+            pendingRoute = null
+            page = to
+            return
+        }
+        if(to in songPageTypes) {
+            val route = to to songId
+            mountedSongPages.removeAll { it.first == to && it.second != songId }
+            if(route !in mountedSongPages) {
+                pendingRoute = route
+                mountedSongPages += route
+                return
+            }
+        }
+        pendingRoute = null
+        page = to
+    }
     LaunchedEffect(model) {
         model.premiumRequired.collect {
             premiumReturnPage = if(currentPage == "song-playback") "song-playback" else "profile"
-            page = "premium"
+            navigate("premium")
         }
     }
     fun openSong(id: String) {
         songId = id
         navigate(if(id in installedIds) "song-playback" else "song-download")
     }
+    val navigateLatest = rememberUpdatedState<(String) -> Unit>({ destination -> navigate(destination) })
+    val navigateAction = remember { { destination: String -> navigateLatest.value(destination) } }
+    val openSongLatest = rememberUpdatedState<(String) -> Unit>({ id -> openSong(id) })
+    val openSongAction = remember { { id: String -> openSongLatest.value(id) } }
+    val setSongTabLatest = rememberUpdatedState<(Int) -> Unit>({ songTab = it })
+    val setSongTabAction = remember { { tab: Int -> setSongTabLatest.value(tab) } }
+    val setReviewQuizLatest = rememberUpdatedState<(Boolean) -> Unit>({ reviewQuiz = it })
+    val setReviewQuizAction = remember { { review: Boolean -> setReviewQuizLatest.value(review) } }
+    val setPremiumReturnLatest = rememberUpdatedState<(String) -> Unit>({ premiumReturnPage = it })
+    val setPremiumReturnAction = remember { { destination: String -> setPremiumReturnLatest.value(destination) } }
+    val starterAction = remember(context) { { context.startActivity(android.content.Intent(context, com.hydro.reedance.StarterActivity::class.java)) } }
     val songPage = page == "song-download" || page == "song-playback"
     val independent = songPage || page in listOf("quiz", "premium")
-    BackHandler(page != "home") { page = when(page) { "quiz" -> if(reviewQuiz) "review" else "song-playback"; "premium" -> premiumReturnPage; else -> "home" } }
+    BackHandler(page != "home") { navigate(when(page) { "quiz" -> if(reviewQuiz) "review" else "song-playback"; "premium" -> premiumReturnPage; else -> "home" }) }
     SearchDismissHost {
      Box(Modifier.fillMaxSize()) {
       if(page == "premium") PremiumBackdrop(Modifier.matchParentSize())
       Scaffold(Modifier.fillMaxSize(), containerColor = Color.Transparent, snackbarHost = { SnackbarHost(snackbar) }, topBar = {
         if(!songPage) Surface(color = if(page == "premium") Color.Transparent else MaterialTheme.colorScheme.background, contentColor = if(page == "premium") Color(0xFF493300) else MaterialTheme.colorScheme.onSurface) { Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             if(page == "quiz" || page == "premium") {
-                PressIconButton({ page = if(page == "quiz") { if(reviewQuiz) "review" else "song-playback" } else premiumReturnPage }) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
+                PressIconButton({ navigate(if(page == "quiz") { if(reviewQuiz) "review" else "song-playback" } else premiumReturnPage) }) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
                 Text(if(page == "quiz") tr("آزمون", "Practice") else tr("پریمیوم", "Premium"), style = MaterialTheme.typography.titleLarge)
             } else {
                 MainHeader(settings.targetLanguage, model::targetLanguage, { navigate("profile") })
@@ -185,31 +235,137 @@ import com.hydro.reedance.data.*
             FloatingNavigation(page, compactNavigation, ::navigate)
         }
     }) { padding ->
-        // Isolate destination identity so Home effects/state are not reused in another page.
-        // The bottom bar floats over the scroll viewport. Its measured height is
-        // trailing *content* space, not viewport padding, so rows pass underneath.
-        Box(Modifier.padding(start = padding.calculateStartPadding(LocalLayoutDirection.current), end = padding.calculateEndPadding(LocalLayoutDirection.current), top = padding.calculateTopPadding(), bottom = if(independent) padding.calculateBottomPadding() else 0.dp).nestedScroll(scrollConnection)) {
-         CompositionLocalProvider(LocalOverlayBottomInset provides if(independent) 0.dp else padding.calculateBottomPadding()) {
-         key(page) {
-          pageStates.SaveableStateProvider(page) {
-           PageEntrance(if(songPage) "$page:$songId" else page) {
-            when(page) {
-                "home", "explore" -> CatalogScreen(model, page == "home", ::openSong, { context.startActivity(android.content.Intent(context, com.hydro.reedance.StarterActivity::class.java)) }, { navigate("explore") })
-                "song-download" -> SongDownloadScreen(model, songId, { navigate("home") }) { navigate("song-playback") }
-                "song-playback" -> SongPlaybackScreen(model, songId, songTab, { songTab = it }, { navigate("home") }, { navigate("song-download") }, { reviewQuiz = false; navigate("quiz") }) { premiumReturnPage = "song-playback"; navigate("premium") }
-                "premium" -> PremiumScreen()
-                "game" -> GameScreen(model) { premiumReturnPage = "game"; navigate("premium") }
-                "quiz" -> QuizScreen(model, reviewQuiz, { navigate(if(reviewQuiz) "review" else "song-playback") }, { navigate("review") })
-                "review" -> ReviewScreen(model) { reviewQuiz = true; navigate("quiz") }
-                "library" -> LibraryScreen(model, ::openSong)
-                "profile" -> ProfileScreen(model, { navigate("library") }) { premiumReturnPage = "profile"; navigate("premium") }
+        // Keep common tabs composed off-screen so their content and scroll state are ready on selection.
+        // The bottom bar floats over the scroll viewport; its height is trailing content space.
+        Box(
+            Modifier
+                .padding(
+                    start = padding.calculateStartPadding(LocalLayoutDirection.current),
+                    end = padding.calculateEndPadding(LocalLayoutDirection.current),
+                    top = padding.calculateTopPadding(),
+                    bottom = if(independent) padding.calculateBottomPadding() else 0.dp
+                )
+                .nestedScroll(scrollConnection)
+                .clipToBounds()
+        ) {
+            CompositionLocalProvider(LocalOverlayBottomInset provides if(independent) 0.dp else padding.calculateBottomPadding()) {
+                mountedPages.forEach { mountedPage ->
+                        val active = page == mountedPage
+                        key(mountedPage) {
+                            LaunchedEffect(mountedPage, pendingRoute) {
+                                if(pendingRoute == (mountedPage to "")) {
+                                    withFrameNanos { }
+                                    if(pendingRoute == (mountedPage to "")) {
+                                        page = mountedPage
+                                        pendingRoute = null
+                                    }
+                                }
+                            }
+                            pageStates.SaveableStateProvider(mountedPage) {
+                                CompositionLocalProvider(
+                                    LocalPageActive provides active,
+                                    LocalItemEntranceEnabled provides active
+                                ) {
+                                    Box(
+                                        Modifier
+                                            .fillMaxSize()
+                                            .then(if(active) Modifier else Modifier.offset(x = 10_000.dp).clearAndSetSemantics {})
+                                    ) {
+                                        PageEntrance(mountedPage) {
+                                            ShellPageContent(
+                                                page = mountedPage,
+                                                model = model,
+                                                songId = if(mountedPage == "song-playback" || mountedPage == "song-download") songId else "",
+                                                songTab = if(mountedPage == "song-playback") songTab else 0,
+                                                setSongTab = setSongTabAction,
+                                                navigate = navigateAction,
+                                                openSong = openSongAction,
+                                                starter = starterAction,
+                                                reviewQuiz = if(mountedPage == "quiz") reviewQuiz else false,
+                                                setReviewQuiz = setReviewQuizAction,
+                                                setPremiumReturnPage = setPremiumReturnAction
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                mountedSongPages.forEach { (route, routeSongId) ->
+                    val active = page == route && songId == routeSongId
+                    key(route, routeSongId) {
+                        LaunchedEffect(route, routeSongId, pendingRoute) {
+                            if(pendingRoute == (route to routeSongId)) {
+                                withFrameNanos { }
+                                if(pendingRoute == (route to routeSongId)) {
+                                    page = route
+                                    songId = routeSongId
+                                    pendingRoute = null
+                                }
+                            }
+                        }
+                        pageStates.SaveableStateProvider(route) {
+                            CompositionLocalProvider(
+                                LocalPageActive provides active,
+                                LocalItemEntranceEnabled provides active
+                            ) {
+                                Box(
+                                    Modifier
+                                        .fillMaxSize()
+                                        .then(if(active) Modifier else Modifier.offset(x = 10_000.dp).clearAndSetSemantics {})
+                                ) {
+                                    PageEntrance("$route:$routeSongId") {
+                                        ShellPageContent(
+                                            page = route,
+                                            model = model,
+                                            songId = routeSongId,
+                                            songTab = songTab,
+                                            setSongTab = setSongTabAction,
+                                            navigate = navigateAction,
+                                            openSong = openSongAction,
+                                            starter = starterAction,
+                                            reviewQuiz = reviewQuiz,
+                                            setReviewQuiz = setReviewQuizAction,
+                                            setPremiumReturnPage = setPremiumReturnAction
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
-           }
-          }
-         }
-         }
         }
       }
     }
+    }
+}
+
+@Composable private fun ShellPageContent(
+    page: String,
+    model: AppModel,
+    songId: String,
+    songTab: Int,
+    setSongTab: (Int) -> Unit,
+    navigate: (String) -> Unit,
+    openSong: (String) -> Unit,
+    starter: () -> Unit,
+    reviewQuiz: Boolean,
+    setReviewQuiz: (Boolean) -> Unit,
+    setPremiumReturnPage: (String) -> Unit
+) {
+    when(page) {
+        "home", "explore" -> CatalogScreen(model, page == "home", openSong, starter) { navigate("explore") }
+        "song-download" -> SongDownloadScreen(model, songId, { navigate("home") }) { navigate("song-playback") }
+        "song-playback" -> SongPlaybackScreen(
+            model, songId, songTab, setSongTab, { navigate("home") }, { navigate("song-download") },
+            { setReviewQuiz(false); navigate("quiz") }
+        ) { setPremiumReturnPage("song-playback"); navigate("premium") }
+        "premium" -> PremiumScreen()
+        "game" -> GameScreen(model) { setPremiumReturnPage("game"); navigate("premium") }
+        "quiz" -> QuizScreen(model, reviewQuiz, { navigate(if(reviewQuiz) "review" else "song-playback") }, { navigate("review") })
+        "review" -> ReviewScreen(model) { setReviewQuiz(true); navigate("quiz") }
+        "library" -> LibraryScreen(model, openSong)
+        "profile" -> ProfileScreen(model, { navigate("library") }) { setPremiumReturnPage("profile"); navigate("premium") }
     }
 }

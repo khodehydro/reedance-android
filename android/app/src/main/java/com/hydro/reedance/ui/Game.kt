@@ -79,26 +79,27 @@ internal object GameSounds {
 @Composable fun GameScreen(model: AppModel, premium: () -> Unit) {
     val settings by model.settings.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    DisposableEffect(context) {
-        GameSounds.prepare(context)
-        onDispose { GameSounds.dispose() }
+    val pageActive = LocalPageActive.current
+    DisposableEffect(context, pageActive) {
+        if(pageActive) GameSounds.prepare(context)
+        onDispose { if(pageActive) GameSounds.dispose() }
     }
     val subscribed by PremiumEntitlement.active.collectAsStateWithLifecycle()
     val catalog by model.catalog.collectAsStateWithLifecycle()
     val installedIds by model.installedIds.collectAsStateWithLifecycle()
     val progress by model.gameWordProgress(settings.targetLanguage).collectAsStateWithLifecycle(initialValue = emptyList())
-    val definitions = remember { mutableStateMapOf<String, GameWordDefinition>() }
+    var definitions by remember { mutableStateOf<Map<String, GameWordDefinition>>(emptyMap()) }
     var busy by remember { mutableStateOf(false) }
 
     LaunchedEffect(settings.targetLanguage, subscribed, catalog, installedIds) {
         busy = true
-        definitions.clear()
+        definitions = emptyMap()
         try {
             val indexed = withContext(Dispatchers.IO) { model.syncGameWords(settings.targetLanguage, subscribed) }
-            indexed.forEach { definitions[key(it.songId, it.lexemeId)] = it }
+            definitions = withContext(Dispatchers.Default) { indexed.associateBy { key(it.songId, it.lexemeId) } }
         } finally { busy = false }
     }
-    val byKey = remember(definitions.toMap()) { definitions.toMap() }
+    val byKey = definitions
     val availableProgress = remember(progress, byKey) { progress.filter { key(it.songId, it.lexemeId) in byKey } }
     val levels = remember(availableProgress) { availableProgress.filter { it.levelIndex != null }.groupBy { it.levelIndex!! }.toSortedMap() }
     val activeRound = levels.entries.firstOrNull { (_, words) -> words.any { !it.solved } }
