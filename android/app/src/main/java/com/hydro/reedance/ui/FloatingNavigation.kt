@@ -17,17 +17,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 private data class Destination(val id: String, val label: String, val outline: Int, val filled: Int)
 
-@Composable fun FloatingNavigation(page: String, compact: Boolean, onNavigate: (String) -> Unit) {
+internal val navigationMenuHorizontalInset = 12.dp
+internal fun navigationMenuWidth(compact: Boolean) = if(compact) 270.dp else 344.dp
+
+@Composable fun FloatingNavigation(
+    page: String,
+    compact: Boolean,
+    onNavigate: (String) -> Unit,
+    menuWidth: Dp = navigationMenuWidth(compact)
+) {
     val duration = if(LocalReducedMotion.current) 0 else 150
-    val menuWidth by animateDpAsState(
-        targetValue = if(compact) 270.dp else 344.dp,
-        animationSpec = tween(duration, easing = FastOutSlowInEasing),
-        label = "nav-width"
-    )
     val destinations = listOf(
         Destination("home", tr("خانه", "Home"), UiIcons.Home, UiIcons.HomeFilled),
         Destination("explore", tr("کشف", "Explore"), UiIcons.Explore, UiIcons.ExploreFilled),
@@ -38,7 +42,7 @@ private data class Destination(val id: String, val label: String, val outline: I
 
     // A wider bounded slot leaves room for the selected label throughout the
     // width animation, so text and rounded corners never get cropped mid-transition.
-    Box(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 12.dp), contentAlignment = Alignment.BottomCenter) {
+    Box(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = navigationMenuHorizontalInset), contentAlignment = Alignment.BottomCenter) {
         Surface(
             modifier = Modifier.widthIn(max = menuWidth).fillMaxWidth(),
             shape = RoundedCornerShape(28.dp),

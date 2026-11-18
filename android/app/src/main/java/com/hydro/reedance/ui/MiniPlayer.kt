@@ -1,8 +1,5 @@
 package com.hydro.reedance.ui
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.tween
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -20,22 +17,25 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.hydro.reedance.data.ActivePlayback
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-@Composable fun MiniPlayer(song: ActivePlayback, playing: Boolean, toggle: () -> Unit, openSong: () -> Unit, compact: Boolean = false) {
-    val maxWidth by animateDpAsState(
-        if(compact) 232.dp else 316.dp,
-        tween(150, easing = FastOutSlowInEasing),
-        label = "mini-player-width"
-    )
+@Composable fun MiniPlayer(
+    song: ActivePlayback,
+    playing: Boolean,
+    toggle: () -> Unit,
+    openSong: () -> Unit,
+    compact: Boolean = false,
+    menuWidth: Dp = navigationMenuWidth(compact)
+) {
     var shareDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
-    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxWidth().padding(horizontal = navigationMenuHorizontalInset), contentAlignment = Alignment.Center) {
         Surface(
-            modifier = Modifier.widthIn(max = maxWidth).padding(horizontal = 16.dp),
+            modifier = Modifier.widthIn(max = menuWidth).fillMaxWidth(),
             shape = RoundedCornerShape(22.dp),
             color = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,

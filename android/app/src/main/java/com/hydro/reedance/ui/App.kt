@@ -1,6 +1,9 @@
 package com.hydro.reedance.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -133,6 +136,11 @@ import com.hydro.reedance.data.*
     val mountedSongPages = remember { mutableStateListOf<Pair<String, String>>() }
     var pendingRoute by remember { mutableStateOf<Pair<String, String>?>(null) }
     var compactNavigation by remember(page) { mutableStateOf(false) }
+    val navigationWidth by animateDpAsState(
+        targetValue = navigationMenuWidth(compactNavigation),
+        animationSpec = tween(if(LocalReducedMotion.current) 0 else 150, easing = FastOutSlowInEasing),
+        label = "navigation-menu-width"
+    )
     val threshold = with(LocalDensity.current) { 36.dp.toPx() }
     val scrollConnection = remember(page, threshold) {
         object : NestedScrollConnection {
@@ -230,9 +238,9 @@ import com.hydro.reedance.data.*
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             if(started) activePlayback?.let { active ->
-                MiniPlayer(active, playing, model::toggleActivePlayback, { openSong(active.songId) }, compact = compactNavigation)
+                MiniPlayer(active, playing, model::toggleActivePlayback, { openSong(active.songId) }, compact = compactNavigation, menuWidth = navigationWidth)
             }
-            FloatingNavigation(page, compactNavigation, ::navigate)
+            FloatingNavigation(page, compactNavigation, ::navigate, navigationWidth)
         }
     }) { padding ->
         // Keep common tabs composed off-screen so their content and scroll state are ready on selection.
