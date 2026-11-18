@@ -94,15 +94,13 @@ import kotlinx.coroutines.flow.collectLatest
     val scope = rememberCoroutineScope()
     val catalogById = remember(catalog) { catalog.associateBy { it.s("id") } }
     var compact by rememberSaveable(settings.targetLanguage) { mutableStateOf(false) }
-    val selectedPage = pagerState.currentPage.coerceAtMost(types.lastIndex)
+    val pageActive = LocalPageActive.current
+    // Changing the header during a drag can remeasure both lists mid-swipe.
+    val selectedPage = pagerState.settledPage.coerceAtMost(types.lastIndex)
     var query by rememberSaveable(settings.targetLanguage) { mutableStateOf("") }
     var sourceFilter by rememberSaveable(settings.targetLanguage) { mutableStateOf("") }
     var order by rememberSaveable { mutableStateOf(LibraryOrder.NEWEST) }
-    val sources = remember(bookmarks, catalogById, selectedPage) {
-        bookmarks.asSequence().filter { matchesLibraryTab(it, types[selectedPage]) }.map { it.songId }.distinct()
-            .map { id -> id to catalogById[id]?.s("title").orEmpty().ifBlank { id } }
-            .sortedBy { it.second.lowercase() }.toList()
-    }
+
 
     Column(Modifier.fillMaxSize()) {
         AnimatedVisibility(
@@ -117,6 +115,11 @@ import kotlinx.coroutines.flow.collectLatest
                     tr("$selectedCount مورد نشان‌شده", "$selectedCount saved items"),
                     style = MaterialTheme.typography.labelMedium
                 )
+                val sources = remember(bookmarks, catalogById, selectedPage) {
+                    bookmarks.asSequence().filter { matchesLibraryTab(it, types[selectedPage]) }.map { it.songId }.distinct()
+                        .map { id -> id to catalogById[id]?.s("title").orEmpty().ifBlank { id } }
+                        .sortedBy { it.second.lowercase() }.toList()
+                }
                 LibraryControls(query, { query = it }, sources, sourceFilter, { sourceFilter = it }, order, { order = it }, visible = !compact)
             }
         }
@@ -139,6 +142,7 @@ import kotlinx.coroutines.flow.collectLatest
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.weight(1f),
+            beyondViewportPageCount = if(pageActive) 1 else 0,
             key = { types[it] }
         ) { page ->
             val requestKey = LibraryRequest(settings.targetLanguage, page, query.trim(), sourceFilter, order)
@@ -161,20 +165,30 @@ import kotlinx.coroutines.flow.collectLatest
             androidx.compose.runtime.key(settings.targetLanguage, page) {
                 // A tab starts at the top on revisit, but the header belongs to the whole pager.
                 val listState = remember { androidx.compose.foundation.lazy.LazyListState() }
-                LaunchedEffect(requestKey) { listState.scrollToItem(0) }
-                LaunchedEffect(listState, pagerState) {
-                    snapshotFlow { pagerState.settledPage == page }.collectLatest { active ->
-                        if(!active) listState.scrollToItem(0)
+                fun resetListIfNeeded() {
+                    if(listState.firstVisibleItemIndex != 0 || listState.firstVisibleItemScrollOffset != 0) {
+                        listState.requestScrollToItem(0)
                     }
                 }
-                LaunchedEffect(listState, entries) {
+                LaunchedEffect(requestKey) { resetListIfNeeded() }
+                LaunchedEffect(listState, pagerState) {
+                    snapshotFlow { pagerState.settledPage == page }.collectLatest { active ->
+                        if(!active) resetListIfNeeded()
+                    }
+                }
+                LaunchedEffect(listState, entries, pageActive) {
+                    if(!pageActive) return@LaunchedEffect
                     snapshotFlow {
-                        val visible = listState.layoutInfo.visibleItemsInfo
-                        val start = visible.firstOrNull()?.index ?: 0
-                        val end = visible.lastOrNull()?.index ?: 0
-                        start to end
-                    }.distinctUntilChanged().collectLatest { (start, end) ->
-                        delay(100) // Coalesce range changes during a fling instead of chasing each row.
+                        if(pagerState.isScrollInProgress || pagerState.settledPage != page) null
+                        else {
+                            val visible = listState.layoutInfo.visibleItemsInfo
+                            val start = visible.firstOrNull()?.index ?: 0
+                            val end = visible.lastOrNull()?.index ?: 0
+                            start to end
+                        }
+                    }.distinctUntilChanged().collectLatest { range ->
+                        val (start, end) = range ?: return@collectLatest
+                        delay(100) // Skip background package reads while the pager is in motion.
                         // A small rolling window, never the complete saved library.
                         val from = (start - 2).coerceIn(0, entries.size)
                         val until = (end + 9).coerceIn(from, minOf(entries.size, from + 24))
