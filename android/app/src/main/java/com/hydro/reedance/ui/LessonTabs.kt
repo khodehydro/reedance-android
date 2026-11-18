@@ -1,7 +1,5 @@
 package com.hydro.reedance.ui
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
@@ -36,7 +34,6 @@ import androidx.compose.ui.unit.dp
         PillOption(tr("کلمه‌به‌کلمه", "Word by word"), UiIcons.WordMode, filledIcon = UiIcons.WordModeFilled)
     )
     var topHeight by remember { mutableIntStateOf(0) }
-    val target by animateFloatAsState(mode.toFloat(), tween(if(LocalReducedMotion.current) 0 else 260), label = "lyric-connection")
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val ink = MaterialTheme.colorScheme.primary
     Box(Modifier.fillMaxWidth()) {
@@ -45,7 +42,7 @@ import androidx.compose.ui.unit.dp
             val toggle = 48.dp.toPx()
             fun physical(x: Float) = if(rtl) size.width - x else x
             val x1 = physical(size.width / 10f)
-            val x2 = physical((size.width - toggle) * (target + .5f) / 3f)
+            val x2 = physical((size.width - toggle) / 2f)
             val y1 = topHeight.toFloat() - 12.dp.toPx()
             val y2 = topHeight + gap + 12.dp.toPx()
             val neck = 5.dp.toPx()
@@ -69,10 +66,15 @@ import androidx.compose.ui.unit.dp
             if(tab == 0) {
                 Spacer(Modifier.height(20.dp))
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Row(Modifier.weight(1f).selectableGroup(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        modes.forEachIndexed { index, option ->
-                            LessonTab(option, mode == index, Modifier.weight(1f)) { onMode(index) }
-                        }
+                    val current = modes[mode]
+                    PressButton(
+                        onClick = { onMode((mode + 1) % modes.size) },
+                        modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+                        shape = RoundedCornerShape(18.dp)
+                    ) {
+                        (current.filledIcon ?: current.icon)?.let { AppIcon(it, null, Modifier.size(18.dp)) }
+                        Spacer(Modifier.width(8.dp))
+                        Text(tr("نمایش متن: ", "Lyrics: ") + current.label, textAlign = TextAlign.Center)
                     }
                     Box(Modifier.width(48.dp), contentAlignment = Alignment.Center) { LyricLayoutToggle(single, onLayout) }
                 }
