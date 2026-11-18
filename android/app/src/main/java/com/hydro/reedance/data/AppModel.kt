@@ -266,7 +266,6 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
                         if(info.state == WorkInfo.State.SUCCEEDED) {
                             lesson.value = content.installedLesson(info.outputData.getString("songId") ?: input.getString("songId") ?: "")
                             catalog.value = content.catalog()
-                            message.value = "دانلود کامل شد / Download complete"
                         }
                         else if(info.state == WorkInfo.State.FAILED) message.value = info.outputData.getString("error") ?: "Installation failed"
                         true

@@ -228,13 +228,15 @@ import kotlin.math.roundToInt
         drawCircle(track, radius, style = Stroke(stroke))
         val sweep = if(progress == null) 94f else 360f * progress.coerceIn(0f, 1f)
         val start = if(progress == null) -90f + phase * 180f / PI.toFloat() else -90f
-        val steps = (sweep / 2f).roundToInt().coerceAtLeast(2)
+        val steps = sweep.roundToInt().coerceAtLeast(2)
         val waveAmplitude = 1.25.dp.toPx()
+        val wavesPerTurn = 24f // Keep the spacing fixed (~6 waves per quarter turn).
         val path = Path()
         repeat(steps + 1) { index ->
             val fraction = index.toFloat() / steps
-            val angle = (start + sweep * fraction) * PI.toFloat() / 180f
-            val radiusOffset = sin((fraction * 12f * PI.toFloat() - phase).toDouble()).toFloat() * waveAmplitude
+            val arcAngle = sweep * fraction * PI.toFloat() / 180f
+            val angle = start * PI.toFloat() / 180f + arcAngle
+            val radiusOffset = sin((arcAngle * wavesPerTurn - phase).toDouble()).toFloat() * waveAmplitude
             val r = radius + radiusOffset
             val point = Offset(
                 size.width / 2f + cos(angle.toDouble()).toFloat() * r,
