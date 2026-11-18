@@ -80,6 +80,8 @@ class LayoutTest {
             }
         }
         compose.onNodeWithContentDescription("Home").assertIsSelected()
+        compose.onNodeWithText("Home").assertIsDisplayed()
+        compose.onNodeWithText("Explore").assertDoesNotExist()
         compose.onNodeWithContentDescription("Explore").performClick().assertIsSelected()
         compose.onNodeWithText("Toggle size").performClick()
         compose.onNodeWithText("Explore").assertDoesNotExist()
