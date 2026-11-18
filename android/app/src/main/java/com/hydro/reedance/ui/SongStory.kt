@@ -1,24 +1,35 @@
 package com.hydro.reedance.ui
 
+import android.app.Activity
 import android.content.Context
 import android.media.MediaPlayer
 import android.media.PlaybackParams
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontFamily
@@ -26,6 +37,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -86,13 +100,27 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
     var speedIndex by rememberSaveable { mutableIntStateOf(1) }
     val speeds = listOf(.75f, 1f, 1.25f, 1.5f)
     val speed by rememberUpdatedState(speeds[speedIndex])
-    val papers = listOf(Color.White, Color(0xFFF3E6C8), Color(0xFFE2E4E7))
-    val ink = Color(0xFF252322)
+    val papers = listOf(Color.White, Color(0xFFF3E6C8), Color(0xFF292B30))
+    val ink = if(paperIndex == 2) Color.White else Color(0xFF252322)
+    val nextPaper = (paperIndex + 1) % papers.size
+    val paperNames = listOf(tr("سفید", "White"), tr("کاهی", "Sepia"), tr("خاکستری تیره", "Dark gray"))
     val pager = rememberPagerState { story.pages.size }
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val reduced = LocalReducedMotion.current
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val window = (context as? Activity)?.window
+    DisposableEffect(window) {
+        val controller = window?.let { WindowCompat.getInsetsController(it, it.decorView) }
+        val originalBehavior = controller?.systemBarsBehavior
+        val bars = WindowInsetsCompat.Type.systemBars()
+        controller?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        controller?.hide(bars)
+        onDispose {
+            controller?.show(bars)
+            if(originalBehavior != null) controller?.systemBarsBehavior = originalBehavior
+        }
+    }
     val page = pager.settledPage
     var request by remember(page) { mutableStateOf(false) }
     var player by remember(page) { mutableStateOf<MediaPlayer?>(null) }
@@ -160,24 +188,69 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
                 Text(tr("داستان آهنگ", "Song story"), style = MaterialTheme.typography.titleMedium)
                 PressIconButton(back, Modifier.align(Alignment.CenterStart)) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
             }
-            HorizontalPager(pager, modifier = Modifier.fillMaxWidth().weight(1f)) { index ->
-                Surface(color = papers[paperIndex], contentColor = ink, modifier = Modifier.fillMaxSize().graphicsLayer {
+            HorizontalPager(pager, modifier = Modifier.fillMaxWidth().weight(1f).background(Color.Black.copy(alpha = .12f))) { index ->
+                val paper = papers[paperIndex]
+                val pageTurn = Modifier.drawWithContent {
+                    val offset = (pager.currentPage - index + pager.currentPageOffsetFraction).coerceIn(-1f, 1f)
+                    val amount = abs(offset)
+                    if(reduced || amount < .001f || amount >= 1f) {
+                        drawContent()
+                    } else {
+                        val right = if(rtl) offset < 0f else offset > 0f
+                        val edge = if(right) size.width else 0f
+                        val direction = if(right) -1f else 1f
+                        val corner = Offset(edge, size.height)
+                        val creaseBottom = Offset(edge + direction * size.width * amount * .95f, size.height)
+                        val creaseSide = Offset(edge, size.height * (1f - amount * .80f))
+                        val foldTip = Offset(creaseBottom.x + direction * size.width * amount * .13f, creaseSide.y)
+                        val curve = Offset((creaseSide.x + creaseBottom.x) / 2f, (creaseSide.y + creaseBottom.y) / 2f)
+                        val face = Path().apply {
+                            moveTo(0f, 0f)
+                            lineTo(size.width, 0f)
+                            if(right) {
+                                lineTo(creaseSide.x, creaseSide.y)
+                                quadraticTo(curve.x, curve.y + size.height * amount * .1f, creaseBottom.x, creaseBottom.y)
+                                lineTo(0f, size.height)
+                            } else {
+                                lineTo(size.width, size.height)
+                                lineTo(creaseBottom.x, creaseBottom.y)
+                                quadraticTo(curve.x, curve.y + size.height * amount * .1f, creaseSide.x, creaseSide.y)
+                            }
+                            close()
+                        }
+                        clipPath(face) { this@drawWithContent.drawContent() }
+                        val fold = Path().apply {
+                            moveTo(creaseSide.x, creaseSide.y)
+                            quadraticTo(curve.x, curve.y + size.height * amount * .1f, creaseBottom.x, creaseBottom.y)
+                            quadraticTo(foldTip.x, (foldTip.y + corner.y) / 2f, foldTip.x, foldTip.y)
+                            quadraticTo(curve.x, creaseSide.y, creaseSide.x, creaseSide.y)
+                            close()
+                        }
+                        drawPath(fold, Brush.linearGradient(
+                            listOf(Color.Black.copy(alpha = .52f), paper, ink.copy(alpha = .55f)),
+                            start = corner, end = foldTip
+                        ))
+                    }
+                }.graphicsLayer {
+                    // Keep a small perspective tilt while the diagonal corner folds over.
                     val offset = (pager.currentPage - index + pager.currentPageOffsetFraction).coerceIn(-1f, 1f)
                     if(!reduced) {
                         val physical = if(rtl) -offset else offset
-                        transformOrigin = TransformOrigin(if(physical > 0f) 1f else 0f, .5f)
-                        rotationY = physical * -36f
-                        cameraDistance = 18.dp.toPx()
-                        alpha = 1f - abs(offset) * .25f
+                        transformOrigin = TransformOrigin(if(physical > 0f) 1f else 0f, 1f)
+                        rotationY = physical * -12f
+                        cameraDistance = 24.dp.toPx()
                     }
-                }) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(Modifier.widthIn(max = 620.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                            Text(story.title, fontFamily = FontFamily.Serif, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
-                            Text(story.pages[index], fontFamily = FontFamily.Serif,
-                                fontSize = listOf(17, 21, 26)[fontIndex].sp,
-                                lineHeight = listOf(26, 32, 39)[fontIndex].sp, textAlign = TextAlign.Center)
+                }
+                Box(Modifier.fillMaxSize().then(pageTurn)) {
+                    Surface(color = paper, contentColor = ink, modifier = Modifier.fillMaxSize()) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Column(Modifier.widthIn(max = 620.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                                Text(story.title, fontFamily = FontFamily.Serif, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
+                                Text(story.pages[index], fontFamily = FontFamily.Serif,
+                                    fontSize = listOf(17, 21, 26)[fontIndex].sp,
+                                    lineHeight = listOf(26, 32, 39)[fontIndex].sp, textAlign = TextAlign.Center)
+                            }
                         }
                     }
                 }
@@ -209,19 +282,32 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
                     PressTextButton({ player?.seekTo(0) }, enabled = player != null) { Text(tr("از اول", "Restart"), color = ink.copy(alpha = if(player != null) 1f else .4f)) }
                 }
                 if(failed) Text(tr("صدا در دسترس نیست. صدای این زبان را در تنظیمات گفتار اندروید نصب کن.", "Narration unavailable. Install an offline voice for this language in Android text-to-speech settings."), style = MaterialTheme.typography.bodySmall)
-                ReaderOptions(tr("کاغذ", "Paper"), listOf(tr("سفید", "White"), tr("کاهی", "Sepia"), tr("خاکستری", "Gray")), paperIndex, ink) { paperIndex = it }
-                ReaderOptions(tr("اندازه", "Size"), listOf(tr("کوچک", "Small"), tr("متوسط", "Medium"), tr("بزرگ", "Large")), fontIndex, ink) { fontIndex = it }
+                val smaller = tr("کوچک کردن نوشته", "Decrease text size")
+                val larger = tr("بزرگ کردن نوشته", "Increase text size")
+                val changePaper = tr("رنگ بعدی کاغذ", "Next paper color")
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ReaderCircle("−", smaller, ink, papers[paperIndex], fontIndex > 0) { fontIndex-- }
+                        ReaderCircle("+", larger, ink, papers[paperIndex], fontIndex < 2) { fontIndex++ }
+                        Spacer(Modifier.weight(1f))
+                        ReaderCircle(null, "$changePaper: ${paperNames[nextPaper]}", ink, papers[nextPaper]) { paperIndex = nextPaper }
+                    }
+                }
             }
         }
     }
 }
 
-@Composable private fun ReaderOptions(label: String, choices: List<String>, selected: Int, ink: Color, onSelect: (Int) -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(label, style = MaterialTheme.typography.labelMedium)
-        choices.forEachIndexed { index, choice ->
-            FilterChip(selected = index == selected, onClick = { onSelect(index) }, label = { Text(choice) },
-                colors = FilterChipDefaults.filterChipColors(labelColor = ink, selectedLabelColor = Color.White, selectedContainerColor = ink))
+@Composable private fun ReaderCircle(symbol: String?, label: String, ink: Color, fill: Color,
+    enabled: Boolean = true, onClick: () -> Unit) {
+    PressIconButton(onClick, enabled = enabled) {
+        Surface(Modifier.size(38.dp), shape = CircleShape, color = fill,
+            border = androidx.compose.foundation.BorderStroke(1.dp, ink.copy(alpha = if(enabled) .65f else .25f))) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.semantics { contentDescription = label }) {
+                if(symbol != null) Text(symbol, color = ink.copy(alpha = if(enabled) 1f else .35f), fontSize = 22.sp,
+                    modifier = Modifier.clearAndSetSemantics {})
+            }
         }
     }
 }
