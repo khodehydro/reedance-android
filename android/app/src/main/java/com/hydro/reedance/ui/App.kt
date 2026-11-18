@@ -198,6 +198,7 @@ import com.hydro.reedance.data.*
                 "song-download" -> SongDownloadScreen(model, songId, { navigate("home") }) { navigate("song-playback") }
                 "song-playback" -> SongPlaybackScreen(model, songId, songTab, { songTab = it }, { navigate("home") }, { navigate("song-download") }, { reviewQuiz = false; navigate("quiz") }) { premiumReturnPage = "song-playback"; navigate("premium") }
                 "premium" -> PremiumScreen()
+                "game" -> GameScreen(model) { premiumReturnPage = "game"; navigate("premium") }
                 "quiz" -> QuizScreen(model, reviewQuiz, { navigate(if(reviewQuiz) "review" else "song-playback") }, { navigate("review") })
                 "review" -> ReviewScreen(model) { reviewQuiz = true; navigate("quiz") }
                 "library" -> LibraryScreen(model, ::openSong)

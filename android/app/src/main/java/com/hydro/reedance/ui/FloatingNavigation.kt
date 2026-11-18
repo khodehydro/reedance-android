@@ -24,13 +24,14 @@ private data class Destination(val id: String, val label: String, val outline: I
 @Composable fun FloatingNavigation(page: String, compact: Boolean, onNavigate: (String) -> Unit) {
     val duration = if(LocalReducedMotion.current) 0 else 150
     val menuWidth by animateDpAsState(
-        targetValue = if(compact) 232.dp else 316.dp,
+        targetValue = if(compact) 270.dp else 344.dp,
         animationSpec = tween(duration, easing = FastOutSlowInEasing),
         label = "nav-width"
     )
     val destinations = listOf(
         Destination("home", tr("خانه", "Home"), UiIcons.Home, UiIcons.HomeFilled),
         Destination("explore", tr("کشف", "Explore"), UiIcons.Explore, UiIcons.ExploreFilled),
+        Destination("game", tr("گیم", "Game"), UiIcons.Words, UiIcons.WordsFilled),
         Destination("review", tr("لایتنر", "Review"), UiIcons.Review, UiIcons.ReviewFilled),
         Destination("library", tr("کتابخانه", "Library"), UiIcons.Library, UiIcons.LibraryFilled)
     )

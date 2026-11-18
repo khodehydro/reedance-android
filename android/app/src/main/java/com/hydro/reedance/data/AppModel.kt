@@ -358,6 +358,65 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
     }
     suspend fun lessonForReview(songId: String): JsonObject? = content.installedLesson(songId)
 
+    fun gameWordProgress(targetLanguage: String): Flow<List<GameWordProgress>> = dao.gameWords(targetLanguage)
+
+    fun solveGameWord(targetLanguage: String, songId: String, lexemeId: String) = operation("ذخیرهٔ پیشرفت ناموفق / Could not save game progress") {
+        withContext(Dispatchers.IO) { dao.solveGameWord(targetLanguage, songId, lexemeId) }
+    }
+
+    /** Index new installed-song vocabulary once; assigned levels and solved words survive restarts. */
+    suspend fun syncGameWords(targetLanguage: String, subscribed: Boolean): List<GameWordDefinition> {
+        val installedIds = withContext(Dispatchers.IO) {
+            dao.installedPackages().filter { it.state in listOf("VERIFIED", "BUNDLED", "DIRECT_TEST", "LOCAL_PASSWORD") }
+                .map { it.songId }.toSet()
+        }
+        val sources = catalog.value.filter { song ->
+            song.s("id") in installedIds && song.s("language") == targetLanguage &&
+                (subscribed || song.s("access") != "paid")
+        }.sortedBy { it.s("id") }
+        val definitions = buildList {
+            sources.forEach { song ->
+                val lesson = try { content.installedLesson(song.s("id")) }
+                    catch(cancelled: CancellationException) { throw cancelled }
+                    catch(_: Exception) { null } ?: return@forEach
+                lesson.a("vocabulary").forEach { word ->
+                    val lemma = word.s("lemma").trim()
+                    val answer = lemma.filter { it.isLetter() }
+                    val lexeme = word.s("lexemeId")
+                    if(lexeme.isNotBlank() && answer.isNotBlank()) add(GameWordDefinition(
+                        targetLanguage = targetLanguage,
+                        songId = song.s("id"),
+                        lexemeId = lexeme,
+                        songTitle = song.s("title"),
+                        lemma = lemma,
+                        letterAnswer = answer,
+                        translationFa = word.s("translationFa"),
+                        translationEn = word.s("translationEn")
+                    ))
+                }
+            }
+        }
+        withContext(Dispatchers.IO) {
+            mutationMutex.withLock {
+                database.withTransaction {
+                    val addedAt = System.currentTimeMillis()
+                    dao.addGameWords(definitions.map { GameWordProgress(targetLanguage, it.songId, it.lexemeId, addedAt = addedAt) })
+                    val pending = dao.pendingGameWords(targetLanguage)
+                    val sizes = balancedGameLevelSizes(pending.size)
+                    var offset = 0
+                    val firstLevel = (dao.maxGameLevel(targetLanguage) ?: -1) + 1
+                    sizes.forEachIndexed { levelOffset, size ->
+                        repeat(size) { position ->
+                            val pendingWord = pending[offset++]
+                            dao.placeGameWord(targetLanguage, pendingWord.songId, pendingWord.lexemeId, firstLevel + levelOffset, position)
+                        }
+                    }
+                }
+            }
+        }
+        return definitions
+    }
+
     fun record(q: JsonObject, answer: List<String>, grade: Grade) {
         val sourceLesson = lesson.value ?: return
         val sourceSong = sourceLesson.s("songId")

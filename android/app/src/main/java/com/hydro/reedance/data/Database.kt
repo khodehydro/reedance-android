@@ -14,6 +14,16 @@ data class StarterProgress(val targetLanguage: String, val stepId: Int, val comp
 data class QuizResult(val songId: String, val questionId: String, val versionCode: Int, val answer: String, val correct: Boolean, val gradedAt: Long = System.currentTimeMillis())
 @Entity data class InstalledPackage(@PrimaryKey val songId: String, val activeVersionCode: Int, val signedPayloadSha256: String, val activePath: String, val state: String, val lastCheckedAt: Long)
 @Entity data class SeenManifest(@PrimaryKey val songId: String, val highestVersionCode: Int, val packageSha256: String)
+@Entity(primaryKeys = ["targetLanguage", "songId", "lexemeId"])
+data class GameWordProgress(
+    val targetLanguage: String,
+    val songId: String,
+    val lexemeId: String,
+    val levelIndex: Int? = null,
+    val positionInLevel: Int = 0,
+    val solved: Boolean = false,
+    val addedAt: Long = System.currentTimeMillis()
+)
 @Dao interface LearningDao {
     @Query("SELECT * FROM Bookmark ORDER BY createdAt DESC") fun bookmarks(): Flow<List<Bookmark>>
     @Query("SELECT * FROM Bookmark WHERE songId = :song AND itemType = :type AND itemId = :id") suspend fun bookmark(song: String, type: String, id: String): Bookmark?
@@ -42,8 +52,18 @@ data class QuizResult(val songId: String, val questionId: String, val versionCod
     @Query("DELETE FROM InstalledPackage WHERE songId = :id") suspend fun deleteInstalled(id: String)
     @Query("SELECT * FROM SeenManifest WHERE songId = :id") suspend fun seen(id: String): SeenManifest?
     @Upsert suspend fun saveSeen(value: SeenManifest)
+    @Query("SELECT * FROM GameWordProgress WHERE targetLanguage = :language ORDER BY CASE WHEN levelIndex IS NULL THEN 1 ELSE 0 END, levelIndex, positionInLevel, addedAt")
+    fun gameWords(language: String): Flow<List<GameWordProgress>>
+    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun addGameWords(words: List<GameWordProgress>)
+    @Query("SELECT * FROM GameWordProgress WHERE targetLanguage = :language AND levelIndex IS NULL ORDER BY addedAt, songId, lexemeId")
+    suspend fun pendingGameWords(language: String): List<GameWordProgress>
+    @Query("SELECT MAX(levelIndex) FROM GameWordProgress WHERE targetLanguage = :language") suspend fun maxGameLevel(language: String): Int?
+    @Query("UPDATE GameWordProgress SET levelIndex = :level, positionInLevel = :position WHERE targetLanguage = :language AND songId = :song AND lexemeId = :lexeme AND levelIndex IS NULL")
+    suspend fun placeGameWord(language: String, song: String, lexeme: String, level: Int, position: Int)
+    @Query("UPDATE GameWordProgress SET solved = 1 WHERE targetLanguage = :language AND songId = :song AND lexemeId = :lexeme")
+    suspend fun solveGameWord(language: String, song: String, lexeme: String)
 }
-@Database(entities = [Bookmark::class, ReviewCard::class, StarterProgress::class, SongPlayback::class, QuizResult::class, InstalledPackage::class, SeenManifest::class], version = 2, exportSchema = false)
+@Database(entities = [Bookmark::class, ReviewCard::class, StarterProgress::class, SongPlayback::class, QuizResult::class, InstalledPackage::class, SeenManifest::class, GameWordProgress::class], version = 3, exportSchema = false)
 abstract class LearningDatabase: RoomDatabase() {
     abstract fun learning(): LearningDao
     companion object {
@@ -57,9 +77,15 @@ abstract class LearningDatabase: RoomDatabase() {
                 db.execSQL("ALTER TABLE ReviewCard_new RENAME TO ReviewCard")
             }
         }
+        val MIGRATION_2_3 = object : androidx.room.migration.Migration(2, 3) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS GameWordProgress (targetLanguage TEXT NOT NULL, songId TEXT NOT NULL, lexemeId TEXT NOT NULL, levelIndex INTEGER, positionInLevel INTEGER NOT NULL, solved INTEGER NOT NULL, addedAt INTEGER NOT NULL, PRIMARY KEY(targetLanguage, songId, lexemeId))")
+            }
+        }
         @Volatile private var instance: LearningDatabase? = null
         fun get(context: Context): LearningDatabase = instance ?: synchronized(this) {
-            instance ?: Room.databaseBuilder(context.applicationContext, LearningDatabase::class.java, "learning.db").addMigrations(MIGRATION_1_2).build().also { instance = it }
+            instance ?: Room.databaseBuilder(context.applicationContext, LearningDatabase::class.java, "learning.db")
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3).build().also { instance = it }
         }
     }
 }
