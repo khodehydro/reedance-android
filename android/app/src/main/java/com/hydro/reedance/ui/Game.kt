@@ -148,6 +148,8 @@ private object GameSounds {
                                 ) { Box(contentAlignment = Alignment.Center) { Text(letter.toString().uppercase(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = if(used) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .35f) else MaterialTheme.colorScheme.onSurface) } }
                             }
                         }
+                        val correctFeedback = tr("آفرین! واژه پیدا شد", "Correct! Word found")
+                        val incorrectFeedback = tr("این واژه نیست؛ دوباره تلاش کن", "Not quite—try again")
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             OutlinedButton(onClick = {
                                 selected = selected.dropLast(1)
@@ -158,11 +160,11 @@ private object GameSounds {
                                 val assembled = selected.map { letters[it] }.joinToString("")
                                 if(assembled.equals(answer, ignoreCase = true)) {
                                     model.solveGameWord(settings.targetLanguage, current.songId, current.lexemeId)
-                                    feedback = tr("آفرین! واژه پیدا شد", "Correct! Word found")
+                                    feedback = correctFeedback
                                     GameSounds.place()
                                     selected = emptyList()
                                 } else {
-                                    feedback = tr("این واژه نیست؛ دوباره تلاش کن", "Not quite—try again")
+                                    feedback = incorrectFeedback
                                     GameSounds.incorrect()
                                 }
                             }, enabled = selected.isNotEmpty(), modifier = Modifier.weight(1f)) { Text(tr("جای‌گذاری واژه", "Place word")) }
