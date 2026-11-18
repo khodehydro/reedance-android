@@ -68,20 +68,13 @@ import kotlinx.coroutines.delay
     val canInteract = pendingWinKey.isEmpty() && !rejecting
 
     Panel {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            Column(Modifier.weight(1f)) {
-                Text(tr("حروف را به هم وصل کن", "Connect the letters"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Text(tr("واژه‌ها را به هر ترتیبی پیدا کن؛ خانه‌های مجاور را لمس کن", "Find words in any order by tapping neighboring hexes"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            PressIconButton(
-                onClick = {
-                    selected = selected.dropLast(1)
-                    feedback = ""
-                    GameSounds.release()
-                },
-                modifier = Modifier.size(44.dp).background(MaterialTheme.colorScheme.surfaceVariant, androidx.compose.foundation.shape.CircleShape),
-                enabled = selected.isNotEmpty() && canInteract
-            ) { AppIcon(UiIcons.Backspace, tr("حذف خانهٔ آخر", "Backspace"), Modifier.size(23.dp)) }
+        Column(Modifier.fillMaxWidth()) {
+            Text(tr("حروف را به هم وصل کن", "Connect the letters"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(
+                tr("واژه‌ها را به هر ترتیبی پیدا کن؛ خانهٔ آخر را دوباره لمس کن تا حذف شود", "Find words in any order; tap the last hex again to undo"),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
         Row(
             Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
