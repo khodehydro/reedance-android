@@ -13,8 +13,6 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -29,10 +27,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.layout.boundsInRoot
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -96,10 +90,6 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
     val grid = rememberLazyGridState()
     val lesson by model.lesson.collectAsStateWithLifecycle()
     val installedIds by model.installedIds.collectAsStateWithLifecycle()
-    val searchFocus = LocalSearchFocus.current
-    val pageActive = LocalPageActive.current
-    DisposableEffect(searchFocus) { onDispose { searchFocus?.focused = false } }
-    LaunchedEffect(pageActive) { if(!pageActive) searchFocus?.dismiss?.invoke() }
     val reduced = LocalReducedMotion.current
     val filtered = remember(catalog, targetLanguage, home, access, installedIds, query) { catalog.filter { s ->
         (s.s("language") == targetLanguage) &&
@@ -120,15 +110,7 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
         }
         if(!home) item(key = "filters", span = { GridItemSpan(maxLineSpan) }) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(value = query, onValueChange = { query = it }, modifier = Modifier.fillMaxWidth()
-                    .onFocusChanged { searchFocus?.focused = it.isFocused }
-                    .onGloballyPositioned { searchFocus?.bounds = it.boundsInRoot() },
-                    shape = RoundedCornerShape(20.dp),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(onSearch = { searchFocus?.dismiss?.invoke() }),
-                    leadingIcon = { AppIcon(UiIcons.Search, null, Modifier.size(20.dp)) },
-                    singleLine = true, label = { Text(tr("جست‌وجوی آهنگ یا خواننده", "Search songs or artists")) },
-                    trailingIcon = { if(query.isNotEmpty()) PressTextButton({ query = "" }) { Text(tr("پاک کردن", "Clear")) } })
+                CatalogSearchField(query, { query = it }, tr("جست‌وجوی آهنگ یا خواننده", "Search songs or artists"))
                 PillTabs(listOf(
                     PillOption(tr("همه", "All"), UiIcons.All, filledIcon = UiIcons.AllFilled), PillOption(tr("رایگان", "Free"), UiIcons.Play, filledIcon = UiIcons.PlayFilled),
                     PillOption(tr("پریمیوم", "Premium"), UiIcons.Crown, filledIcon = UiIcons.CrownFilled), PillOption(tr("دانلودشده‌ها", "Downloaded"), UiIcons.Check, filledIcon = UiIcons.CheckFilled)
@@ -167,15 +149,10 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
     )
     val pagerState = rememberPagerState(pageCount = { filters.size })
     val scope = rememberCoroutineScope()
-    val searchFocus = LocalSearchFocus.current
-    val pageActive = LocalPageActive.current
     val compactPages = remember(filters.size) {
         mutableStateListOf<Boolean>().apply { repeat(filters.size) { add(false) } }
     }
     val compact = compactPages[pagerState.currentPage]
-    DisposableEffect(searchFocus) { onDispose { searchFocus?.focused = false } }
-    LaunchedEffect(pageActive) { if(!pageActive) searchFocus?.dismiss?.invoke() }
-    LaunchedEffect(compact) { if(compact) searchFocus?.dismiss?.invoke() }
 
     Column(Modifier.fillMaxSize()) {
         AnimatedVisibility(
@@ -185,22 +162,8 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
         ) {
             Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Heading(tr("کشف موسیقی", "Discover music"), tr("موسیقی را بشنو، کلمه‌ها را کشف کن.", "Good music. Words that stay with you."))
-                OutlinedTextField(
-                    value = query.value,
-                    onValueChange = { query.value = it },
-                    modifier = Modifier.fillMaxWidth()
-                        .onFocusChanged { searchFocus?.focused = it.isFocused }
-                        .onGloballyPositioned { searchFocus?.bounds = it.boundsInRoot() },
-                    shape = RoundedCornerShape(20.dp),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(onSearch = { searchFocus?.dismiss?.invoke() }),
-                    leadingIcon = { AppIcon(UiIcons.Search, null, Modifier.size(20.dp)) },
-                    singleLine = true,
-                    label = { Text(tr("جست‌وجوی آهنگ یا خواننده", "Search songs or artists")) },
-                    trailingIcon = {
-                        if(query.value.isNotEmpty()) PressTextButton({ query.value = "" }) { Text(tr("پاک کردن", "Clear")) }
-                    }
-                )
+                CatalogSearchField(query.value, { query.value = it },
+                    tr("جست‌وجوی آهنگ یا خواننده", "Search songs or artists"), visible = !compact)
             }
         }
         Surface(color = MaterialTheme.colorScheme.background) {

@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.input.nestedscroll.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.ui.geometry.Offset
@@ -19,8 +20,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hydro.reedance.data.*
@@ -121,6 +120,7 @@ import kotlinx.coroutines.flow.collectLatest
                     tr("$selectedCount مورد نشان‌شده", "$selectedCount saved items"),
                     style = MaterialTheme.typography.labelMedium
                 )
+                LibraryControls(query, { query = it }, sources, sourceFilter, { sourceFilter = it }, order, { order = it }, visible = !compact)
             }
         }
         Surface(color = MaterialTheme.colorScheme.background) {
@@ -138,8 +138,6 @@ import kotlinx.coroutines.flow.collectLatest
                 }
             }
         }
-
-        LibraryControls(query, { query = it }, sources, sourceFilter, { sourceFilter = it }, order, { order = it })
 
         HorizontalPager(
             state = pagerState,
@@ -219,27 +217,17 @@ import kotlinx.coroutines.flow.collectLatest
 }
 
 @Composable private fun LibraryControls(query: String, onQuery: (String) -> Unit, sources: List<Pair<String, String>>,
-    source: String, onSource: (String) -> Unit, order: LibraryOrder, onOrder: (LibraryOrder) -> Unit) {
+    source: String, onSource: (String) -> Unit, order: LibraryOrder, onOrder: (LibraryOrder) -> Unit, visible: Boolean) {
     var filtersOpen by remember { mutableStateOf(false) }
     var sortingOpen by remember { mutableStateOf(false) }
-    val clearLabel = tr("پاک‌کردن جستجو", "Clear search")
     val allSongs = tr("همهٔ آهنگ‌ها", "All songs")
     val sourceTitle = sources.firstOrNull { it.first == source }?.second ?: source
     val sortLabels = listOf(tr("جدیدترین", "Newest first"), tr("قدیمی‌ترین", "Oldest first"), tr("نام آهنگ", "Song title"))
-    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        OutlinedTextField(
-            value = query, onValueChange = onQuery, modifier = Modifier.fillMaxWidth(), singleLine = true,
-            placeholder = { Text(tr("جستجو در این تب", "Search this tab")) },
-            leadingIcon = { AppIcon(UiIcons.Search, null) },
-            trailingIcon = if(query.isEmpty()) null else ({
-                PressIconButton({ onQuery("") }) { Text("×", style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.semantics { contentDescription = clearLabel }) }
-            }),
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
-        )
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        CatalogSearchField(query, onQuery, tr("جست‌وجو در این تب", "Search this tab"), visible = visible)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f)) {
-                FilterChip(selected = source.isNotEmpty(), onClick = { filtersOpen = true }, label = {
+                FilterChip(shape = CircleShape, selected = source.isNotEmpty(), onClick = { filtersOpen = true }, label = {
                     Text(if(source.isEmpty()) tr("فیلتر آهنگ", "Filter by song") else sourceTitle,
                         maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 }, leadingIcon = { AppIcon(UiIcons.All, null, Modifier.size(16.dp)) })
@@ -251,7 +239,7 @@ import kotlinx.coroutines.flow.collectLatest
                 }
             }
             Box {
-                FilterChip(selected = order != LibraryOrder.NEWEST, onClick = { sortingOpen = true }, label = {
+                FilterChip(shape = CircleShape, selected = order != LibraryOrder.NEWEST, onClick = { sortingOpen = true }, label = {
                     Text(sortLabels[order.ordinal], maxLines = 1)
                 }, trailingIcon = { Text("▾") })
                 DropdownMenu(expanded = sortingOpen, onDismissRequest = { sortingOpen = false }) {
