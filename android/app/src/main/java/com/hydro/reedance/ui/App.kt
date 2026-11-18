@@ -111,6 +111,7 @@ import com.hydro.reedance.data.*
     var songTab by rememberSaveable { mutableIntStateOf(0) }
     var reviewQuiz by rememberSaveable { mutableStateOf(false) }
     var premiumReturnPage by rememberSaveable { mutableStateOf("profile") }
+    var profileReturnPage by rememberSaveable { mutableStateOf("home") }
     val currentPage by rememberUpdatedState(page)
     val snackbar = remember { SnackbarHostState() }
     val message by model.message.collectAsStateWithLifecycle()
@@ -214,18 +215,38 @@ import com.hydro.reedance.data.*
     val setPremiumReturnAction = remember { { destination: String -> setPremiumReturnLatest.value(destination) } }
     val starterAction = remember(context) { { context.startActivity(android.content.Intent(context, com.hydro.reedance.StarterActivity::class.java)) } }
     val songPage = page == "song-download" || page == "song-playback"
-    val independent = songPage || page in listOf("quiz", "premium")
-    BackHandler(page != "home") { navigate(when(page) { "quiz" -> if(reviewQuiz) "review" else "song-playback"; "premium" -> premiumReturnPage; else -> "home" }) }
+    val independent = songPage || page in listOf("quiz", "premium", "profile")
+    BackHandler(page != "home") {
+        navigate(when(page) {
+            "quiz" -> if(reviewQuiz) "review" else "song-playback"
+            "premium" -> premiumReturnPage
+            "profile" -> profileReturnPage
+            else -> "home"
+        })
+    }
     SearchDismissHost {
      Box(Modifier.fillMaxSize()) {
       if(page == "premium") PremiumBackdrop(Modifier.matchParentSize())
       Scaffold(Modifier.fillMaxSize(), containerColor = Color.Transparent, snackbarHost = { SnackbarHost(snackbar) }, topBar = {
         if(!songPage) Surface(color = if(page == "premium") Color.Transparent else MaterialTheme.colorScheme.background, contentColor = if(page == "premium") Color(0xFF493300) else MaterialTheme.colorScheme.onSurface) { Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            if(page == "quiz" || page == "premium") {
-                PressIconButton({ navigate(if(page == "quiz") { if(reviewQuiz) "review" else "song-playback" } else premiumReturnPage) }) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
-                Text(if(page == "quiz") tr("آزمون", "Practice") else tr("پریمیوم", "Premium"), style = MaterialTheme.typography.titleLarge)
+            if(page in listOf("quiz", "premium", "profile")) {
+                PressIconButton({
+                    navigate(when(page) {
+                        "quiz" -> if(reviewQuiz) "review" else "song-playback"
+                        "premium" -> premiumReturnPage
+                        else -> profileReturnPage
+                    })
+                }) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
+                Text(when(page) {
+                    "quiz" -> tr("آزمون", "Practice")
+                    "premium" -> tr("پریمیوم", "Premium")
+                    else -> tr("پروفایل", "Profile")
+                }, style = MaterialTheme.typography.titleLarge)
             } else {
-                MainHeader(settings.targetLanguage, model::targetLanguage, { navigate("profile") })
+                MainHeader(settings.targetLanguage, model::targetLanguage, {
+                    profileReturnPage = page
+                    navigate("profile")
+                })
             }
         }
         }
