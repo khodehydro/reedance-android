@@ -23,7 +23,7 @@ import kotlin.math.sin
 /** Native Slider retains touch, keyboard and accessibility seeking; only its track is custom. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable internal fun WaveSeekBar(value: Float, duration: Float, playing: Boolean,
-    onValueChange: (Float) -> Unit, onValueChangeFinished: () -> Unit) {
+    onValueChange: (Float) -> Unit, onValueChangeFinished: () -> Unit, ink: Color = Color.White, enabled: Boolean = true) {
     val reduced = LocalReducedMotion.current
     val paused = LocalBackgroundMotion.current.paused
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -43,16 +43,16 @@ import kotlin.math.sin
     val description = tr("موقعیت پخش", "Playback position")
     val maximum = duration.coerceAtLeast(1f)
     Slider(value = value.coerceIn(0f, maximum), onValueChange = onValueChange,
-        onValueChangeFinished = onValueChangeFinished, valueRange = 0f..maximum,
+        enabled = enabled, onValueChangeFinished = onValueChangeFinished, valueRange = 0f..maximum,
         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).semantics { contentDescription = description },
-        colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = Color.White, inactiveTrackColor = Color.White.copy(alpha = .45f)),
+        colors = SliderDefaults.colors(thumbColor = ink, activeTrackColor = ink, inactiveTrackColor = ink.copy(alpha = .45f)),
         thumb = { Spacer(Modifier.size(0.dp)) },
         track = { state ->
             Canvas(Modifier.fillMaxWidth().height(24.dp)) {
                 val end = size.width * (state.value / maximum).coerceIn(0f, 1f)
                 val center = size.height / 2f
                 val stroke = 2.dp.toPx()
-                drawLine(Color.White.copy(alpha = .45f), Offset(end, center), Offset(size.width, center), stroke, StrokeCap.Round)
+                drawLine(ink.copy(alpha = if(enabled) .45f else .22f), Offset(end, center), Offset(size.width, center), stroke, StrokeCap.Round)
                 if(end > 0f) {
                     val path = Path()
                     val wavelength = 20.dp.toPx()
@@ -65,7 +65,7 @@ import kotlin.math.sin
                         val y = center + sin(x / wavelength * 2f * PI.toFloat() - phase) * amplitude * taper
                         if(step == 0) path.moveTo(x, y) else path.lineTo(x, y)
                     }
-                    drawPath(path, Color.White, style = Stroke(stroke, cap = StrokeCap.Round))
+                    drawPath(path, ink, style = Stroke(stroke, cap = StrokeCap.Round))
                 }
             }
         })

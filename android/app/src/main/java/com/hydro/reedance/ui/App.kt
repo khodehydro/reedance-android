@@ -187,7 +187,8 @@ import com.hydro.reedance.data.*
     SearchDismissHost {
      Box(Modifier.fillMaxSize()) {
       if(page == "premium") PremiumBackdrop(Modifier.matchParentSize())
-      Scaffold(Modifier.fillMaxSize(), containerColor = Color.Transparent, snackbarHost = { SnackbarHost(snackbar) }, topBar = {
+      val scaffoldInsets = if(page == "song-story") WindowInsets(0, 0, 0, 0) else ScaffoldDefaults.contentWindowInsets
+      Scaffold(Modifier.fillMaxSize(), contentWindowInsets = scaffoldInsets, containerColor = Color.Transparent, snackbarHost = { SnackbarHost(snackbar) }, topBar = {
         if(!songPage) Surface(color = if(page == "premium") Color.Transparent else MaterialTheme.colorScheme.background, contentColor = if(page == "premium") Color(0xFF493300) else MaterialTheme.colorScheme.onSurface) { Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             if(page in listOf("quiz", "premium", "profile")) {
                 PressIconButton({
@@ -302,7 +303,9 @@ import com.hydro.reedance.data.*
                                         .fillMaxSize()
                                         .then(if(active) Modifier else Modifier.offset(x = 10_000.dp).clearAndSetSemantics {})
                                 ) {
-                                    PageEntrance("$route:$routeSongId") {
+                                    if(route == "song-story") {
+                                        if(active) SongStoryScreen(model, routeSongId) { navigateAction("song-playback") }
+                                    } else PageEntrance("$route:$routeSongId") {
                                         ShellPageContent(
                                             page = route,
                                             model = model,
@@ -349,7 +352,6 @@ import com.hydro.reedance.data.*
             model, songId, songTab, setSongTab, { navigate("home") }, { navigate("song-download") },
             { setReviewQuiz(false); navigate("quiz") }, { navigate("song-story") }
         ) { setPremiumReturnPage("song-playback"); navigate("premium") }
-        "song-story" -> if(LocalPageActive.current) SongStoryScreen(model, songId) { navigate("song-playback") }
         "premium" -> PremiumScreen()
         "game" -> GameScreen(model) { setPremiumReturnPage("game"); navigate("premium") }
         "quiz" -> QuizScreen(model, reviewQuiz, { navigate(if(reviewQuiz) "review" else "song-playback") }, { navigate("review") })

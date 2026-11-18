@@ -43,6 +43,7 @@ import com.hydro.reedance.data.s
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
@@ -116,10 +117,16 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
     var player by remember(page) { mutableStateOf<MediaPlayer?>(null) }
     var playing by remember(page) { mutableStateOf(false) }
     var failed by remember(page) { mutableStateOf(false) }
+    var position by remember(page) { mutableIntStateOf(0) }
+    var duration by remember(page) { mutableIntStateOf(0) }
+    var dragging by remember(page) { mutableStateOf<Float?>(null) }
     val scrolling by rememberUpdatedState(pager.isScrollInProgress)
     fun pause() {
         val current = player
-        if(current == null) request = false else if(playing) current.pause()
+        if(current == null) request = false else if(playing) {
+            current.pause()
+            position = current.currentPosition
+        }
         playing = false
     }
     fun play(current: MediaPlayer) {
@@ -135,6 +142,13 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
     }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { pause() }
     LaunchedEffect(pager.isScrollInProgress) { if(pager.isScrollInProgress) pause() }
+    LaunchedEffect(player, playing) {
+        val current = player ?: return@LaunchedEffect
+        while(playing && player === current) {
+            position = current.currentPosition
+            delay(100)
+        }
+    }
     LaunchedEffect(speedIndex) { if(playing) player?.let(::play) }
     LaunchedEffect(story, page, request) {
         if(!request) return@LaunchedEffect
@@ -155,7 +169,11 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
             }
             prepared.prepareAsync()
             check(withTimeoutOrNull(8_000) { ready.await() } == true)
-            prepared.setOnCompletionListener { playing = false }
+            duration = prepared.duration.coerceAtLeast(0)
+            prepared.setOnCompletionListener {
+                position = duration
+                playing = false
+            }
             player = prepared
             if(!scrolling) play(prepared)
             awaitCancellation()
@@ -167,6 +185,9 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
         } finally {
             player = null
             playing = false
+            position = 0
+            duration = 0
+            dragging = null
             audio?.release()
             output?.delete()
         }
@@ -223,7 +244,7 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
                         Text(tr("بعدی", "Next"), color = ink.copy(alpha = if(page < story.pages.lastIndex) 1f else .4f))
                     }
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     PressIconButton({
                         when {
                             playing || (request && player == null) -> pause()
@@ -232,13 +253,28 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
                         }
                     }) {
                         val stop = playing || (request && player == null)
-                        AppIcon(if(stop) UiIcons.Pause else UiIcons.Play,
+                        AppIcon(if(stop) UiIcons.PauseFilled else UiIcons.PlayFilled,
                             if(stop) tr("مکث روایت", "Pause narration") else tr("پخش روایت", "Play narration"), tint = ink)
                     }
-                    Text(if(request && player == null) tr("در حال آماده‌سازی…", "Preparing…") else tr("روایت صوتی", "Narration"))
+                    Box(Modifier.weight(1f)) {
+                        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                            WaveSeekBar(
+                                value = dragging ?: position.toFloat(), duration = duration.toFloat(), playing = playing,
+                                onValueChange = { dragging = it },
+                                onValueChangeFinished = {
+                                    dragging?.toInt()?.coerceIn(0, duration)?.let { target ->
+                                        player?.seekTo(target)
+                                        position = target
+                                    }
+                                    dragging = null
+                                },
+                                ink = ink, enabled = duration > 0 && player != null
+                            )
+                        }
+                    }
                     PressTextButton({ speedIndex = (speedIndex + 1) % speeds.size }) { Text("${speeds[speedIndex]}×", color = ink) }
-                    PressTextButton({ player?.seekTo(0) }, enabled = player != null) { Text(tr("از اول", "Restart"), color = ink.copy(alpha = if(player != null) 1f else .4f)) }
                 }
+                if(request && player == null) Text(tr("در حال آماده‌سازی…", "Preparing…"), style = MaterialTheme.typography.bodySmall)
                 if(failed) Text(tr("صدا در دسترس نیست. صدای این زبان را در تنظیمات گفتار اندروید نصب کن.", "Narration unavailable. Install an offline voice for this language in Android text-to-speech settings."), style = MaterialTheme.typography.bodySmall)
                 val smaller = tr("کوچک کردن نوشته", "Decrease text size")
                 val larger = tr("بزرگ کردن نوشته", "Increase text size")
