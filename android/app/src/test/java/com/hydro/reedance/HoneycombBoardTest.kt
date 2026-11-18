@@ -41,4 +41,16 @@ class HoneycombBoardTest {
         assertEquals(listOf(4, 5), board.restoredSolvedPath("first", listOf(4, 5)))
         assertEquals(listOf(0, 1), board.restoredSolvedPath("first", listOf(0, 5)))
     }
+    @Test fun seededBoardsDoNotPlaceWholeAnswersAlongTheFirstRow() {
+        repeat(40) { seed ->
+            val targets = words.map { it.copy(songId = "${it.songId}-$seed") }
+            val board = buildHoneycombBoard(targets)
+            val cells = board.wordPaths.values.flatten()
+            assertEquals(cells.size, cells.distinct().size)
+            board.wordPaths.values.forEach { path ->
+                assertTrue(path.any { it >= board.columns })
+                assertTrue(path.zipWithNext().all { (a, b) -> areHoneycombNeighbors(a, b, board.columns) })
+            }
+        }
+    }
 }
