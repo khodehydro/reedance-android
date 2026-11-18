@@ -39,7 +39,10 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.gson.JsonObject
 import com.hydro.reedance.data.AppModel
+import com.hydro.reedance.data.LearningLanguage
 import com.hydro.reedance.data.s
+import com.hydro.reedance.data.a
+import com.hydro.reedance.data.tr
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
@@ -49,12 +52,37 @@ import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import java.util.Locale
 
-internal data class LessonStory(val title: String, val locale: String, val pages: List<String>)
+internal data class StoryGloss(val text: String, val meaningFa: String, val meaningEn: String) {
+    fun meaning(fa: Boolean) = if(fa) meaningFa.ifBlank { meaningEn } else meaningEn.ifBlank { meaningFa }
+}
+internal data class StoryLine(val text: String, val meaningFa: String = "", val meaningEn: String = "", val words: List<StoryGloss> = emptyList()) {
+    fun meaning(fa: Boolean) = if(fa) meaningFa.ifBlank { meaningEn } else meaningEn.ifBlank { meaningFa }
+}
+internal data class LessonStory(val title: String, val locale: String, val pages: List<List<StoryLine>>)
+
+private fun sampleLine(text: String, fa: String, en: String, glosses: String): StoryLine =
+    StoryLine(text, fa, en, glosses.split('|').map { entry ->
+        val (word, persian, english) = entry.split('/')
+        StoryGloss(word, persian, english)
+    })
 
 private val sampleStory = LessonStory("Bir fincan çay", "tr-TR", listOf(
-    "Deniz akşam eve döndü. Yağmur yağıyordu ve sokak sessizdi.",
-    "Pencerenin yanında oturdu ve eski bir şarkı açtı. Şarkıyı dinlerken bir arkadaşını hatırladı.",
-    "Arkadaşına bir mesaj yazdı: ‘Yarın bir çay içelim mi?’ Cevap hemen geldi: ‘Olur, seni özledim.’"
+    listOf(
+        sampleLine("Deniz akşam eve döndü.", "دنیز عصر به خانه برگشت.", "Deniz came home in the evening.",
+            "Deniz/دنیز/Deniz|akşam/عصر/in the evening|eve/به خانه/home|döndü./برگشت/returned"),
+        sampleLine("Yağmur yağıyordu ve sokak sessizdi.", "باران می‌بارید و خیابان ساکت بود.", "It was raining and the street was quiet.",
+            "Yağmur/باران/rain|yağıyordu/می‌بارید/was falling|ve/و/and|sokak/خیابان/street|sessizdi./ساکت بود/was quiet")
+    ), listOf(
+        sampleLine("Pencerenin yanında oturdu ve eski bir şarkı açtı.", "کنار پنجره نشست و یک آهنگ قدیمی پخش کرد.", "Deniz sat by the window and put on an old song.",
+            "Pencerenin yanında/کنار پنجره/by the window|oturdu/نشست/sat|ve/و/and|eski/قدیمی/old|bir/یک/a|şarkı/آهنگ/song|açtı./پخش کرد/put on"),
+        sampleLine("Şarkıyı dinlerken bir arkadaşını hatırladı.", "هنگام گوش دادن به آهنگ، یاد یکی از دوستانش افتاد.", "While listening to the song, Deniz remembered a friend.",
+            "Şarkıyı/آهنگ را/the song|dinlerken/هنگام گوش دادن/while listening|bir/یک/a|arkadaşını/دوستش/friend|hatırladı./به یاد آورد/remembered")
+    ), listOf(
+        sampleLine("Arkadaşına bir mesaj yazdı: ‘Yarın bir çay içelim mi?’", "به دوستش پیام داد: «فردا با هم چای بخوریم؟»", "Deniz texted a friend: ‘Shall we have tea tomorrow?’",
+            "Arkadaşına/به دوستش/to a friend|bir/یک/a|mesaj/پیام/message|yazdı:/نوشت/wrote|‘Yarın/فردا/tomorrow|bir/یک/a|çay/چای/tea|içelim mi?’/بخوریم؟/shall we drink?"),
+        sampleLine("Cevap hemen geldi: ‘Olur, seni özledim.’", "جواب فوری آمد: «حتماً، دلم برایت تنگ شده.»", "The reply came at once: ‘Sure, I miss you.’",
+            "Cevap/جواب/reply|hemen/فوری/right away|geldi:/آمد/came|‘Olur,/حتماً/sure|seni/تو را/you|özledim.’/دلم تنگ شده/I miss")
+    )
 ))
 
 internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
@@ -62,8 +90,16 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
     val story = lesson.get("story")?.takeIf { it.isJsonObject }?.asJsonObject
     val title = story?.s("title").orEmpty()
     val pages = story?.get("pages")?.takeIf { it.isJsonArray }?.asJsonArray
-        ?.mapNotNull { it.takeIf { item -> item.isJsonPrimitive && item.asJsonPrimitive.isString }?.asString }
-        ?.filter { it.isNotBlank() }.orEmpty()
+        ?.mapNotNull { page ->
+            when {
+                page.isJsonPrimitive && page.asJsonPrimitive.isString -> listOf(StoryLine(page.asString))
+                page.isJsonObject -> page.asJsonObject.a("lines").map { line ->
+                    StoryLine(line.s("text"), line.tr("meaning", true), line.tr("meaning", false),
+                        line.a("words").map { StoryGloss(it.s("text"), it.tr("meaning", true), it.tr("meaning", false)) })
+                }
+                else -> emptyList()
+            }.filter { it.text.isNotBlank() }.takeIf { it.isNotEmpty() }
+        }.orEmpty()
     val locale = lesson.s("locale").ifBlank { lesson.s("targetLanguage") }
     return if(title.isNotBlank() && pages.isNotEmpty() && locale.isNotBlank()) LessonStory(title, locale, pages)
     else sampleStory.takeIf { songId == "gulum-2" }
@@ -90,6 +126,9 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
 
 @Composable private fun StoryReader(story: LessonStory, back: () -> Unit) {
     var paperIndex by rememberSaveable { mutableIntStateOf(0) }
+    var meaningMode by rememberSaveable { mutableIntStateOf(0) }
+    val fa = LearningLanguage.persian
+    val hasMeaning = story.pages.flatten().any { it.meaning(fa).isNotBlank() || it.words.isNotEmpty() }
     var fontIndex by rememberSaveable { mutableIntStateOf(1) }
     var speedIndex by rememberSaveable { mutableIntStateOf(1) }
     val speeds = listOf(.75f, 1f, 1.25f, 1.5f)
@@ -156,7 +195,7 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
         var audio: MediaPlayer? = null
         try {
             val file = File.createTempFile("story-", ".wav", context.cacheDir).also { output = it }
-            check(synthesizeStoryPage(context, story.locale, story.pages[page], file))
+            check(synthesizeStoryPage(context, story.locale, story.pages[page].joinToString(" ") { it.text }, file))
             val prepared = MediaPlayer().also { audio = it }
             prepared.setDataSource(file.absolutePath)
             val ready = CompletableDeferred<Boolean>()
@@ -226,9 +265,7 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
                             Column(Modifier.widthIn(max = 620.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(20.dp)) {
                                 Text(story.title, fontFamily = FontFamily.Serif, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
-                                Text(story.pages[index], fontFamily = FontFamily.Serif,
-                                    fontSize = listOf(17, 21, 26)[fontIndex].sp,
-                                    lineHeight = listOf(26, 32, 39)[fontIndex].sp, textAlign = TextAlign.Center)
+                                StoryPageText(story.pages[index], meaningMode, fontIndex, fa, ink)
                             }
                         }
                     }
@@ -285,6 +322,14 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
                         ReaderCircle("−", smaller, ink, papers[paperIndex], fontIndex > 0) { fontIndex-- }
                         ReaderCircle("+", larger, ink, papers[paperIndex], fontIndex < 2) { fontIndex++ }
                         Spacer(Modifier.weight(1f))
+                        if(hasMeaning) {
+                            val labels = listOf(tr("متن اصلی", "Original"), tr("ترجمهٔ خطی", "Line by line"), tr("کلمه‌به‌کلمه", "Word by word"))
+                            val icons = listOf(UiIcons.Original, UiIcons.Lines, UiIcons.WordMode)
+                            val meaningLabel = tr("حالت معنی", "Translation mode")
+                            ReaderCircle(null, "$meaningLabel: ${labels[meaningMode]}", ink, papers[paperIndex], icon = icons[meaningMode]) {
+                                meaningMode = (meaningMode + 1) % labels.size
+                            }
+                        }
                         ReaderCircle(null, "$changePaper: ${paperNames[nextPaper]}", ink, papers[nextPaper]) { paperIndex = nextPaper }
                     }
                 }
@@ -293,12 +338,44 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
+@Composable private fun StoryPageText(lines: List<StoryLine>, mode: Int, size: Int, fa: Boolean, ink: Color) {
+    val font = listOf(17, 21, 26)[size].sp
+    val lineHeight = listOf(26, 32, 39)[size].sp
+    val glossSize = listOf(13, 15, 18)[size].sp
+    lines.forEach { line ->
+        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            if(mode == 2 && line.words.isNotEmpty()) {
+                // The supported story source languages are left-to-right, even in the Persian UI.
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+                        verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        line.words.forEach { word ->
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(word.text, fontFamily = FontFamily.Serif, fontSize = font, textAlign = TextAlign.Center)
+                                if(word.meaning(fa).isNotBlank()) Text(word.meaning(fa), fontSize = glossSize,
+                                    color = ink.copy(alpha = .77f), textAlign = TextAlign.Center)
+                            }
+                        }
+                    }
+                }
+            } else {
+                Text(line.text, fontFamily = FontFamily.Serif, fontSize = font, lineHeight = lineHeight, textAlign = TextAlign.Center)
+                if(mode == 1 && line.meaning(fa).isNotBlank()) Text(line.meaning(fa), fontSize = glossSize,
+                    color = ink.copy(alpha = .77f), textAlign = TextAlign.Center)
+            }
+        }
+    }
+}
+
 @Composable private fun ReaderCircle(symbol: String?, label: String, ink: Color, fill: Color,
-    enabled: Boolean = true, onClick: () -> Unit) {
+    enabled: Boolean = true, icon: Int? = null, onClick: () -> Unit) {
     PressIconButton(onClick, enabled = enabled) {
         Surface(Modifier.size(38.dp), shape = CircleShape, color = fill,
             border = androidx.compose.foundation.BorderStroke(1.dp, ink.copy(alpha = if(enabled) .65f else .25f))) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.semantics { contentDescription = label }) {
+                if(icon != null) AppIcon(icon, null, Modifier.size(20.dp), tint = ink)
                 if(symbol != null) Text(symbol, color = ink.copy(alpha = if(enabled) 1f else .35f), fontSize = 22.sp,
                     modifier = Modifier.clearAndSetSemantics {})
             }
