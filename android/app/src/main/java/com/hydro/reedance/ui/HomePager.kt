@@ -73,9 +73,15 @@ internal fun currentPersianMonth(now: Long = System.currentTimeMillis()): Persia
 }
 
 @Composable private fun WelcomeBanner(explore: () -> Unit, animate: Boolean) {
-    Box(Modifier.fillMaxSize().clip(RoundedCornerShape(28.dp)).background(Brush.linearGradient(listOf(Blue, Deep)))) {
-        BannerGradient(animate, Modifier.matchParentSize())
+    WelcomeBackdrop(animate, Modifier.fillMaxSize().clip(RoundedCornerShape(28.dp))) {
         BannerMessages(explore, animate, Modifier.fillMaxSize().padding(26.dp))
+    }
+}
+
+@Composable internal fun WelcomeBackdrop(animate: Boolean, modifier: Modifier, content: @Composable BoxScope.() -> Unit) {
+    Box(modifier.background(Brush.linearGradient(listOf(Blue, Deep)))) {
+        BannerGradient(animate, Modifier.matchParentSize())
+        content()
     }
 }
 

@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -38,40 +39,42 @@ private data class IntroPage(val art: Int, val title: String, val detail: String
     val pager = rememberPagerState { pages.size }
     val scope = rememberCoroutineScope()
     val last = pager.currentPage == pages.lastIndex
-    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(vertical = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(tr("آشنایی با ری‌دنس", "Meet Reedance"), style = MaterialTheme.typography.titleMedium)
-        HorizontalPager(state = pager, modifier = Modifier.weight(1f).fillMaxWidth()) { index ->
-            val page = pages[index]
-            BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                val artSize = (maxHeight * .48f).coerceIn(72.dp, 220.dp)
-                Column(Modifier.widthIn(max = 480.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Box(Modifier.size(artSize).background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
-                        contentAlignment = Alignment.Center) {
-                        Icon(painterResource(page.art), null, Modifier.size(artSize * .48f),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer)
+    WelcomeBackdrop(animate = true, modifier = Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().safeDrawingPadding().padding(vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(tr("آشنایی با ری‌دنس", "Meet Reedance"), style = MaterialTheme.typography.titleMedium, color = Color.White)
+            HorizontalPager(state = pager, modifier = Modifier.weight(1f).fillMaxWidth()) { index ->
+                val page = pages[index]
+                BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    val artSize = (maxHeight * .48f).coerceIn(72.dp, 220.dp)
+                    Column(Modifier.widthIn(max = 480.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Box(Modifier.size(artSize).background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+                            contentAlignment = Alignment.Center) {
+                            Icon(painterResource(page.art), null, Modifier.size(artSize * .48f),
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                        }
+                        Text(page.title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center, color = Color.White)
+                        Text(page.detail, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center,
+                            color = Color.White.copy(alpha = .92f))
                     }
-                    Text(page.title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
-                    Text(page.detail, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            repeat(pages.size) { index ->
-                val active = index == pager.currentPage
-                Box(Modifier.size(width = if(active) 20.dp else 8.dp, height = 8.dp).background(
-                    if(active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant, CircleShape))
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                repeat(pages.size) { index ->
+                    val active = index == pager.currentPage
+                    Box(Modifier.size(width = if(active) 20.dp else 8.dp, height = 8.dp).background(
+                        if(active) Color.White else Color.White.copy(alpha = .42f), CircleShape))
+                }
             }
-        }
-        Spacer(Modifier.height(16.dp))
-        Action(tr(if(last) "شروع یادگیری" else "بعدی", if(last) "Start learning" else "Next"),
-            Modifier.widthIn(max = 480.dp).fillMaxWidth().padding(horizontal = 24.dp),
-            enabled = !pager.isScrollInProgress) {
-            if(last) model.completePermissionSetup()
-            else scope.launch { pager.animateScrollToPage(pager.currentPage + 1) }
+            Spacer(Modifier.height(16.dp))
+            Action(tr(if(last) "شروع یادگیری" else "بعدی", if(last) "Start learning" else "Next"),
+                Modifier.widthIn(max = 480.dp).fillMaxWidth().padding(horizontal = 24.dp),
+                enabled = !pager.isScrollInProgress) {
+                if(last) model.completePermissionSetup()
+                else scope.launch { pager.animateScrollToPage(pager.currentPage + 1) }
+            }
         }
     }
 }

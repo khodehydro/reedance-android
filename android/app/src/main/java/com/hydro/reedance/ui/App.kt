@@ -36,7 +36,7 @@ import com.hydro.reedance.data.*
     CompositionLocalProvider(LocalFa provides fa, LocalReducedMotion provides false, LocalLayoutDirection provides if(fa) LayoutDirection.Rtl else LayoutDirection.Ltr,
         LocalDensity provides Density(density.density, density.fontScale * listOf(.9f, 1f, 1.15f)[settings.textSize.coerceIn(0,2)])) {
         ReedanceTheme(settings) {
-            val lightBars = MaterialTheme.colorScheme.background.luminance() > .5f
+            val lightBars = settings.permissionsSetup && MaterialTheme.colorScheme.background.luminance() > .5f
             SideEffect {
                 (context as? android.app.Activity)?.window?.let { window ->
                     @Suppress("DEPRECATION")
