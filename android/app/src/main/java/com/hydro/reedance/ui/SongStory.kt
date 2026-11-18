@@ -71,17 +71,35 @@ private val sampleStory = LessonStory("Bir fincan çay", "tr-TR", listOf(
         sampleLine("Deniz akşam eve döndü.", "دنیز عصر به خانه برگشت.", "Deniz came home in the evening.",
             "Deniz/دنیز/Deniz|akşam/عصر/in the evening|eve/به خانه/home|döndü./برگشت/returned"),
         sampleLine("Yağmur yağıyordu ve sokak sessizdi.", "باران می‌بارید و خیابان ساکت بود.", "It was raining and the street was quiet.",
-            "Yağmur/باران/rain|yağıyordu/می‌بارید/was falling|ve/و/and|sokak/خیابان/street|sessizdi./ساکت بود/was quiet")
+            "Yağmur/باران/rain|yağıyordu/می‌بارید/was falling|ve/و/and|sokak/خیابان/street|sessizdi./ساکت بود/was quiet"),
+        sampleLine("Islak montunu kapının yanına astı.", "پالتوی خیسش را کنار در آویخت.", "Deniz hung the wet coat by the door.",
+            "Islak/خیس/wet|montunu/پالتویش/their coat|kapının yanına/کنار در/by the door|astı./آویخت/hung"),
+        sampleLine("Mutfakta su ısıttı ve kendine bir fincan çay yaptı.", "در آشپزخانه آب گرم کرد و برای خودش یک فنجان چای درست کرد.", "In the kitchen, Deniz heated water and made a cup of tea.",
+            "Mutfakta/در آشپزخانه/in the kitchen|su/آب/water|ısıttı/گرم کرد/heated|ve/و/and|kendine/برای خودش/for themself|bir fincan/یک فنجان/a cup of|çay/چای/tea|yaptı./درست کرد/made"),
+        sampleLine("Çay hazır olunca pencerenin önündeki lambayı yaktı.", "وقتی چای آماده شد، چراغ جلوی پنجره را روشن کرد.", "When the tea was ready, Deniz turned on the lamp by the window.",
+            "Çay/چای/tea|hazır olunca/وقتی آماده شد/when it was ready|pencerenin önündeki/جلوی پنجره/by the window|lambayı/چراغ را/the lamp|yaktı./روشن کرد/turned on")
     ), listOf(
         sampleLine("Pencerenin yanında oturdu ve eski bir şarkı açtı.", "کنار پنجره نشست و یک آهنگ قدیمی پخش کرد.", "Deniz sat by the window and put on an old song.",
             "Pencerenin yanında/کنار پنجره/by the window|oturdu/نشست/sat|ve/و/and|eski/قدیمی/old|bir/یک/a|şarkı/آهنگ/song|açtı./پخش کرد/put on"),
         sampleLine("Şarkıyı dinlerken bir arkadaşını hatırladı.", "هنگام گوش دادن به آهنگ، یاد یکی از دوستانش افتاد.", "While listening to the song, Deniz remembered a friend.",
-            "Şarkıyı/آهنگ را/the song|dinlerken/هنگام گوش دادن/while listening|bir/یک/a|arkadaşını/دوستش/friend|hatırladı./به یاد آورد/remembered")
+            "Şarkıyı/آهنگ را/the song|dinlerken/هنگام گوش دادن/while listening|bir/یک/a|arkadaşını/دوستش/friend|hatırladı./به یاد آورد/remembered"),
+        sampleLine("Eskiden bu şarkıyı birlikte dinlerlerdi.", "قبلاً این آهنگ را با هم گوش می‌دادند.", "They used to listen to this song together.",
+            "Eskiden/قبلاً/back then|bu şarkıyı/این آهنگ را/this song|birlikte/با هم/together|dinlerlerdi./گوش می‌دادند/used to listen"),
+        sampleLine("Bazen son otobüsü kaçırır, eve kadar yürürlerdi.", "گاهی به آخرین اتوبوس نمی‌رسیدند و تا خانه پیاده می‌رفتند.", "Sometimes they missed the last bus and walked all the way home.",
+            "Bazen/گاهی/sometimes|son otobüsü/آخرین اتوبوس/the last bus|kaçırır,/از دست می‌دادند/missed|eve kadar/تا خانه/all the way home|yürürlerdi./پیاده می‌رفتند/would walk"),
+        sampleLine("Deniz gülümsedi ve telefonunu masadan aldı.", "دنیز لبخند زد و گوشی‌اش را از روی میز برداشت.", "Deniz smiled and picked up the phone from the table.",
+            "Deniz/دنیز/Deniz|gülümsedi/لبخند زد/smiled|ve/و/and|telefonunu/گوشی‌اش/their phone|masadan/از روی میز/from the table|aldı./برداشت/picked up")
     ), listOf(
         sampleLine("Arkadaşına bir mesaj yazdı: ‘Yarın bir çay içelim mi?’", "به دوستش پیام داد: «فردا با هم چای بخوریم؟»", "Deniz texted a friend: ‘Shall we have tea tomorrow?’",
             "Arkadaşına/به دوستش/to a friend|bir/یک/a|mesaj/پیام/message|yazdı:/نوشت/wrote|‘Yarın/فردا/tomorrow|bir/یک/a|çay/چای/tea|içelim mi?’/بخوریم؟/shall we drink?"),
         sampleLine("Cevap hemen geldi: ‘Olur, seni özledim.’", "جواب فوری آمد: «حتماً، دلم برایت تنگ شده.»", "The reply came at once: ‘Sure, I miss you.’",
-            "Cevap/جواب/reply|hemen/فوری/right away|geldi:/آمد/came|‘Olur,/حتماً/sure|seni/تو را/you|özledim.’/دلم تنگ شده/I miss")
+            "Cevap/جواب/reply|hemen/فوری/right away|geldi:/آمد/came|‘Olur,/حتماً/sure|seni/تو را/you|özledim.’/دلم تنگ شده/I miss"),
+        sampleLine("Ertesi gün küçük bir çay bahçesinde buluştular.", "روز بعد در یک چای‌خانهٔ باغی کوچک همدیگر را دیدند.", "The next day they met in a small tea garden.",
+            "Ertesi gün/روز بعد/the next day|küçük/کوچک/small|bir/یک/a|çay bahçesinde/در باغ چای/in a tea garden|buluştular./همدیگر را دیدند/met"),
+        sampleLine("İki çay söylediler ve uzun uzun konuştular.", "دو چای سفارش دادند و مدت زیادی گپ زدند.", "They ordered two teas and talked for a long time.",
+            "İki/دو/two|çay/چای/teas|söylediler/سفارش دادند/ordered|ve/و/and|uzun uzun/مدت زیادی/for a long time|konuştular./گپ زدند/talked"),
+        sampleLine("Deniz eve dönerken aynı şarkıyı yeniden açtı.", "دنیز در راه خانه دوباره همان آهنگ را پخش کرد.", "On the way home, Deniz put on the same song again.",
+            "Deniz/دنیز/Deniz|eve dönerken/در راه خانه/on the way home|aynı şarkıyı/همان آهنگ را/the same song|yeniden/دوباره/again|açtı./پخش کرد/put on")
     )
 ))
 
@@ -235,7 +253,9 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
     Surface(color = papers[paperIndex], contentColor = ink, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().safeDrawingPadding()) {
             Box(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), contentAlignment = Alignment.Center) {
-                Text(tr("داستان آهنگ", "Song story"), style = MaterialTheme.typography.titleMedium)
+                Text(story.title, Modifier.padding(horizontal = 52.dp), fontFamily = FontFamily.Serif,
+                    style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center,
+                    maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 PressIconButton(back, Modifier.align(Alignment.CenterStart)) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
             }
             HorizontalPager(pager, modifier = Modifier.fillMaxWidth().weight(1f).background(papers[paperIndex])) { index ->
@@ -261,10 +281,9 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
                 }
                 Box(Modifier.fillMaxSize().then(pageTurn)) {
                     Surface(color = paper, contentColor = ink, modifier = Modifier.fillMaxSize()) {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
                             Column(Modifier.widthIn(max = 620.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                                Text(story.title, fontFamily = FontFamily.Serif, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
                                 StoryPageText(story.pages[index], meaningMode, fontIndex, fa, ink)
                             }
                         }
