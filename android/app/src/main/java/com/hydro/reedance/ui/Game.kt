@@ -112,7 +112,8 @@ internal object GameSounds {
     val solvedTargetKeys = words.filter { it.solved }.map { gameWordKey(it.songId, it.lexemeId) }.toSet()
     val solvedCellIndices = words.filter { it.solved }.associate { word ->
         val saved = word.solvedCellIndices.split(',').mapNotNull { it.toIntOrNull() }
-        gameWordKey(word.songId, word.lexemeId) to saved.ifEmpty { letterBoard.wordPaths[gameWordKey(word.songId, word.lexemeId)].orEmpty() }
+        val wordKey = gameWordKey(word.songId, word.lexemeId)
+        wordKey to letterBoard.restoredSolvedPath(wordKey, saved)
     }
     val matchingInstalledSongs = catalog.filter { it.s("id") in installedIds && it.s("language") == settings.targetLanguage }
     val canUseAnyInstalledSong = matchingInstalledSongs.any { subscribed || it.s("access") != "paid" }

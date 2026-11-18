@@ -10,6 +10,23 @@ data class HoneycombLetterBoard(
     val wordPaths: Map<String, List<Int>>
 ) {
     val rows: Int get() = letters.size / columns
+
+    private val reservedByCell = wordPaths.flatMap { (word, path) -> path.map { it to word } }.toMap()
+
+    /** Alternate routes may use spare cells, but must leave every other answer intact. */
+    fun canUsePath(word: String, path: List<Int>): Boolean =
+        word in wordPaths && path.all { reservedByCell[it]?.let { owner -> owner == word } ?: true }
+
+    /** Old saves may contain a route that crossed another answer. Restore its planned route instead. */
+    fun restoredSolvedPath(word: String, saved: List<Int>): List<Int> {
+        val planned = wordPaths[word] ?: return emptyList()
+        return saved.takeIf { path ->
+            path.size == planned.size && path.distinct().size == path.size &&
+                path.withIndex().all { (i, cell) -> letters.getOrNull(cell) == letters[planned[i]] } &&
+                path.zipWithNext().all { (a, b) -> areHoneycombNeighbors(a, b, columns) } &&
+                canUsePath(word, path)
+        } ?: planned
+    }
 }
 
 fun gameWordKey(songId: String, lexemeId: String): String = "$songId::$lexemeId"

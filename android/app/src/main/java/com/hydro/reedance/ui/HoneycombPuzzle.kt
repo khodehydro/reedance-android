@@ -48,7 +48,7 @@ import kotlinx.coroutines.delay
     var pendingWinCells by rememberSaveable(boardKey) { mutableStateOf(emptyList<Int>()) }
     var rejecting by rememberSaveable(boardKey) { mutableStateOf(false) }
     val correctFeedback = tr("آفرین! واژه پیدا شد", "Word found!")
-    val incorrectFeedback = tr("این مسیر واژه‌ای نمی‌سازد؛ دوباره تلاش کن", "Those letters do not make a word. Try again.")
+    val incorrectFeedback = tr("این مسیر مناسب نیست؛ مسیر دیگری را امتحان کن", "Try a different path for this word.")
 
     LaunchedEffect(rejecting, boardKey) {
         if(rejecting) {
@@ -125,9 +125,12 @@ import kotlinx.coroutines.delay
             GameSounds.connect()
             val guess = nextSelection.map { board.letters[it] }.joinToString("")
             val solvedKeys = solvedTargetKeys + pendingWinKey
-            val match = targets.firstOrNull { target ->
-                gameWordKey(target.songId, target.lexemeId) !in solvedKeys && target.letterAnswer.equals(guess, ignoreCase = true)
+            val candidates = targets.filter { target ->
+                val wordKey = gameWordKey(target.songId, target.lexemeId)
+                wordKey !in solvedKeys && board.canUsePath(wordKey, nextSelection) &&
+                    target.letterAnswer.startsWith(guess, ignoreCase = true)
             }
+            val match = candidates.firstOrNull { it.letterAnswer.length == guess.length }
             if(match != null) {
                 val matchKey = gameWordKey(match.songId, match.lexemeId)
                 pendingWinKey = matchKey
@@ -142,10 +145,7 @@ import kotlinx.coroutines.delay
                     usedCellIndices = nextSelection
                 )
             } else {
-                val couldContinue = targets.any { target ->
-                    gameWordKey(target.songId, target.lexemeId) !in solvedKeys && target.letterAnswer.startsWith(guess, ignoreCase = true)
-                }
-                if(!couldContinue) {
+                if(candidates.isEmpty()) {
                     rejecting = true
                     feedback = incorrectFeedback
                     GameSounds.incorrect()

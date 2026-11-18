@@ -1,11 +1,13 @@
 package com.hydro.reedance
 
+import com.hydro.reedance.domain.HoneycombLetterBoard
 import com.hydro.reedance.domain.GameWordDefinition
 import com.hydro.reedance.domain.areHoneycombNeighbors
 import com.hydro.reedance.domain.buildHoneycombBoard
 import com.hydro.reedance.domain.gameWordKey
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class HoneycombBoardTest {
@@ -30,5 +32,13 @@ class HoneycombBoardTest {
 
     @Test fun boardLayoutIsStableAcrossCalls() {
         assertEquals(buildHoneycombBoard(words), buildHoneycombBoard(words))
+    }
+    @Test fun alternateRouteCannotConsumeAnotherWordsReservedCells() {
+        val board = HoneycombLetterBoard("ABABAB".toList(), 2, mapOf("first" to listOf(0, 1), "second" to listOf(2, 3)))
+        assertFalse(board.canUsePath("first", listOf(2, 3)))
+        assertTrue(board.canUsePath("first", listOf(4, 5)))
+        assertEquals(listOf(0, 1), board.restoredSolvedPath("first", listOf(2, 3)))
+        assertEquals(listOf(4, 5), board.restoredSolvedPath("first", listOf(4, 5)))
+        assertEquals(listOf(0, 1), board.restoredSolvedPath("first", listOf(0, 5)))
     }
 }
