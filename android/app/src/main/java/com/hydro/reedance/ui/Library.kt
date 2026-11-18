@@ -16,14 +16,16 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hydro.reedance.data.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.collectLatest
 
@@ -96,6 +98,14 @@ import kotlinx.coroutines.flow.collectLatest
         mutableStateListOf<Boolean>().apply { repeat(types.size) { add(false) } }
     }
     val selectedPage = pagerState.currentPage.coerceAtMost(types.lastIndex)
+    var query by rememberSaveable(settings.targetLanguage) { mutableStateOf("") }
+    var sourceFilter by rememberSaveable(settings.targetLanguage) { mutableStateOf("") }
+    var order by rememberSaveable { mutableStateOf(LibraryOrder.NEWEST) }
+    val sources = remember(bookmarks, catalogById, selectedPage) {
+        bookmarks.asSequence().filter { matchesLibraryTab(it, types[selectedPage]) }.map { it.songId }.distinct()
+            .map { id -> id to catalogById[id]?.s("title").orEmpty().ifBlank { id } }
+            .sortedBy { it.second.lowercase() }.toList()
+    }
     val compact = compactPages[selectedPage]
 
     Column(Modifier.fillMaxSize()) {
@@ -105,7 +115,7 @@ import kotlinx.coroutines.flow.collectLatest
             exit = fadeOut(tween(120)) + shrinkVertically(tween(190))
         ) {
             Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Heading(tr("کتابخانهٔ تو", "Your little collection"), tr("نشان‌شده‌ها؛ از جدید به قدیم.", "Your saved items, newest first."))
+                Heading(tr("کتابخانهٔ تو", "Your little collection"), tr("آهنگ‌ها و نکته‌هایی که ذخیره کرده‌ای.", "Songs and learning items you’ve saved."))
                 val selectedCount = bookmarks.count { matchesLibraryTab(it, types[selectedPage]) }
                 Text(
                     tr("$selectedCount مورد نشان‌شده", "$selectedCount saved items"),
@@ -129,18 +139,21 @@ import kotlinx.coroutines.flow.collectLatest
             }
         }
 
+        LibraryControls(query, { query = it }, sources, sourceFilter, { sourceFilter = it }, order, { order = it })
+
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.weight(1f),
             key = { types[it] }
         ) { page ->
-            val requestKey = settings.targetLanguage to page
+            val requestKey = LibraryRequest(settings.targetLanguage, page, query.trim(), sourceFilter, order)
             val threshold = with(LocalDensity.current) { 40.dp.toPx() }
-            val scrollConnection = remember(requestKey, threshold) {
+            val scrollConnection = remember(settings.targetLanguage, page, threshold) {
                 LibraryScrollConnection(threshold) { compactPages[page] = it }
             }
-            val preparedEntries by produceState<PreparedLibraryEntries?>(null, bookmarks, requestKey) {
-                val rows = withContext(Dispatchers.Default) { libraryBookmarks(bookmarks, types[page]) }
+            val preparedEntries by produceState<PreparedLibraryEntries?>(null, bookmarks, requestKey, catalogById) {
+                if(requestKey.query.isNotBlank()) delay(280)
+                val rows = prepareLibraryRows(bookmarks, types[page], requestKey, catalogById, model::libraryItem)
                 val initialWindow = libraryInitialWindow(rows, model::libraryItem)
                 value = PreparedLibraryEntries(requestKey, rows, initialWindow)
             }
@@ -150,6 +163,7 @@ import kotlinx.coroutines.flow.collectLatest
 
             androidx.compose.runtime.key(settings.targetLanguage, page) {
                 val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+                LaunchedEffect(requestKey) { listState.scrollToItem(0) }
                 LaunchedEffect(listState, scrollConnection) {
                     snapshotFlow { listState.canScrollForward || listState.canScrollBackward }
                         .distinctUntilChanged().collectLatest { scrollable ->
@@ -185,13 +199,65 @@ import kotlinx.coroutines.flow.collectLatest
                             LinearProgressIndicator(Modifier.fillMaxWidth())
                         }
                         else if(entries.isEmpty()) item(key = "empty") {
-                            Panel { Text(tr("در این بخش هنوز موردی نشان نکرده‌ای.", "No saved items in this tab yet.")) }
+                            Panel {
+                                if(query.isNotBlank() || sourceFilter.isNotEmpty()) {
+                                    Text(tr("نتیجه‌ای پیدا نشد.", "No matching saved items."))
+                                    PressTextButton({ query = ""; sourceFilter = "" }) { Text(tr("پاک‌کردن جستجو و فیلتر", "Clear search and filters")) }
+                                } else Text(tr("در این بخش هنوز موردی نشان نکرده‌ای.", "No saved items in this tab yet."))
+                            }
                         }
                         items(entries, key = { "${it.songId}:${it.itemType}:${it.itemId}" }, contentType = { it.itemType }) { mark ->
                             LibraryBookmarkCard(model, mark, catalogById[mark.songId], song,
                                 preloaded = prepared?.initialWindow?.containsKey(mark) == true,
                                 preloadedContent = prepared?.initialWindow?.get(mark))
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable private fun LibraryControls(query: String, onQuery: (String) -> Unit, sources: List<Pair<String, String>>,
+    source: String, onSource: (String) -> Unit, order: LibraryOrder, onOrder: (LibraryOrder) -> Unit) {
+    var filtersOpen by remember { mutableStateOf(false) }
+    var sortingOpen by remember { mutableStateOf(false) }
+    val clearLabel = tr("پاک‌کردن جستجو", "Clear search")
+    val allSongs = tr("همهٔ آهنگ‌ها", "All songs")
+    val sourceTitle = sources.firstOrNull { it.first == source }?.second ?: source
+    val sortLabels = listOf(tr("جدیدترین", "Newest first"), tr("قدیمی‌ترین", "Oldest first"), tr("نام آهنگ", "Song title"))
+    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        OutlinedTextField(
+            value = query, onValueChange = onQuery, modifier = Modifier.fillMaxWidth(), singleLine = true,
+            placeholder = { Text(tr("جستجو در این تب", "Search this tab")) },
+            leadingIcon = { AppIcon(UiIcons.Search, null) },
+            trailingIcon = if(query.isEmpty()) null else ({
+                PressIconButton({ onQuery("") }) { Text("×", style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.semantics { contentDescription = clearLabel }) }
+            }),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+        )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1f)) {
+                FilterChip(selected = source.isNotEmpty(), onClick = { filtersOpen = true }, label = {
+                    Text(if(source.isEmpty()) tr("فیلتر آهنگ", "Filter by song") else sourceTitle,
+                        maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                }, leadingIcon = { AppIcon(UiIcons.All, null, Modifier.size(16.dp)) })
+                DropdownMenu(expanded = filtersOpen, onDismissRequest = { filtersOpen = false }, modifier = Modifier.heightIn(max = 320.dp)) {
+                    (listOf("" to allSongs) + sources + (if(source.isNotEmpty() && sources.none { it.first == source }) listOf(source to sourceTitle) else emptyList())).forEach { (id, title) ->
+                        DropdownMenuItem(text = { Text(title) }, onClick = { onSource(id); filtersOpen = false },
+                            trailingIcon = if(id == source) ({ AppIcon(UiIcons.Check, null) }) else null)
+                    }
+                }
+            }
+            Box {
+                FilterChip(selected = order != LibraryOrder.NEWEST, onClick = { sortingOpen = true }, label = {
+                    Text(sortLabels[order.ordinal], maxLines = 1)
+                }, trailingIcon = { Text("▾") })
+                DropdownMenu(expanded = sortingOpen, onDismissRequest = { sortingOpen = false }) {
+                    LibraryOrder.entries.forEach { option ->
+                        DropdownMenuItem(text = { Text(sortLabels[option.ordinal]) }, onClick = { onOrder(option); sortingOpen = false },
+                            trailingIcon = if(option == order) ({ AppIcon(UiIcons.Check, null) }) else null)
                     }
                 }
             }

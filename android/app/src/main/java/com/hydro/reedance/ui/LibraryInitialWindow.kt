@@ -18,7 +18,7 @@ internal suspend fun libraryInitialWindow(
 }
 
 internal data class PreparedLibraryEntries(
-    val key: Pair<String, Int>,
+    val key: LibraryRequest,
     val entries: List<Bookmark>,
     val initialWindow: Map<Bookmark, LibraryItemContent?>
 )
