@@ -24,9 +24,9 @@ internal fun learningCellRtl(text: String, explicit: String = ""): Boolean = whe
     else -> text.any { it in '\u0600'..'\u06FF' || it in '\u0750'..'\u077F' || it in '\u08A0'..'\u08FF' }
 }
 
-@Composable internal fun LearningCell(text: String, explicit: String, style: TextStyle) {
+@Composable internal fun LearningCell(text: String, explicit: String, style: TextStyle, modifier: Modifier = Modifier.width(152.dp)) {
     val rtl = learningCellRtl(text, explicit)
-    Text(text, Modifier.width(152.dp).padding(12.dp),
+    Text(text, modifier.padding(12.dp),
         style = style.copy(textDirection = if(rtl) TextDirection.Rtl else TextDirection.Ltr,
             textAlign = TextAlign.Center))
 }

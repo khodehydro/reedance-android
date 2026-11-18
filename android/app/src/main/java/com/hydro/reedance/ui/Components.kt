@@ -126,32 +126,59 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
         }
     }
 }
-@Composable fun LearningTable(table: JsonObject) {
+@Composable fun LearningTable(table: JsonObject, fitToWidth: Boolean = false) {
     val fa = LearningLanguage.persian
+    val columns = remember(table) { table.getAsJsonArray("columns")?.toList().orEmpty() }
+    val rows = remember(table) { table.getAsJsonArray("rows")?.map { it.asJsonArray.toList() }.orEmpty() }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         PersianText(table.tr("title", fa), style = MaterialTheme.typography.titleSmall)
         table.tr("intro", fa).takeIf { it.isNotEmpty() }?.let { PersianText(it) }
-        val columns = table.getAsJsonArray("columns") ?: JsonArray()
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-        Column(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).clip(RoundedCornerShape(12.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))) {
-            Row(Modifier.background(MaterialTheme.colorScheme.secondaryContainer)) {
-                columns.forEach { LearningCell(it.cell(fa), "", MaterialTheme.typography.titleSmall) }
+            if(fitToWidth) {
+                BoxWithConstraints(Modifier.fillMaxWidth()) {
+                    // Keep wide tables readable without introducing a horizontal gesture inside the pager.
+                    val columnsPerBlock = (maxWidth / 104.dp).toInt().coerceAtLeast(1)
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        columns.indices.chunked(columnsPerBlock).forEach { indices ->
+                            LearningTableGrid(columns, rows, indices, fa, fitToWidth = true)
+                        }
+                    }
+                }
+            } else {
+                LearningTableGrid(columns, rows, columns.indices.toList(), fa, fitToWidth = false)
             }
-            table.getAsJsonArray("rows")?.forEach { row ->
-                HorizontalDivider()
-                Row { row.asJsonArray.forEach { cell ->
-                    LearningCell(cell.cell(fa), if(cell.isJsonObject) cell.asJsonObject.s("dir") else "", MaterialTheme.typography.bodyMedium)
-                } }
-            }
-        }
         }
         table.tr("footer", fa).takeIf { it.isNotEmpty() }?.let { PersianText(it, style = MaterialTheme.typography.bodySmall) }
     }
 }
-@Composable fun LearningNote(note: JsonObject, tablesInDialog: Boolean = false, save: (@Composable () -> Unit)? = null) {
+
+@Composable private fun LearningTableGrid(columns: List<JsonElement>, rows: List<List<JsonElement>>,
+    indices: List<Int>, fa: Boolean, fitToWidth: Boolean) {
+    val shape = RoundedCornerShape(12.dp)
+    val scroll = if(fitToWidth) Modifier else Modifier.horizontalScroll(rememberScrollState())
+    Column(Modifier.fillMaxWidth().then(scroll).clip(shape).border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape)) {
+        Row(Modifier.background(MaterialTheme.colorScheme.secondaryContainer)) {
+            indices.forEach { index ->
+                LearningCell(columns[index].cell(fa), "", MaterialTheme.typography.titleSmall,
+                    if(fitToWidth) Modifier.weight(1f) else Modifier.width(152.dp))
+            }
+        }
+        rows.forEach { row ->
+            HorizontalDivider()
+            Row {
+                indices.forEach { index ->
+                    val cell = row.getOrNull(index)
+                    LearningCell(cell?.cell(fa).orEmpty(), if(cell?.isJsonObject == true) cell.asJsonObject.s("dir") else "",
+                        MaterialTheme.typography.bodyMedium, if(fitToWidth) Modifier.weight(1f) else Modifier.width(152.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable fun LearningNote(note: JsonObject, fitTablesToWidth: Boolean = false, save: (@Composable () -> Unit)? = null) {
     val fa = LearningLanguage.persian
     var answer by remember(note) { mutableStateOf(false) }
-    var showTables by remember(note) { mutableStateOf(false) }
     val tables = remember(note) { note.a("tables") }
     val color = when(note.s("tone")) {
         "mint" -> Color(0xFFDEEFE7); "amber" -> Color(0xFFFFEBCB); "coral" -> Color(0xFFFFE0D8); "rose" -> Color(0xFFF8DFE8); "apricot" -> Color(0xFFFFE6CF); else -> Color(0xFFE3EEFF)
@@ -175,11 +202,7 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
                 }
             }
         }
-        if(tablesInDialog && tables.isNotEmpty()) {
-            PressOutlinedButton({ showTables = true }, shape = CircleShape) {
-                Text(tr("نمایش جدول‌ها", "View tables"))
-            }
-        } else tables.forEach { LearningTable(it) }
+        tables.forEach { LearningTable(it, fitToWidth = fitTablesToWidth) }
         note.tr("takeaway", fa).takeIf { it.isNotEmpty() }?.let { PersianText(it, style = MaterialTheme.typography.titleSmall) }
         if(note.has("check")) {
             PersianText(note.obj("check").tr("prompt", fa))
@@ -188,18 +211,7 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
         }
         save?.invoke()
     }
-    // In the library pager, keep horizontally draggable tables out of the swipe surface.
-    if(showTables) AlertDialog(
-        onDismissRequest = { showTables = false },
-        title = { Text(tr("جدول‌های نکته", "Note tables")) },
-        text = {
-            Column(Modifier.fillMaxWidth().heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                tables.forEach { LearningTable(it) }
-            }
-        },
-        confirmButton = { PressTextButton({ showTables = false }) { Text(tr("بستن", "Close")) } }
-    )
+
 }
 
 // Match the title font scale, keep the crown adjacent to short titles, and reserve
