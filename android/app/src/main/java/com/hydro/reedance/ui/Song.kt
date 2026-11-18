@@ -165,7 +165,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                         itemsIndexed(data.a(type), key = { _, it -> "$type-${it.s("id")}" }, contentType = { _, _ -> "phrase" }) { index, item ->
                             val content: @Composable () -> Unit = { Panel {
                                 PhraseLearningContent(item)
-                                if(type == "idioms") SaveAction(model, type, item.s("id"))
+                                SaveAction(model, type, item.s("id"))
                             } }
                             if(index < access.limit(type)) content() else LockedLessonItem(onUnlock = { subscriptionInfo = true }) { content() }
                         }

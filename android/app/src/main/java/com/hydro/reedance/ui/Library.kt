@@ -88,7 +88,7 @@ import kotlinx.coroutines.flow.collectLatest
     val bookmarks by model.bookmarks.collectAsStateWithLifecycle()
     val settings by model.settings.collectAsStateWithLifecycle()
     val catalog by model.catalog.collectAsStateWithLifecycle()
-    val types = listOf("song", "vocabulary", "grammar", "idioms")
+    val types = listOf("song", "vocabulary", "grammar", "phrases")
     val pagerState = rememberPagerState(pageCount = { types.size })
     val scope = rememberCoroutineScope()
     val catalogById = remember(catalog) { catalog.associateBy { it.s("id") } }
@@ -106,7 +106,7 @@ import kotlinx.coroutines.flow.collectLatest
         ) {
             Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Heading(tr("کتابخانهٔ تو", "Your little collection"), tr("نشان‌شده‌ها؛ از جدید به قدیم.", "Your saved items, newest first."))
-                val selectedCount = bookmarks.count { it.itemType == types[selectedPage] }
+                val selectedCount = bookmarks.count { matchesLibraryTab(it, types[selectedPage]) }
                 Text(
                     tr("$selectedCount مورد نشان‌شده", "$selectedCount saved items"),
                     style = MaterialTheme.typography.labelMedium
@@ -119,7 +119,7 @@ import kotlinx.coroutines.flow.collectLatest
                     PillOption(tr("آهنگ‌ها", "Songs"), UiIcons.Lyrics, filledIcon = UiIcons.LyricsFilled),
                     PillOption(tr("لغت‌ها", "Words"), UiIcons.Words, filledIcon = UiIcons.WordsFilled),
                     PillOption(tr("نکته‌ها", "Notes"), UiIcons.Notes, filledIcon = UiIcons.NotesFilled),
-                    PillOption(tr("اصطلاحات", "Expressions"), UiIcons.Phrases, filledIcon = UiIcons.PhrasesFilled)
+                    PillOption(tr("جمله‌ها و اصطلاحات", "Sentences & expressions"), UiIcons.Phrases, filledIcon = UiIcons.PhrasesFilled)
                 ), selectedPage, compact) { target ->
                     scope.launch {
                         if(kotlin.math.abs(target - pagerState.currentPage) > 1) pagerState.scrollToPage(target)

@@ -10,8 +10,11 @@ import com.google.gson.JsonObject
 import com.hydro.reedance.data.*
 import kotlinx.coroutines.CancellationException
 
+internal fun matchesLibraryTab(row: Bookmark, type: String): Boolean =
+    if(type == "phrases") row.itemType == "idioms" || row.itemType == "sentences" else row.itemType == type
+
 internal fun libraryBookmarks(rows: List<Bookmark>, type: String): List<Bookmark> =
-    rows.filter { it.itemType == type }.sortedByDescending { it.createdAt }
+    rows.filter { matchesLibraryTab(it, type) }.sortedByDescending { it.createdAt }
 
 /** Resolve only visible bookmark cards from their own source package, never the currently playing song. */
 @Composable internal fun LibraryBookmarkCard(model: AppModel, mark: Bookmark, catalogSong: JsonObject?, openSong: (String) -> Unit,

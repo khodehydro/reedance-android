@@ -29,4 +29,10 @@ class LibraryBookmarksTest {
         assertTrue(libraryBookmarks(all, "sentences").isEmpty())
         assertEquals(listOf(old), libraryBookmarks(all - recent, "vocabulary"))
     }
+    @Test fun phrasesTabCombinesSavedSentencesAndExpressionsNewestFirst() {
+        val expression = Bookmark("song-a", "idioms", "same", 10)
+        val sentence = Bookmark("song-a", "sentences", "same", 30)
+        val word = Bookmark("song-b", "vocabulary", "word", 40)
+        assertEquals(listOf(sentence, expression), libraryBookmarks(listOf(expression, word, sentence), "phrases"))
+    }
 }
