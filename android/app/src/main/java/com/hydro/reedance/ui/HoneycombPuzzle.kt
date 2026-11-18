@@ -1,6 +1,10 @@
 package com.hydro.reedance.ui
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -32,6 +36,7 @@ import kotlinx.coroutines.delay
     model: AppModel,
     targetLanguage: String,
     board: HoneycombLetterBoard,
+    roundIndex: Int,
     targets: List<GameWordDefinition>,
     solvedTargetKeys: Set<String>,
     solvedCellIndices: Map<String, List<Int>>
@@ -93,6 +98,8 @@ import kotlinx.coroutines.delay
             selectedCells = selected.toSet(),
             lockedCells = lockedCells,
             winningCells = winningCells,
+            roundIndex = roundIndex,
+            targetLanguage = targetLanguage,
             canInteract = canInteract
         ) { index ->
             if(index in lockedCells || !canInteract) return@HoneycombBoard
@@ -158,9 +165,20 @@ import kotlinx.coroutines.delay
     selectedCells: Set<Int>,
     lockedCells: Set<Int>,
     winningCells: Set<Int>,
+    roundIndex: Int,
+    targetLanguage: String,
     canInteract: Boolean,
     onTap: (Int) -> Unit
 ) {
+    val reducedMotion = LocalReducedMotion.current
+    var previousRound by rememberSaveable(targetLanguage) { mutableIntStateOf(roundIndex) }
+    val wave = remember(targetLanguage, roundIndex, reducedMotion) {
+        Animatable(if(!reducedMotion && roundIndex > previousRound) 0f else 1f)
+    }
+    LaunchedEffect(wave) {
+        previousRound = roundIndex
+        if(wave.value < 1f) wave.animateTo(1f, tween(650, easing = LinearEasing))
+    }
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val columns = board.columns
         val lightTheme = MaterialTheme.colorScheme.background.luminance() > .5f
@@ -181,6 +199,7 @@ import kotlinx.coroutines.delay
                 board.letters.forEachIndexed { index, letter ->
                     val row = index / columns
                     val column = index % columns
+                    val waveDelay = .60f * (row + column).toFloat() / (board.rows + columns - 2).coerceAtLeast(1)
                     val locked = index in lockedCells
                     val selected = index in selectedCells
                     val winning = index in winningCells
@@ -201,17 +220,26 @@ import kotlinx.coroutines.delay
                         label = "honeycomb-letter-$index"
                     )
                     val scale by animateFloatAsState(if(selected || winning) 1.035f else 1f, label = "honeycomb-scale-$index")
+                    val ready by remember(wave, waveDelay) { derivedStateOf { wave.value >= waveDelay + .39f } }
                     Box(
                         Modifier.offset(
                             x = tileWidth * column.toFloat() + if(row % 2 == 1) tileWidth * .5f else 0.dp,
                             y = rowStep * row.toFloat()
                         ).size(tileWidth, tileHeight)
-                            .graphicsLayer { scaleX = scale; scaleY = scale }
+                            .graphicsLayer {
+                                // A shared clock sends the entrance diagonally across the grid.
+                                val t = ((wave.value - waveDelay) / .39f).coerceIn(0f, 1f)
+                                val eased = FastOutSlowInEasing.transform(t)
+                                alpha = eased
+                                translationY = (1f - eased) * 12.dp.toPx() - 4f * eased * (1f - eased) * 9.dp.toPx()
+                                scaleX = scale * (.78f + .22f * eased)
+                                scaleY = scaleX
+                            }
                             .shadow(if(selected || winning) 5.dp else 2.dp, HexagonShape)
                             .clip(HexagonShape)
                             .background(color)
                             .border(1.5.dp, Color.White.copy(alpha = if(lightTheme) .95f else .78f), HexagonShape)
-                            .clickable(enabled = canInteract && !locked) { onTap(index) },
+                            .clickable(enabled = canInteract && ready && !locked) { onTap(index) },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(letter.toString().uppercase(), color = textColor, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)

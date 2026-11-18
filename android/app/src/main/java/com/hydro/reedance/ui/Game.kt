@@ -156,6 +156,7 @@ internal object GameSounds {
                         model = model,
                         targetLanguage = settings.targetLanguage,
                         board = letterBoard,
+                        roundIndex = roundIndex,
                         targets = roundTargets,
                         solvedTargetKeys = solvedTargetKeys,
                         solvedCellIndices = solvedCellIndices
