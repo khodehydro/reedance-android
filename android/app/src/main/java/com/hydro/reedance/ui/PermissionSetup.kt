@@ -6,7 +6,6 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -46,14 +45,5 @@ import com.hydro.reedance.notifications.LearningReminders
                 Text(tr("تنظیمات اعلان اندروید", "Android notification settings"))
             }
         }
-    }
-}
-
-@Composable fun PermissionSetup(model: AppModel) {
-    Column(Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
-        Heading(tr("آمادهٔ شروع؟", "Ready to begin?"), tr("فقط دسترسی‌های ضروری، با انتخاب خودت", "Only the access you choose"))
-        Panel { ReminderControls(model) }
-        Action(tr("ادامه به برنامه", "Continue to the app"), Modifier.fillMaxWidth()) { model.completePermissionSetup() }
-        Text(tr("فعال‌کردن اعلان اجباری نیست. هر زمان از فضای من و تنظیمات می‌توانی نظرت را عوض کنی.", "Notifications are not required. Change your choice anytime in My space and settings."), style = MaterialTheme.typography.bodySmall)
     }
 }
