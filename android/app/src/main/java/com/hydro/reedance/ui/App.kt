@@ -76,7 +76,7 @@ import com.hydro.reedance.data.*
     val message by model.message.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val settings by model.settings.collectAsStateWithLifecycle()
-    val lightSystemBars = page == "premium" || MaterialTheme.colorScheme.background.luminance() > .5f
+    val lightSystemBars = page == "song-story" || page == "premium" || MaterialTheme.colorScheme.background.luminance() > .5f
     SideEffect {
         (context as? android.app.Activity)?.window?.let { window ->
             WindowCompat.getInsetsController(window, window.decorView).apply {
@@ -91,7 +91,7 @@ import com.hydro.reedance.data.*
     val installedIds by model.installedIds.collectAsStateWithLifecycle()
     val pageStates = rememberSaveableStateHolder()
     val preloadablePages = remember { setOf("home", "explore", "game", "review", "library", "profile", "quiz", "premium") }
-    val songPageTypes = remember { setOf("song-download", "song-playback") }
+    val songPageTypes = remember { setOf("song-download", "song-playback", "song-story") }
     val mountedPages = remember { mutableStateListOf("home") }
     val mountedSongPages = remember { mutableStateListOf<Pair<String, String>>() }
     var pendingRoute by remember { mutableStateOf<Pair<String, String>?>(null) }
@@ -129,7 +129,7 @@ import com.hydro.reedance.data.*
         }
     }
     fun navigate(to: String) {
-        if(to == "quiz") model.pause()
+        if(to == "quiz" || to == "song-story") model.pause()
         if(to in preloadablePages) {
             if(to !in mountedPages) {
                 pendingRoute = to to ""
@@ -173,10 +173,11 @@ import com.hydro.reedance.data.*
     val setPremiumReturnLatest = rememberUpdatedState<(String) -> Unit>({ premiumReturnPage = it })
     val setPremiumReturnAction = remember { { destination: String -> setPremiumReturnLatest.value(destination) } }
     val starterAction = remember(context) { { context.startActivity(android.content.Intent(context, com.hydro.reedance.StarterActivity::class.java)) } }
-    val songPage = page == "song-download" || page == "song-playback"
+    val songPage = page in songPageTypes
     val independent = songPage || page in listOf("quiz", "premium", "profile")
     BackHandler(page != "home") {
         navigate(when(page) {
+            "song-story" -> "song-playback"
             "quiz" -> if(reviewQuiz) "review" else "song-playback"
             "premium" -> premiumReturnPage
             "profile" -> profileReturnPage
@@ -346,8 +347,9 @@ import com.hydro.reedance.data.*
         "song-download" -> SongDownloadScreen(model, songId, { navigate("home") }) { navigate("song-playback") }
         "song-playback" -> SongPlaybackScreen(
             model, songId, songTab, setSongTab, { navigate("home") }, { navigate("song-download") },
-            { setReviewQuiz(false); navigate("quiz") }
+            { setReviewQuiz(false); navigate("quiz") }, { navigate("song-story") }
         ) { setPremiumReturnPage("song-playback"); navigate("premium") }
+        "song-story" -> if(LocalPageActive.current) SongStoryScreen(model, songId) { navigate("song-playback") }
         "premium" -> PremiumScreen()
         "game" -> GameScreen(model) { setPremiumReturnPage("game"); navigate("premium") }
         "quiz" -> QuizScreen(model, reviewQuiz, { navigate(if(reviewQuiz) "review" else "song-playback") }, { navigate("review") })

@@ -16,20 +16,24 @@ class LessonTabsTest {
         var tab by mutableIntStateOf(0)
         var mode by mutableIntStateOf(0)
         var quizzes = 0
+        var stories = 0
         compose.setContent {
             CompositionLocalProvider(LocalFa provides false, LocalReducedMotion provides true) {
                 ReedanceTheme(Settings(language = "en")) {
-                    LessonTabs(tab, { tab = it }, mode, { mode = it }, false, {}, { quizzes++ })
+                    LessonTabs(tab, { tab = it }, mode, { mode = it }, false, {}, { quizzes++ }, { stories++ })
                 }
             }
         }
-        compose.onNodeWithText("Line by line").performClick().assertIsSelected()
+        compose.onNodeWithText("Lyrics: Original").performClick()
+        compose.onNodeWithText("Lyrics: Line by line").assertExists()
+        compose.onNodeWithText("Song story").performClick()
+        compose.runOnIdle { assertEquals(1, stories) }
         compose.runOnIdle { assertEquals(1, mode) }
         compose.onNodeWithText("Song quiz").performClick()
         compose.runOnIdle { assertEquals(1, quizzes); assertEquals(0, tab) }
         compose.onNodeWithText("Phrases").performClick()
-        compose.onNodeWithText("Line by line").assertDoesNotExist()
+        compose.onNodeWithText("Lyrics: Line by line").assertDoesNotExist()
         compose.onNodeWithText("Lyrics").performClick()
-        compose.onNodeWithText("Line by line").assertIsSelected()
+        compose.onNodeWithText("Lyrics: Line by line").assertExists()
     }
 }

@@ -110,6 +110,13 @@
         "$ref": "#/$defs/table"
       }
     },
+    "story": {
+      "type": "object", "additionalProperties": false, "required": ["title", "pages"],
+      "properties": {
+        "title": { "$ref": "#/$defs/shortText" },
+        "pages": { "type": "array", "minItems": 1, "maxItems": 30, "items": { "type": "string", "minLength": 1, "maxLength": 3000, "pattern": "\\S" } }
+      }
+    },
     "questions": {
       "type": "array",
       "minItems": 1,

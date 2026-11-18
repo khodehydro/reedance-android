@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 
 /** One measured navigation surface: the connector never intercepts touches or exposes semantics. */
 @Composable internal fun LessonTabs(tab: Int, onTab: (Int) -> Unit, mode: Int, onMode: (Int) -> Unit,
-    single: Boolean, onLayout: () -> Unit, onQuiz: () -> Unit) {
+    single: Boolean, onLayout: () -> Unit, onQuiz: () -> Unit, onStory: (() -> Unit)?) {
     val tabs = listOf(
         PillOption(tr("لیریک", "Lyrics"), UiIcons.Lyrics, filledIcon = UiIcons.LyricsFilled),
         PillOption(tr("نکته‌ها", "Notes"), UiIcons.Notes, filledIcon = UiIcons.NotesFilled),
@@ -77,6 +77,13 @@ import androidx.compose.ui.unit.dp
                         Text(tr("نمایش متن: ", "Lyrics: ") + current.label, textAlign = TextAlign.Center)
                     }
                     Box(Modifier.width(48.dp), contentAlignment = Alignment.Center) { LyricLayoutToggle(single, onLayout) }
+                }
+            }
+            if(onStory != null) {
+                PressOutlinedButton(onStory, Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                    AppIcon(UiIcons.Library, null, Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(tr("داستان آهنگ", "Song story"))
                 }
             }
         }

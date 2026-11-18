@@ -30,7 +30,7 @@ import com.hydro.reedance.domain.songEntryState
 
 fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
-@Composable fun SongPlaybackScreen(model: AppModel, songId: String, tab: Int, setTab: (Int) -> Unit, back: () -> Unit, download: () -> Unit, quiz: () -> Unit, premium: () -> Unit) {
+@Composable fun SongPlaybackScreen(model: AppModel, songId: String, tab: Int, setTab: (Int) -> Unit, back: () -> Unit, download: () -> Unit, quiz: () -> Unit, story: () -> Unit, premium: () -> Unit) {
     val catalog by model.catalog.collectAsStateWithLifecycle()
     val loadedLesson by model.lesson.collectAsStateWithLifecycle()
     val lesson = loadedLesson?.takeIf { it.s("songId") == songId } ?: model.cachedLesson(songId)
@@ -57,6 +57,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
         scroll.firstVisibleItemIndex > 0 || scroll.firstVisibleItemScrollOffset > collapseThreshold
     } }
     val motionDuration = if(LocalReducedMotion.current) 0 else 180
+    val hasStory = remember(lesson, songId) { lessonStory(lesson, songId) != null }
     val available = lesson?.s("songId") == songId
     val entryState = songEntryState(available, loading, loadError)
     LaunchedEffect(songId, reload) {
@@ -108,7 +109,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                 item(key = "player", contentType = "player") { PlayerPanel(model, data) }
                 item(key = "credits") { Text(data.obj("credits").tr("notice", fa), style = MaterialTheme.typography.bodySmall) }
                 item(key = "tabs") {
-                    LessonTabs(tab, setTab, mode, { mode = it }, singleLyric, { singleLyric = !singleLyric }, openQuiz)
+                    LessonTabs(tab, setTab, mode, { mode = it }, singleLyric, { singleLyric = !singleLyric }, openQuiz, if(!access.preview && hasStory) story else null)
                 }
                 when(tab) {
                     0 -> {
