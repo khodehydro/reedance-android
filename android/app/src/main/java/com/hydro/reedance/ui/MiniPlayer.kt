@@ -1,5 +1,6 @@
 package com.hydro.reedance.ui
 
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import android.content.Intent
@@ -25,7 +26,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 @Composable fun MiniPlayer(song: ActivePlayback, playing: Boolean, toggle: () -> Unit, openSong: () -> Unit, compact: Boolean = false) {
-    val maxWidth by animateDpAsState(if(compact) 276.dp else 300.dp, tween(190), label = "mini-player-width")
+    val maxWidth by animateDpAsState(
+        if(compact) 232.dp else 316.dp,
+        tween(150, easing = FastOutSlowInEasing),
+        label = "mini-player-width"
+    )
     var shareDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {

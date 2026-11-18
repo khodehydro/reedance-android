@@ -172,7 +172,13 @@ import com.hydro.reedance.data.*
         }
         }
     }, bottomBar = {
-        if(!independent) Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        if(!independent) Column(
+            Modifier.fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
+                .navigationBarsPadding()
+                .padding(top = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
             if(started) activePlayback?.let { active ->
                 MiniPlayer(active, playing, model::toggleActivePlayback, { openSong(active.songId) }, compact = compactNavigation)
             }

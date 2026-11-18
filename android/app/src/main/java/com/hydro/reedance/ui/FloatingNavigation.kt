@@ -22,20 +22,24 @@ import androidx.compose.ui.unit.dp
 private data class Destination(val id: String, val label: String, val outline: Int, val filled: Int)
 
 @Composable fun FloatingNavigation(page: String, compact: Boolean, onNavigate: (String) -> Unit) {
-    val duration = if(LocalReducedMotion.current) 0 else 190
+    val duration = if(LocalReducedMotion.current) 0 else 150
+    val menuWidth by animateDpAsState(
+        targetValue = if(compact) 232.dp else 316.dp,
+        animationSpec = tween(duration, easing = FastOutSlowInEasing),
+        label = "nav-width"
+    )
     val destinations = listOf(
         Destination("home", tr("خانه", "Home"), UiIcons.Home, UiIcons.HomeFilled),
         Destination("explore", tr("کشف", "Explore"), UiIcons.Explore, UiIcons.ExploreFilled),
         Destination("review", tr("لایتنر", "Review"), UiIcons.Review, UiIcons.ReviewFilled),
         Destination("library", tr("کتابخانه", "Library"), UiIcons.Library, UiIcons.LibraryFilled)
     )
-    val slotHeight = 56.dp
 
-    // The outer surface is the only navigation background. Each destination is
-    // otherwise just an icon; the selected item grows into a blue icon + label.
-    Box(Modifier.fillMaxWidth().heightIn(min = slotHeight).padding(horizontal = 12.dp), contentAlignment = Alignment.BottomCenter) {
+    // A wider bounded slot leaves room for the selected label throughout the
+    // width animation, so text and rounded corners never get cropped mid-transition.
+    Box(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 12.dp), contentAlignment = Alignment.BottomCenter) {
         Surface(
-            modifier = Modifier.animateContentSize(tween(duration)).wrapContentWidth(),
+            modifier = Modifier.widthIn(max = menuWidth).fillMaxWidth(),
             shape = RoundedCornerShape(28.dp),
             color = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,
@@ -43,23 +47,25 @@ private data class Destination(val id: String, val label: String, val outline: I
             tonalElevation = 0.dp
         ) {
             Row(
-                Modifier.selectableGroup().padding(horizontal = 5.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(3.dp),
+                Modifier.fillMaxWidth().selectableGroup().padding(horizontal = 5.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 destinations.forEach { destination ->
                     val active = page == destination.id
+                    val chipColor by animateColorAsState(
+                        if(active) Blue else Color.Transparent,
+                        tween(duration),
+                        label = "nav-selected-color-${destination.id}"
+                    )
                     val tabShape = if(compact) CircleShape else RoundedCornerShape(24.dp)
-                    val tabModifier = Modifier
-                        .clip(tabShape)
-                        .then(if(active) Modifier.background(Blue) else Modifier)
-                        .selectable(active, role = Role.Tab, onClick = { onNavigate(destination.id) })
-                        .semantics { contentDescription = destination.label }
-                        .animateContentSize(tween(duration))
-                        .height(48.dp)
-                        .padding(horizontal = 13.dp)
                     Row(
-                        tabModifier,
+                        Modifier.clip(tabShape)
+                            .background(chipColor)
+                            .selectable(active, role = Role.Tab, onClick = { onNavigate(destination.id) })
+                            .semantics { contentDescription = destination.label }
+                            .height(48.dp)
+                            .padding(horizontal = 12.dp),
                         horizontalArrangement = Arrangement.spacedBy(7.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
