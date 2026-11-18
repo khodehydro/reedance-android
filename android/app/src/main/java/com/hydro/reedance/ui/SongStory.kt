@@ -198,7 +198,7 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
     var speedIndex by rememberSaveable { mutableIntStateOf(1) }
     val speeds = listOf(.75f, 1f, 1.25f, 1.5f)
     val speed by rememberUpdatedState(speeds[speedIndex])
-    val papers = listOf(Color.White, Color(0xFFF3E6C8), Color(0xFF292B30))
+    val papers = listOf(Color.White, Color(0xFFF3E6C8), Color(0xFF18191C))
     val ink = if(paperIndex == 2) Color.White else Color(0xFF252322)
     val nextPaper = (paperIndex + 1) % papers.size
     val paperNames = listOf(tr("سفید", "White"), tr("کاهی", "Sepia"), tr("خاکستری تیره", "Dark gray"))
