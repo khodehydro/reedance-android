@@ -47,7 +47,7 @@ private data class Destination(val id: String, val label: String, val outline: I
             tonalElevation = 0.dp
         ) {
             Row(
-                Modifier.fillMaxWidth().selectableGroup().padding(horizontal = 5.dp, vertical = 4.dp),
+                Modifier.fillMaxWidth().selectableGroup().padding(5.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
