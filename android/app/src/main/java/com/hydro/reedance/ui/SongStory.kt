@@ -23,10 +23,6 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.clipPath
-import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -38,8 +34,6 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -53,7 +47,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import java.util.Locale
-import kotlin.math.abs
 
 internal data class LessonStory(val title: String, val locale: String, val pages: List<String>)
 
@@ -109,16 +102,13 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
     val reduced = LocalReducedMotion.current
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
-    val window = (context as? Activity)?.window
-    DisposableEffect(window) {
-        val controller = window?.let { WindowCompat.getInsetsController(it, it.decorView) }
-        val originalBehavior = controller?.systemBarsBehavior
-        val bars = WindowInsetsCompat.Type.systemBars()
-        controller?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        controller?.hide(bars)
-        onDispose {
-            controller?.show(bars)
-            if(originalBehavior != null) controller?.systemBarsBehavior = originalBehavior
+    SideEffect {
+        // The paper draws edge-to-edge; only the content is inset below.
+        (context as? Activity)?.window?.let { window ->
+            WindowCompat.getInsetsController(window, window.decorView).apply {
+                isAppearanceLightStatusBars = paperIndex != 2
+                isAppearanceLightNavigationBars = paperIndex != 2
+            }
         }
     }
     val page = pager.settledPage
@@ -188,57 +178,25 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
                 Text(tr("داستان آهنگ", "Song story"), style = MaterialTheme.typography.titleMedium)
                 PressIconButton(back, Modifier.align(Alignment.CenterStart)) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
             }
-            HorizontalPager(pager, modifier = Modifier.fillMaxWidth().weight(1f).background(Color.Black.copy(alpha = .12f))) { index ->
+            HorizontalPager(pager, modifier = Modifier.fillMaxWidth().weight(1f).background(papers[paperIndex])) { index ->
                 val paper = papers[paperIndex]
                 val pageTurn = Modifier.drawWithContent {
-                    val offset = (pager.currentPage - index + pager.currentPageOffsetFraction).coerceIn(-1f, 1f)
-                    val amount = abs(offset)
-                    if(reduced || amount < .001f || amount >= 1f) {
-                        drawContent()
-                    } else {
-                        val right = if(rtl) offset < 0f else offset > 0f
-                        val edge = if(right) size.width else 0f
-                        val direction = if(right) -1f else 1f
-                        val corner = Offset(edge, size.height)
-                        val creaseBottom = Offset(edge + direction * size.width * amount * .95f, size.height)
-                        val creaseSide = Offset(edge, size.height * (1f - amount * .80f))
-                        val foldTip = Offset(creaseBottom.x + direction * size.width * amount * .13f, creaseSide.y)
-                        val curve = Offset((creaseSide.x + creaseBottom.x) / 2f, (creaseSide.y + creaseBottom.y) / 2f)
-                        val face = Path().apply {
-                            moveTo(0f, 0f)
-                            lineTo(size.width, 0f)
-                            if(right) {
-                                lineTo(creaseSide.x, creaseSide.y)
-                                quadraticTo(curve.x, curve.y + size.height * amount * .1f, creaseBottom.x, creaseBottom.y)
-                                lineTo(0f, size.height)
-                            } else {
-                                lineTo(size.width, size.height)
-                                lineTo(creaseBottom.x, creaseBottom.y)
-                                quadraticTo(curve.x, curve.y + size.height * amount * .1f, creaseSide.x, creaseSide.y)
-                            }
-                            close()
-                        }
-                        clipPath(face) { this@drawWithContent.drawContent() }
-                        val fold = Path().apply {
-                            moveTo(creaseSide.x, creaseSide.y)
-                            quadraticTo(curve.x, curve.y + size.height * amount * .1f, creaseBottom.x, creaseBottom.y)
-                            quadraticTo(foldTip.x, (foldTip.y + corner.y) / 2f, foldTip.x, foldTip.y)
-                            quadraticTo(curve.x, creaseSide.y, creaseSide.x, creaseSide.y)
-                            close()
-                        }
-                        drawPath(fold, Brush.linearGradient(
-                            listOf(Color.Black.copy(alpha = .52f), paper, ink.copy(alpha = .55f)),
-                            start = corner, end = foldTip
-                        ))
-                    }
-                }.graphicsLayer {
-                    // Keep a small perspective tilt while the diagonal corner folds over.
-                    val offset = (pager.currentPage - index + pager.currentPageOffsetFraction).coerceIn(-1f, 1f)
-                    if(!reduced) {
-                        val physical = if(rtl) -offset else offset
-                        transformOrigin = TransformOrigin(if(physical > 0f) 1f else 0f, 1f)
-                        rotationY = physical * -12f
-                        cameraDistance = 24.dp.toPx()
+                    drawContent()
+                    val offset = pager.currentPage - index + pager.currentPageOffsetFraction
+                    val strength = kotlin.math.sin(kotlin.math.abs(offset).coerceIn(0f, 1f) * Math.PI).toFloat()
+                    if(!reduced && strength > .001f && size.width > 0f) {
+                        val rightEdge = if(rtl) offset < 0f else offset > 0f
+                        val width = minOf(42.dp.toPx(), size.width)
+                        val edge = if(rightEdge) size.width else 0f
+                        val inner = if(rightEdge) edge - width else width
+                        drawRect(
+                            brush = Brush.linearGradient(
+                                listOf(Color.Black.copy(alpha = .19f * strength), Color.Transparent),
+                                start = Offset(edge, 0f), end = Offset(inner, 0f)
+                            ),
+                            topLeft = Offset(minOf(edge, inner), 0f),
+                            size = androidx.compose.ui.geometry.Size(width, size.height)
+                        )
                     }
                 }
                 Box(Modifier.fillMaxSize().then(pageTurn)) {

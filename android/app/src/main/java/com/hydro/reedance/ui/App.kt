@@ -76,9 +76,9 @@ import com.hydro.reedance.data.*
     val message by model.message.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val settings by model.settings.collectAsStateWithLifecycle()
-    val lightSystemBars = page == "song-story" || page == "premium" || MaterialTheme.colorScheme.background.luminance() > .5f
+    val lightSystemBars = page == "premium" || MaterialTheme.colorScheme.background.luminance() > .5f
     SideEffect {
-        (context as? android.app.Activity)?.window?.let { window ->
+        if(page != "song-story") (context as? android.app.Activity)?.window?.let { window ->
             WindowCompat.getInsetsController(window, window.decorView).apply {
                 isAppearanceLightStatusBars = lightSystemBars
                 isAppearanceLightNavigationBars = lightSystemBars
