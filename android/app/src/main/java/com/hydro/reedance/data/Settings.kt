@@ -5,7 +5,7 @@ import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.*
 private val Context.settingsStore by preferencesDataStore("settings")
-data class Settings(val language: String = "", val theme: String = "dark", val textSize: Int = 1, val reduceMotion: Boolean = false, val rating: Int = 0, val targetLanguage: String = "en", val reminders: Boolean = false, val permissionsSetup: Boolean = false, val lastVisit: Long = 0L, val lastReminder: Long = 0L)
+data class Settings(val language: String = "en", val theme: String = "dark", val textSize: Int = 1, val reduceMotion: Boolean = false, val rating: Int = 0, val targetLanguage: String = "en", val reminders: Boolean = false, val permissionsSetup: Boolean = false, val lastVisit: Long = 0L, val lastReminder: Long = 0L)
 class SettingsRepository(private val context: Context) {
     private val reminders = booleanPreferencesKey("reminders")
     private val setup = booleanPreferencesKey("permissions_setup")
@@ -17,7 +17,7 @@ class SettingsRepository(private val context: Context) {
     private val size = intPreferencesKey("text_size")
     private val motion = booleanPreferencesKey("reduce_motion")
     private val rating = intPreferencesKey("rating")
-    val flow = context.settingsStore.data.map { Settings(it[language] ?: "", if(it[theme] == "light") "light" else "dark", it[size] ?: 1, false, it[rating] ?: 0, it[targetLanguage]?.takeIf { code -> code in listOf("en", "es", "ko", "tr") } ?: "en", it[reminders] ?: false, it[setup] ?: false, it[visit] ?: 0L, it[sent] ?: 0L) }
+    val flow = context.settingsStore.data.map { Settings(it[language]?.takeIf { code -> code == "fa" } ?: "en", if(it[theme] == "light") "light" else "dark", it[size] ?: 1, false, it[rating] ?: 0, it[targetLanguage]?.takeIf { code -> code in listOf("en", "es", "ko", "tr") } ?: "en", it[reminders] ?: false, it[setup] ?: false, it[visit] ?: 0L, it[sent] ?: 0L) }
     suspend fun reminders(value: Boolean) { context.settingsStore.edit { it[reminders] = value } }
     suspend fun completeSetup() { context.settingsStore.edit { it[setup] = true } }
     suspend fun visited() { context.settingsStore.edit { it[visit] = System.currentTimeMillis() } }
