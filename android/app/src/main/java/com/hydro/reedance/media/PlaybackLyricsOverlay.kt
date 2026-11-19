@@ -7,6 +7,7 @@ import android.graphics.PixelFormat
 import android.graphics.Point
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.hardware.input.InputManager
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings as AndroidSettings
@@ -154,6 +155,12 @@ private class LyricsOverlayWindow(private val context: Context) {
         Point(positionStore.getInt("x", 0), positionStore.getInt("y", 0)) else null
     private var positionChanged = false
     private var windowArea = Point()
+    private var locked = false
+    private var controls: LinearLayout? = null
+    private var unlockButton: ImageButton? = null
+    private var unlockLayout: WindowManager.LayoutParams? = null
+    private var rtlControls = false
+    private val baseFlags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
     private fun dp(value: Int) = (value * context.resources.displayMetrics.density).roundToInt()
 
     fun show(line: OverlayLyric, mode: Int, fa: Boolean, onMode: () -> Unit, onClose: () -> Unit): Boolean {
@@ -166,7 +173,7 @@ private class LyricsOverlayWindow(private val context: Context) {
             val initial = draggedPosition ?: Point((windowArea.x - targetWidth) / 2, dp(52))
             val params = WindowManager.LayoutParams(targetWidth.coerceAtMost(windowArea.x), WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+                baseFlags,
                 PixelFormat.TRANSLUCENT).apply {
                 gravity = Gravity.TOP or Gravity.LEFT
                 x = initial.x.coerceIn(0, (windowArea.x - this.width).coerceAtLeast(0))
@@ -182,6 +189,7 @@ private class LyricsOverlayWindow(private val context: Context) {
                 root = overlay
                 layoutParams = params
                 width = targetWidth
+                if(locked) setLocked(true)
             } catch(_: RuntimeException) {
                 // Restricted profiles, OEM policies and permission changes can reject this window.
                 hide()
@@ -229,6 +237,70 @@ private class LyricsOverlayWindow(private val context: Context) {
         params.x = left
         params.y = top
         runCatching { manager?.updateViewLayout(card, params) }
+        if(locked) repositionUnlockButton()
+    }
+
+    private fun setLocked(value: Boolean) {
+        val card = root ?: return
+        val params = layoutParams ?: return
+        val wm = manager ?: return
+        try {
+            if(value) {
+                // The caption window stops receiving touch. Only the small, separate lock button remains touchable.
+                val button = iconControl(R.drawable.uicon_lock,
+                    if(rtlControls) "باز کردن قفل متن شناور" else "Unlock floating lyrics") { setLocked(false) }
+                val buttonParams = WindowManager.LayoutParams(dp(48), dp(48), WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                    baseFlags, PixelFormat.TRANSLUCENT).apply {
+                    gravity = Gravity.TOP or Gravity.LEFT
+                    x = unlockX(params)
+                    y = params.y
+                    setTitle("Reedance floating lyrics unlock")
+                }
+                wm.addView(button, buttonParams)
+                unlockButton = button
+                unlockLayout = buttonParams
+                params.flags = baseFlags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+                // Android 12+ only passes touches through an application overlay below its obscuring limit.
+                params.alpha = if(Build.VERSION.SDK_INT >= 31) {
+                    minOf(.79f, context.getSystemService(InputManager::class.java)?.maximumObscuringOpacityForTouch ?: .79f)
+                } else 1f
+            } else {
+                params.flags = baseFlags
+                params.alpha = 1f
+            }
+            wm.updateViewLayout(card, params)
+            locked = value
+            controls?.visibility = if(value) View.INVISIBLE else View.VISIBLE
+            card.importantForAccessibility = if(value) View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS else View.IMPORTANT_FOR_ACCESSIBILITY_AUTO
+            if(!value) removeUnlockButton()
+        } catch(_: RuntimeException) {
+            // Never leave an untouchable card without its unlock button.
+            locked = false
+            removeUnlockButton()
+            params.flags = baseFlags
+            params.alpha = 1f
+            controls?.visibility = View.VISIBLE
+            card.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_AUTO
+            if(runCatching { wm.updateViewLayout(card, params) }.isFailure) hide()
+        }
+    }
+
+    private fun unlockX(card: WindowManager.LayoutParams): Int =
+        card.x + if(rtlControls) dp(12) else (card.width - dp(12) - dp(48)).coerceAtLeast(0)
+
+    private fun repositionUnlockButton() {
+        val button = unlockButton ?: return
+        val params = unlockLayout ?: return
+        val card = layoutParams ?: return
+        params.x = unlockX(card)
+        params.y = card.y
+        runCatching { manager?.updateViewLayout(button, params) }
+    }
+
+    private fun removeUnlockButton() {
+        unlockButton?.let { button -> runCatching { manager?.removeViewImmediate(button) } }
+        unlockButton = null
+        unlockLayout = null
     }
 
     private fun savePosition() {
@@ -289,6 +361,7 @@ private class LyricsOverlayWindow(private val context: Context) {
     private fun create(mode: Int, fa: Boolean, onMode: () -> Unit, onClose: () -> Unit): LinearLayout {
         val modeName = if(fa) listOf("متن اصلی", "ترجمهٔ خطی", "کلمه‌به‌کلمه")[mode]
             else listOf("Original", "Line by line", "Word by word")[mode]
+        rtlControls = fa
         return DraggableCard().apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(12), 0, dp(12), dp(14))
@@ -308,22 +381,18 @@ private class LyricsOverlayWindow(private val context: Context) {
                     setPadding(dp(8), 0, 0, 0)
                 }
                 addView(grip, LinearLayout.LayoutParams(0, dp(48), 1f))
-                addView(ImageButton(context).apply {
-                    setImageResource(when(mode) {
-                        1 -> R.drawable.uicon_lines
-                        2 -> R.drawable.uicon_word_mode
-                        else -> R.drawable.uicon_original
-                    })
-                    setColorFilter(Color.WHITE)
-                    scaleType = ImageView.ScaleType.CENTER_INSIDE
-                    setPadding(dp(14), dp(14), dp(14), dp(14))
-                    setBackgroundColor(Color.TRANSPARENT)
-                    contentDescription = if(fa) "تغییر حالت متن: $modeName" else "Change lyric mode: $modeName"
-                    setOnClickListener { onMode() }
-                }, LinearLayout.LayoutParams(dp(48), dp(48)))
+                val modeIcon = when(mode) {
+                    1 -> R.drawable.uicon_lines
+                    2 -> R.drawable.uicon_word_mode
+                    else -> R.drawable.uicon_original
+                }
+                addView(iconControl(modeIcon, if(fa) "تغییر حالت متن: $modeName" else "Change lyric mode: $modeName", onMode),
+                    LinearLayout.LayoutParams(dp(48), dp(48)))
                 addView(control("×", if(fa) "بستن متن شناور" else "Close floating lyrics", onClose).apply { textSize = 24f },
                     LinearLayout.LayoutParams(dp(48), dp(48)))
-            })
+                addView(iconControl(R.drawable.uicon_lock_open, if(fa) "قفل کردن متن شناور" else "Lock floating lyrics") { setLocked(true) },
+                    LinearLayout.LayoutParams(dp(48), dp(48)))
+            }.also { controls = it })
             original = lyricText(18f, Color.WHITE, 3).also { addView(it) }
             meaning = lyricText(14f, Color.WHITE, 5).apply { setPadding(0, dp(6), 0, 0) }.also { addView(it) }
         }
@@ -336,6 +405,16 @@ private class LyricsOverlayWindow(private val context: Context) {
         textDirection = View.TEXT_DIRECTION_FIRST_STRONG_LTR
         maxLines = lines
         ellipsize = TextUtils.TruncateAt.END
+    }
+
+    private fun iconControl(icon: Int, description: String, action: () -> Unit) = ImageButton(context).apply {
+        setImageResource(icon)
+        setColorFilter(Color.WHITE)
+        scaleType = ImageView.ScaleType.CENTER_INSIDE
+        setPadding(dp(14), dp(14), dp(14), dp(14))
+        setBackgroundColor(Color.TRANSPARENT)
+        contentDescription = description
+        setOnClickListener { action() }
     }
 
     private fun control(title: String, description: String, action: () -> Unit) = Button(context).apply {
@@ -354,6 +433,8 @@ private class LyricsOverlayWindow(private val context: Context) {
 
     fun hide() {
         savePosition()
+        removeUnlockButton()
+        controls = null
         root?.let { view -> runCatching { manager?.removeViewImmediate(view) } }
         root = null
         layoutParams = null
