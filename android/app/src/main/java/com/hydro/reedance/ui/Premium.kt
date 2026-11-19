@@ -8,6 +8,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -24,6 +25,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.painterResource
+import com.hydro.reedance.R
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -141,10 +144,7 @@ private val PremiumColors = lightColorScheme(
                 tr("رایگان: با خروج از برنامه متوقف می‌شود", "Free: stops when you leave the app")
             )
         }
-        PremiumGlassCard {
-            Text(tr("همین حالا آمادهٔ خرید نیست", "Checkout isn’t available yet"), style = MaterialTheme.typography.titleMedium)
-            Text(tr("این صفحه پیش‌نمایش امکانات و خرید لایسنس است. اتصال به مایکت هنوز انجام نشده و با زدن دکمه هیچ پرداختی انجام نمی‌شود.", "This page previews Premium and license purchase. Myket isn’t connected yet, and tapping the button will not charge you."), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+        SnappPayBanner()
         PressButton(
             onClick = { checkoutInfo = true },
             modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
@@ -168,6 +168,36 @@ private val PremiumColors = lightColorScheme(
         text = { Text(tr("اتصال به مایکت در این نسخه انجام نشده؛ هیچ مبلغی دریافت نمی‌شود و لایسنسی فعال نخواهد شد.", "Myket isn’t connected in this version. No payment will be taken and no license will be activated.")) },
         confirmButton = { PressTextButton({ checkoutInfo = false }) { Text(tr("متوجه شدم", "Got it")) } }
     )
+}
+
+/** Informational only: this card does not initiate checkout or imply an active payment integration. */
+@Composable private fun SnappPayBanner() {
+    val blue = Color(0xFF005FBB)
+    val ink = Color(0xFF252A3C)
+    Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp),
+        color = Color(0xFFEAF5FF), contentColor = ink,
+        border = BorderStroke(1.dp, Color(0xFF98D1FB))) {
+        Column(Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(
+            Color(0xFFF7FCFF), Color(0xFFE3F2FF), Color(0xFFFDF5DF)
+        ))).padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                Surface(shape = RoundedCornerShape(14.dp), color = Color.White) {
+                    Image(painterResource(R.drawable.snapppay_wordmark), contentDescription = null,
+                        modifier = Modifier.size(66.dp).padding(10.dp))
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(tr("خرید قسطی با اسنپ‌پی", "Pay in installments with SnappPay"),
+                        style = MaterialTheme.typography.titleMedium)
+                    Text(tr("اطلاع‌رسانی", "Information only"), color = blue,
+                        style = MaterialTheme.typography.labelMedium)
+                }
+            }
+            Text(tr("پرداخت قسطی پریمیوم با اسنپ‌پی هنوز در برنامه فعال نیست.",
+                "SnappPay installments for Premium are not active in the app yet."),
+                style = MaterialTheme.typography.bodySmall)
+        }
+    }
 }
 
 @Composable private fun PremiumHero() {
