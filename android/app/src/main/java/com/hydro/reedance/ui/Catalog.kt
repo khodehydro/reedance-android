@@ -262,16 +262,11 @@ private val artistSpace = Regex("\\s+")
         HeaderSurface {
             Box(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 8.dp, vertical = 8.dp)) {
                 if(artist != null) {
-                    Column(Modifier.align(Alignment.TopCenter).padding(horizontal = 52.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        ArtistCover(artist, Modifier.size(48.dp))
-                        Text(artist.name, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center,
-                            maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        Text(artistSongCount(artist.songs.size), style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                    Text(artist.name, Modifier.align(Alignment.Center).padding(horizontal = 52.dp),
+                        style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center,
+                        maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
-                PressIconButton(back, Modifier.align(Alignment.TopStart)) {
+                PressIconButton(back, Modifier.align(Alignment.CenterStart)) {
                     AppIcon(UiIcons.Back, tr("بازگشت به آرتیست‌ها", "Back to artists"))
                 }
             }
