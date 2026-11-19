@@ -1,6 +1,9 @@
 package com.hydro.reedance.ui
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -21,16 +24,17 @@ import com.hydro.reedance.data.*
         ProfileMembershipCard(premium)
         ProfileStarterCard { context.startActivity(Intent(context, com.hydro.reedance.StarterActivity::class.java)) }
         Panel {
-            Text(tr("تنظیمات برنامه", "Make yourself at home"), style = MaterialTheme.typography.titleLarge)
+            Text(tr("تنظیمات برنامه", "App settings"), style = MaterialTheme.typography.titleLarge)
             Text(tr("زبان رابط", "App language"))
             ChoiceRow(listOf("English", "فارسی"), if(settings.language == "en") 0 else 1, List(2) { UiIcons.Globe to UiIcons.GlobeFilled }) { model.language(if(it == 0) "en" else "fa") }
-            ReminderControls(model)
-            LyricsOverlayControls(model, premium)
             Text(tr("ظاهر", "Appearance"))
             ChoiceRow(listOf(tr("روشن", "Light"), tr("تاریک", "Dark")), if(settings.theme == "dark") 1 else 0, listOf(UiIcons.Light to UiIcons.LightFilled, UiIcons.Dark to UiIcons.DarkFilled)) { model.theme(if(it == 1) "dark" else "light") }
             Text(tr("اندازهٔ نوشته", "Text size"))
             ChoiceRow(listOf(tr("کوچک", "Small"), tr("معمولی", "Default"), tr("بزرگ", "Large")), settings.textSize, List(3) { UiIcons.WordMode to UiIcons.WordModeFilled }, model::textSize)
-
+            HorizontalDivider()
+            ReminderControls(model)
+            HorizontalDivider()
+            LyricsOverlayControls(model, premium)
         }
         Panel {
             Text(tr("فضای آفلاین", "Offline storage"), style = MaterialTheme.typography.titleLarge)
@@ -46,6 +50,20 @@ import com.hydro.reedance.data.*
             PressOutlinedButton({
                 context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, "Reedance — learn languages through music. https://github.com/khodehydro/reedance-android"), "Reedance"))
             }) { Text(tr("اشتراک‌گذاری برنامه", "Share Reedance")) }
+        }
+        Panel {
+            Text(tr("پشتیبانی در تلگرام", "Telegram support"), style = MaterialTheme.typography.titleLarge)
+            Text(tr("برای سؤال‌ها و گزارش مشکل با ما در ارتباط باش.", "Contact us with questions or to report a problem."))
+            val unavailable = tr("لینک تلگرام باز نشد.", "Could not open the Telegram link.")
+            PressOutlinedButton(onClick = {
+                try {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/reedance")))
+                } catch(_: ActivityNotFoundException) {
+                    Toast.makeText(context, unavailable, Toast.LENGTH_SHORT).show()
+                }
+            }, modifier = Modifier.fillMaxWidth()) {
+                Text(tr("باز کردن تلگرام", "Open Telegram"))
+            }
         }
         Panel {
             Text(tr("دربارهٔ ری‌دنس", "About Reedance"), style = MaterialTheme.typography.titleLarge)
