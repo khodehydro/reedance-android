@@ -25,6 +25,7 @@ import com.hydro.reedance.data.*
             Text(tr("زبان رابط", "App language"))
             ChoiceRow(listOf("English", "فارسی"), if(settings.language == "en") 0 else 1, List(2) { UiIcons.Globe to UiIcons.GlobeFilled }) { model.language(if(it == 0) "en" else "fa") }
             ReminderControls(model)
+            LyricsOverlayControls(model, premium)
             Text(tr("ظاهر", "Appearance"))
             ChoiceRow(listOf(tr("روشن", "Light"), tr("تاریک", "Dark")), if(settings.theme == "dark") 1 else 0, listOf(UiIcons.Light to UiIcons.LightFilled, UiIcons.Dark to UiIcons.DarkFilled)) { model.theme(if(it == 1) "dark" else "light") }
             Text(tr("اندازهٔ نوشته", "Text size"))
