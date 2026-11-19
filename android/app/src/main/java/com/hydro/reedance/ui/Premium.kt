@@ -172,14 +172,9 @@ private val PremiumColors = lightColorScheme(
 
 /** Informational only: this card does not initiate checkout or imply an active payment integration. */
 @Composable private fun SnappPayBanner() {
-    val blue = Color(0xFF005FBB)
-    val ink = Color(0xFF252A3C)
     Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp),
-        color = Color(0xFFEAF5FF), contentColor = ink,
-        border = BorderStroke(1.dp, Color(0xFF98D1FB))) {
-        Column(Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(
-            Color(0xFFF7FCFF), Color(0xFFE3F2FF), Color(0xFFFDF5DF)
-        ))).padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        color = Color(0xFF007DFA), contentColor = Color.White) {
+        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 Surface(shape = RoundedCornerShape(14.dp), color = Color.White) {
@@ -189,7 +184,7 @@ private val PremiumColors = lightColorScheme(
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(tr("خرید قسطی با اسنپ‌پی", "Pay in installments with SnappPay"),
                         style = MaterialTheme.typography.titleMedium)
-                    Text(tr("اطلاع‌رسانی", "Information only"), color = blue,
+                    Text(tr("اطلاع‌رسانی", "Information only"),
                         style = MaterialTheme.typography.labelMedium)
                 }
             }
