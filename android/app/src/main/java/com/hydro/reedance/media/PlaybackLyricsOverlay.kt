@@ -28,6 +28,7 @@ import com.hydro.reedance.data.n
 import com.hydro.reedance.data.s
 import com.hydro.reedance.data.tr
 import com.hydro.reedance.domain.PremiumEntitlement
+import com.hydro.reedance.domain.backgroundPlaybackAllowed
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -77,7 +78,7 @@ internal class PlaybackLyricsOverlay(private val context: Context, private val p
         updatePlayingSong()
         scope.launch {
             combine(preferences.flow, PremiumEntitlement.active, foreground, playingSong, dismissed) { prefs, premium, inApp, song, hidden ->
-                song?.takeIf { prefs.lyricsOverlay && premium && !inApp && !hidden }
+                song?.takeIf { prefs.lyricsOverlay && backgroundPlaybackAllowed(premium) && !inApp && !hidden }
                     ?.let { Display(it, prefs.lyricsOverlayMode, prefs.language == "fa") }
             }.distinctUntilChanged().collectLatest { request ->
                 window.hide()

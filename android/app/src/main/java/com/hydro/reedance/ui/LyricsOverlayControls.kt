@@ -17,22 +17,24 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hydro.reedance.data.AppModel
 import com.hydro.reedance.domain.PremiumEntitlement
+import com.hydro.reedance.domain.backgroundPlaybackAllowed
 
 @Composable internal fun LyricsOverlayControls(model: AppModel, premium: () -> Unit) {
     val settings by model.settings.collectAsStateWithLifecycle()
     val subscribed by PremiumEntitlement.active.collectAsStateWithLifecycle()
+    val available = backgroundPlaybackAllowed(subscribed)
     val context = LocalContext.current
     var granted by remember { mutableStateOf(Settings.canDrawOverlays(context)) }
     var settingsUnavailable by remember { mutableStateOf(false) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { granted = Settings.canDrawOverlays(context) }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         granted = Settings.canDrawOverlays(context)
-        if(granted && PremiumEntitlement.active.value) model.lyricsOverlay(true)
+        if(granted && backgroundPlaybackAllowed(PremiumEntitlement.active.value)) model.lyricsOverlay(true)
     }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(tr("متن شناور آهنگ", "Floating lyrics"), Modifier.weight(1f))
-            PressSwitch(settings.lyricsOverlay && granted && subscribed, { enabled ->
+            PressSwitch(settings.lyricsOverlay && granted && available, { enabled ->
                 if(!enabled) model.lyricsOverlay(false)
                 else if(granted) model.lyricsOverlay(true)
                 else {
@@ -40,12 +42,12 @@ import com.hydro.reedance.domain.PremiumEntitlement
                     settingsUnavailable = runCatching { permission.launch(request) }.isFailure &&
                         runCatching { permission.launch(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)) }.isFailure
                 }
-            }, enabled = subscribed)
+            }, enabled = available)
         }
-        Text(tr("متن آهنگ در زمان پخش، روی برنامه‌های دیگر نمایش داده می‌شود. این قابلیت پریمیوم به مجوز نمایش روی برنامه‌ها نیاز دارد.",
-            "Show the current lyric over other apps while music plays. This Premium feature requires Android’s display-over-other-apps permission."),
+        Text(tr("متن آهنگ در زمان پخش، روی برنامه‌های دیگر نمایش داده می‌شود. این قابلیت به مجوز نمایش روی برنامه‌ها نیاز دارد.",
+            "Show the current lyric over other apps while music plays. This feature requires Android’s display-over-other-apps permission."),
             style = MaterialTheme.typography.bodySmall)
-        if(!subscribed) {
+        if(!available) {
             PressTextButton(premium) { Text(tr("مشاهدهٔ پریمیوم", "Explore Premium")) }
         } else {
             if(!granted) Text(tr("در تنظیمات اندروید، ری‌دنس را انتخاب کن و مجوز را بده.",

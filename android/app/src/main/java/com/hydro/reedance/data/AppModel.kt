@@ -229,7 +229,7 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
     fun onBackground() {
         updateProgress()
         checkpoint(force = true)
-        if(!PremiumEntitlement.active.value) pause()
+        if(!backgroundPlaybackAllowed(PremiumEntitlement.active.value)) pause()
     }
     private var installRequest: java.util.UUID? = null
     val installTransfer = MutableStateFlow<InstallTransferProgress?>(null)

@@ -1,5 +1,6 @@
 package com.hydro.reedance.domain
 
+import com.hydro.reedance.BuildConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,3 +19,6 @@ object PremiumEntitlement {
         mutableActive.value = isActive
     }
 }
+
+/** Temporary device testing gate: does not grant Premium or unlock paid content. */
+internal fun backgroundPlaybackAllowed(verifiedPremium: Boolean): Boolean = BuildConfig.DEBUG || verifiedPremium
