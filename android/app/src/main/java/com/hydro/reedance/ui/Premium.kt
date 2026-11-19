@@ -6,13 +6,11 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -196,32 +194,21 @@ private val PremiumColors = lightColorScheme(
 }
 
 @Composable private fun PremiumHero() {
-    Surface(
-        Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        color = Color(0xFF3A2C0C),
-        contentColor = Color.White
-    ) {
-        Box {
-            Box(Modifier.align(Alignment.TopEnd).offset(x = 25.dp, y = (-34).dp).size(150.dp).clip(CircleShape).background(Color(0xFF99721A).copy(alpha = .42f)))
-            Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Surface(shape = CircleShape, color = Color(0xFFFFDF80).copy(alpha = .18f), contentColor = Color(0xFFFFDF80)) {
-                    Row(Modifier.padding(horizontal = 12.dp, vertical = 7.dp), horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
-                        AppIcon(UiIcons.CrownFilled, null, Modifier.size(17.dp), Color(0xFFFFDF80))
-                        Text(tr("ری‌دنس پریمیوم", "REEDANCE PREMIUM"), style = MaterialTheme.typography.labelLarge)
-                    }
-                }
-                Text(tr("یادگیری، بی‌وقفه و بی‌مرز", "Learn without limits"), style = MaterialTheme.typography.headlineSmall)
-                Text(tr("با موسیقی بیشتر یاد بگیر؛ همهٔ امکانات پریمیوم، یک‌جا.", "Go further with music and unlock the full learning experience."), color = Color.White.copy(alpha = .86f))
-            }
+    PremiumFlatCard(color = Color(0xFF3A2C0C), contentColor = Color.White) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            AppIcon(UiIcons.CrownFilled, null, Modifier.size(20.dp), Color(0xFFFFDF80))
+            Text(tr("ری‌دنس پریمیوم", "REEDANCE PREMIUM"), color = Color(0xFFFFDF80),
+                style = MaterialTheme.typography.labelLarge)
         }
+        Text(tr("یادگیری، بی‌وقفه و بی‌مرز", "Learn without limits"), style = MaterialTheme.typography.headlineSmall)
+        Text(tr("با موسیقی بیشتر یاد بگیر؛ همهٔ امکانات پریمیوم، یک‌جا.", "Go further with music and unlock the full learning experience."))
     }
 }
 
 @Composable private fun PremiumBenefit(icon: Int, title: String, description: String, freeLimit: String) {
-    PremiumGlassCard {
+    PremiumFlatCard {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
-            Surface(Modifier.size(42.dp), shape = RoundedCornerShape(14.dp), color = Color(0xFFFFE69A).copy(alpha = .56f), contentColor = Color(0xFF765000)) {
+            Surface(Modifier.size(42.dp), shape = RoundedCornerShape(14.dp), color = Color(0xFFFFE69A), contentColor = Color(0xFF765000)) {
                 Box(contentAlignment = Alignment.Center) { AppIcon(icon, null, Modifier.size(22.dp), Color(0xFF765000)) }
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
@@ -233,18 +220,12 @@ private val PremiumColors = lightColorScheme(
     }
 }
 
-@Composable private fun PremiumGlassCard(content: @Composable ColumnScope.() -> Unit) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-        color = Color(0xFFFFF8E6).copy(alpha = .74f),
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        border = BorderStroke(1.dp, Color.White.copy(alpha = .9f)),
-        shadowElevation = 7.dp,
-        tonalElevation = 0.dp
-    ) {
-        Box(Modifier.background(Brush.verticalGradient(listOf(Color.White.copy(alpha = .55f), Color(0xFFFFF3CF).copy(alpha = .52f))))) {
-            Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
-        }
+@Composable private fun PremiumFlatCard(
+    color: Color = MaterialTheme.colorScheme.surface,
+    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp), color = color, contentColor = contentColor) {
+        Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
     }
 }
