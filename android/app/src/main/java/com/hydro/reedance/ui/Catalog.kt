@@ -193,7 +193,7 @@ private val artistSpace = Regex("\\s+")
         }
         Surface(color = MaterialTheme.colorScheme.background) {
             Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
-                CollapsingPillTabs(tabOptions, pagerState.currentPage, compact) { target ->
+                CollapsingPillTabs(tabOptions, pagerState.currentPage, compact, stretchExpanded = true) { target ->
                     scope.launch { pagerState.animateScrollToPage(target) }
                 }
             }

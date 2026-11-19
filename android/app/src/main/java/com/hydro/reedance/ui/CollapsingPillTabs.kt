@@ -24,7 +24,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 
 /** Two measured strips, one fixed-height slot. Animation reads occur only in render layers. */
-@Composable internal fun CollapsingPillTabs(items: List<PillOption>, selected: Int, compact: Boolean, onSelect: (Int) -> Unit) {
+@Composable internal fun CollapsingPillTabs(items: List<PillOption>, selected: Int, compact: Boolean, stretchExpanded: Boolean = false, onSelect: (Int) -> Unit) {
     val progress = remember { Animatable(if(compact) 1f else 0f) }
     val reduced = LocalReducedMotion.current
     LaunchedEffect(compact, reduced) {
@@ -35,7 +35,7 @@ import androidx.compose.ui.unit.dp
         LibraryTabStrip(items, selected, false, !compact, Modifier.graphicsLayer {
             alpha = 1f - progress.value
             translationY = -4.dp.toPx() * progress.value
-        }, onSelect)
+        }, onSelect, stretch = stretchExpanded)
         LibraryTabStrip(items, selected, true, compact, Modifier.graphicsLayer {
             alpha = progress.value
             translationY = 4.dp.toPx() * (1f - progress.value)
@@ -44,21 +44,23 @@ import androidx.compose.ui.unit.dp
 }
 
 @Composable private fun LibraryTabStrip(items: List<PillOption>, selected: Int, iconsOnly: Boolean,
-    interactive: Boolean, modifier: Modifier, onSelect: (Int) -> Unit) {
+    interactive: Boolean, modifier: Modifier, onSelect: (Int) -> Unit, stretch: Boolean = false) {
     val semantics = if(interactive) Modifier else Modifier.clearAndSetSemantics { }
     val scrollState = rememberScrollState()
     val selectedRequester = remember { BringIntoViewRequester() }
     LaunchedEffect(selected, interactive) {
-        if(interactive) {
+        if(interactive && !stretch) {
             withFrameNanos { }
             selectedRequester.bringIntoView()
         }
     }
-    Row(modifier.zIndex(if(interactive) 1f else 0f).then(semantics).horizontalScroll(scrollState, enabled = interactive).selectableGroup(),
+    Row(modifier.zIndex(if(interactive) 1f else 0f).then(semantics)
+        .then(if(stretch) Modifier.fillMaxWidth() else Modifier.horizontalScroll(scrollState, enabled = interactive)).selectableGroup(),
         horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
         items.forEachIndexed { index, item ->
             val active = selected == index
-            Surface((if(active && interactive) Modifier.bringIntoViewRequester(selectedRequester) else Modifier)
+            val sizing = if(stretch) Modifier.weight(1f) else Modifier
+            Surface(sizing.then(if(active && interactive && !stretch) Modifier.bringIntoViewRequester(selectedRequester) else Modifier)
                 .selectable(active, enabled = interactive, role = Role.Tab, onClick = { onSelect(index) })
                 .semantics { contentDescription = item.description }, shape = CircleShape,
                 color = if(active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
