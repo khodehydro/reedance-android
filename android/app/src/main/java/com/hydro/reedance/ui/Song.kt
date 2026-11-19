@@ -46,8 +46,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     val access = LessonAccess(premium = song.s("access") == "paid", subscribed = subscribed)
     var subscriptionInfo by remember { mutableStateOf(false) }
     val openQuiz = { if(access.preview) subscriptionInfo = true else quiz() }
-    val fa = LearningLanguage.persian
-    var mode by rememberSaveable { mutableIntStateOf(1) }
+    var mode by rememberSaveable(songId) { mutableIntStateOf(0) }
     var singleLyric by rememberSaveable(songId) { mutableStateOf(false) }
     var selectedWord by remember { mutableStateOf<JsonObject?>(null) }
     val scroll = rememberLazyListState()
@@ -107,7 +106,6 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
             } else {
                 val data = lesson!!
                 item(key = "player", contentType = "player") { PlayerPanel(model, data) }
-                item(key = "credits") { Text(data.obj("credits").tr("notice", fa), style = MaterialTheme.typography.bodySmall) }
                 item(key = "tabs") {
                     LessonTabs(tab, setTab, mode, { mode = it }, singleLyric, { singleLyric = !singleLyric }, openQuiz, if(!access.preview && hasStory) story else null)
                 }
@@ -142,7 +140,6 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                             }
                         }
                         if(lines.size > access.limit("lyrics")) item(key = "lyrics-preview") { PremiumPreview() }
-                        item(key = "lyric-quiz") { SongQuizInvitation(openQuiz) }
                     }
                     1 -> { itemsIndexed(data.a("grammar"), key = { _, it -> "grammar-${it.s("id")}" }, contentType = { _, _ -> "note" }) { index, note ->
                             val content: @Composable () -> Unit = { LearningNote(note) { SaveAction(model, "grammar", note.s("id")) } }
@@ -173,8 +170,8 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                         if(data.a(type).size > access.limit(type)) item(key = "$type-preview") { PremiumPreview() }
                     }
                 }
+                if(!subscribed) item(key = "subscription") { ProfileMembershipCard(premium, clickableCard = true) }
             }
-            if(access.preview) item(key = "subscription") { SubscriptionOffer(premium) }
         }
     }
     if(subscriptionInfo) AlertDialog(

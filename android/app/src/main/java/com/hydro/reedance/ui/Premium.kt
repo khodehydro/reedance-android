@@ -50,21 +50,6 @@ private val PremiumColors = lightColorScheme(
     }
 }
 
-@Composable internal fun SubscriptionOffer(onClick: () -> Unit) {
-    Surface(color = Color(0xFFFFE69A), contentColor = Color(0xFF493300), shape = RoundedCornerShape(22.dp)) {
-        Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                AppIcon(UiIcons.Crown, null, tint = Color(0xFF936000))
-                Text(tr("آموزش کامل با اشتراک پریمیوم", "Unlock the complete lesson"), style = MaterialTheme.typography.titleMedium)
-            }
-            Text(tr("برای دسترسی به تمام محتوای آموزشی، امکانات پریمیوم را ببین.", "Explore Premium for full access to all learning content."))
-            PressButton(onClick, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF493300), contentColor = Color(0xFFFFE69A))) {
-                Text(tr("مشاهدهٔ پریمیوم", "Explore Premium"))
-            }
-        }
-    }
-}
-
 /** Warm, full-screen golden haze with slow drifting dust; kept behind cards and copy for legibility. */
 @Composable internal fun PremiumBackdrop(modifier: Modifier = Modifier) {
     val motion = rememberInfiniteTransition(label = "premium-gold-dust")

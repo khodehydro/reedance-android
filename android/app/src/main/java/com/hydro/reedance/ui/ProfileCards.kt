@@ -1,5 +1,6 @@
 package com.hydro.reedance.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -10,10 +11,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 /** Local builds have no verified entitlement provider; never imply that a purchase succeeded. */
-@Composable internal fun ProfileMembershipCard(onUpgrade: () -> Unit) {
+@Composable internal fun ProfileMembershipCard(onUpgrade: () -> Unit, clickableCard: Boolean = false) {
     val gold = Color(0xFFFFDF80)
     val ink = Color(0xFF42310B)
-    Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp), color = gold, contentColor = ink) {
+    Surface(Modifier.fillMaxWidth().then(if(clickableCard) Modifier.clickable(onClick = onUpgrade) else Modifier),
+        shape = RoundedCornerShape(22.dp), color = gold, contentColor = ink) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 AppIcon(UiIcons.CrownFilled, null, Modifier.size(32.dp), tint = ink)
