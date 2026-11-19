@@ -1,41 +1,41 @@
 package com.hydro.reedance.ui
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import com.hydro.reedance.R
-import kotlin.math.PI
-import kotlin.math.sin
 
-private val PremiumColors = lightColorScheme(
-    primary = Color(0xFF805B00), onPrimary = Color.White,
-    primaryContainer = Color(0xFFFFE69A), onPrimaryContainer = Color(0xFF493300),
-    secondary = Color(0xFF725D2A), onSecondary = Color.White,
-    background = Color(0xFFFFF8E4), onBackground = Color(0xFF352900),
-    surface = Color(0xFFFFFEFA), onSurface = Color(0xFF352900),
-    surfaceVariant = Color(0xFFF5EAC9), onSurfaceVariant = Color(0xFF62552F),
-    outline = Color(0xFF827242), outlineVariant = Color(0xFFDED2AB)
+private val PaywallBackground = Color(0xFF151716)
+private val PaywallAccent = Color(0xFF34C6D6)
+private val PaywallMuted = Color(0xFFB4BCBC)
+private val PaywallColors = darkColorScheme(
+    primary = PaywallAccent, onPrimary = Color(0xFF102629),
+    surface = PaywallBackground, onSurface = Color.White,
+    onSurfaceVariant = PaywallMuted
 )
 
 /** Never compose hidden text/actions: blur is presentation, not access control.
@@ -51,121 +51,115 @@ private val PremiumColors = lightColorScheme(
     }
 }
 
-/** Warm, full-screen golden haze with slow drifting dust; kept behind cards and copy for legibility. */
-@Composable internal fun PremiumBackdrop(modifier: Modifier = Modifier) {
-    val motion = rememberInfiniteTransition(label = "premium-gold-dust")
-    val phase by motion.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(12000, easing = LinearEasing), RepeatMode.Restart),
-        label = "premium-dust-drift"
-    )
-    Box(
-        modifier.background(
-            Brush.linearGradient(
-                listOf(Color(0xFFFFFDF4), Color(0xFFFFE87A), Color(0xFFFFF8D9), Color(0xFFEFCB45), Color(0xFFFFFCF2))
-            )
+@Composable internal fun PremiumScreen(onClose: () -> Unit) {
+    MaterialTheme(colorScheme = PaywallColors, typography = MaterialTheme.typography) {
+        Surface(color = PaywallBackground, modifier = Modifier.fillMaxSize()) {
+            PremiumScreenContent(onClose)
+        }
+    }
+}
+
+@Composable private fun PremiumScreenContent(onClose: () -> Unit) {
+    var quarterly by rememberSaveable { mutableStateOf(true) }
+    var dialog by remember { mutableStateOf<String?>(null) }
+    val period = if(quarterly) tr("سه‌ماهه", "Three months") else tr("ماهیانه", "Monthly")
+    val price = if(quarterly) tr("۵۶۰٬۰۰۰", "560,000") else tr("۲۸۰٬۰۰۰", "280,000")
+    val unit = tr("تومان", "toman")
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+        .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom))) {
+        PaywallHero(onClose) { dialog = "restore" }
+        Column(Modifier.widthIn(max = 520.dp).fillMaxWidth().align(Alignment.CenterHorizontally)
+            .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).selectableGroup(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                PaywallPlan(tr("ماهیانه", "Monthly"), tr("۲۸۰٬۰۰۰", "280,000"), unit,
+                    tr("اشتراک یک‌ماهه", "One-month plan"), !quarterly, Modifier.weight(1f)) { quarterly = false }
+                PaywallPlan(tr("سه‌ماهه", "Three months"), tr("۵۶۰٬۰۰۰", "560,000"), unit,
+                    tr("یک ماه رایگان", "One month free"), quarterly, Modifier.weight(1f)) { quarterly = true }
+            }
+            PressButton(onClick = { dialog = "subscribe" }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+                shape = CircleShape, colors = ButtonDefaults.buttonColors(containerColor = PaywallAccent, contentColor = Color(0xFF102629))) {
+                Text(tr("خرید اشتراک", "Subscribe"), style = MaterialTheme.typography.titleMedium)
+            }
+            Text(tr("پرداخت در این نسخه فعال نیست.", "Payments are not active in this version."),
+                style = MaterialTheme.typography.bodySmall, color = PaywallMuted, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+            SnappPayBanner()
+        }
+    }
+    if(dialog != null) {
+        val restoring = dialog == "restore"
+        AlertDialog(
+            onDismissRequest = { dialog = null },
+            title = { Text(if(restoring) tr("بازیابی خرید", "Restore purchase") else tr("خرید اشتراک پریمیوم", "Subscribe to Premium")) },
+            text = { Text(if(restoring) tr("بازیابی خرید هنوز در این نسخه فعال نیست.", "Purchase restoration is not available in this version.")
+                else tr("طرح $period · $price $unit\nپرداخت هنوز فعال نیست و مبلغی دریافت نمی‌شود.",
+                    "$period · $price $unit\nPayments are not active yet. You won’t be charged.")) },
+            confirmButton = { PressTextButton({ dialog = null }) { Text(tr("متوجه شدم", "Got it")) } }
         )
-    ) {
-        Canvas(Modifier.matchParentSize()) {
-            val width = size.width
-            val height = size.height
-            drawRect(Brush.radialGradient(
-                listOf(Color(0xFFFFC928).copy(alpha = .54f), Color.Transparent),
-                center = Offset(width * .12f, height * .27f), radius = width * .78f
-            ))
-            drawRect(Brush.radialGradient(
-                listOf(Color.White.copy(alpha = .92f), Color.Transparent),
-                center = Offset(width * .86f, height * .58f), radius = width * .8f
-            ))
-            drawRect(Brush.radialGradient(
-                listOf(Color(0xFFFFD83D).copy(alpha = .52f), Color.Transparent),
-                center = Offset(width * .92f, height * .06f), radius = width * .58f
-            ))
-            repeat(92) { index ->
-                val seedX = ((index * 83) % 997) / 997f
-                val seedY = ((index * 229) % 991) / 991f
-                val y = (seedY + phase * (.46f + (index % 5) * .055f)) % 1f
-                val x = (seedX + sin(phase * (2.0 * PI) + index) * .008f).toFloat()
-                val radius = ((index % 3) + 2).dp.toPx() * if(index % 11 == 0) 1.5f else .95f
-                val tint = when(index % 4) {
-                    0 -> Color.White
-                    1 -> Color(0xFFFFF0B0)
-                    else -> Color(0xFFD2A73A)
+    }
+}
+
+@Composable private fun PaywallHero(onClose: () -> Unit, onRestore: () -> Unit) {
+    Box(Modifier.fillMaxWidth()) {
+        Image(painterResource(R.drawable.premium_placeholder), contentDescription = null,
+            modifier = Modifier.matchParentSize(), contentScale = ContentScale.Crop, alignment = Alignment.TopCenter)
+        Box(Modifier.matchParentSize().background(Brush.verticalGradient(
+            0f to Color(0xD500080B), .30f to Color(0x2900080B), .55f to Color.Transparent,
+            .72f to PaywallBackground.copy(alpha = .65f), 1f to PaywallBackground
+        )))
+        Column(Modifier.fillMaxWidth().statusBarsPadding(), horizontalAlignment = Alignment.CenterHorizontally) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween) {
+                val close = tr("بستن", "Close")
+                PressIconButton(onClose) {
+                    Text("×", style = MaterialTheme.typography.headlineMedium,
+                        modifier = Modifier.clearAndSetSemantics { contentDescription = close })
                 }
-                val alpha = if(index % 9 == 0) .48f else .3f
-                drawCircle(tint.copy(alpha = alpha), radius, Offset(x * width, y * height))
+                PressTextButton(onRestore) { Text(tr("بازیابی", "Restore"), color = Color.White) }
+            }
+            Text(tr("ری‌دنس پریمیوم", "Reedance Premium"), modifier = Modifier.padding(horizontal = 20.dp),
+                style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+            Text(tr("با موسیقی، بی‌مرز یاد بگیر", "Learn without limits, with music"),
+                modifier = Modifier.padding(start = 20.dp, top = 6.dp, end = 20.dp),
+                style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+            Spacer(Modifier.height(180.dp))
+            Column(Modifier.widthIn(max = 520.dp).fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                listOf(
+                    tr("دسترسی به همهٔ آهنگ‌های پریمیوم", "Access all Premium songs"),
+                    tr("آموزش کامل همهٔ آهنگ‌ها", "Full lessons for every song"),
+                    tr("نشان‌گذاری نامحدود", "Unlimited saved items"),
+                    tr("پخش در پس‌زمینه", "Background playback")
+                ).forEach { benefit ->
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        AppIcon(UiIcons.Check, null, Modifier.size(18.dp), tint = PaywallAccent)
+                        Text(benefit, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                    }
+                }
             }
         }
     }
 }
 
-@Composable internal fun PremiumScreen() {
-    val typography = MaterialTheme.typography
-    MaterialTheme(colorScheme = PremiumColors, typography = typography) {
-        PremiumScreenContent()
-    }
-}
-
-@Composable private fun PremiumScreenContent() {
-    var checkoutInfo by remember { mutableStateOf(false) }
-    Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-            .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 24.dp + LocalOverlayBottomInset.current),
-        verticalArrangement = Arrangement.spacedBy(18.dp)
-    ) {
-        PremiumHero()
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(tr("با پریمیوم چی به دست میاری؟", "What you get with Premium"), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
-            PremiumBenefit(
-                UiIcons.CrownFilled,
-                tr("دسترسی به آهنگ‌های پریمیوم", "Access to Premium songs"),
-                tr("همهٔ آهنگ‌های پریمیوم را برای یادگیری انتخاب کن.", "Choose any Premium song for your learning."),
-                tr("محدودیت ندارد", "No limit")
-            )
-            PremiumBenefit(
-                UiIcons.BookmarkFilled,
-                tr("آموزش کامل همهٔ آهنگ‌ها", "Full lessons for every song"),
-                tr("همهٔ خط‌های ترانه، نکته‌ها و لغت‌ها بدون محو شدن ببین.", "Read every lyric, note and vocabulary item without blurred previews."),
-                tr("رایگان: ۳ خط، ۲ نکته و ۵ لغت", "Free: 3 lyrics, 2 notes and 5 words")
-            )
-            PremiumBenefit(
-                UiIcons.BookmarkFilled,
-                tr("نشان‌گذاری نامحدود", "Unlimited saved items"),
-                tr("لغت‌ها، نکته‌های گرامری و بقیهٔ موارد آموزشی را بدون سقف ذخیره کن.", "Save vocabulary, grammar notes and other learning items without a cap."),
-                tr("رایگان: ۳۰ مورد از هر دسته", "Free: 30 per category")
-            )
-            PremiumBenefit(
-                UiIcons.PlayFilled,
-                tr("پخش در پس‌زمینه", "Background playback"),
-                tr("موسیقی را هنگام استفاده از برنامه‌های دیگر هم ادامه بده.", "Keep listening while you use other apps."),
-                tr("رایگان: با خروج از برنامه متوقف می‌شود", "Free: stops when you leave the app")
-            )
+@Composable private fun PaywallPlan(title: String, price: String, unit: String, detail: String,
+    selected: Boolean, modifier: Modifier, onSelect: () -> Unit) {
+    val shape = RoundedCornerShape(18.dp)
+    Surface(modifier.fillMaxHeight().heightIn(min = 128.dp).clip(shape)
+        .selectable(selected, role = Role.RadioButton, onClick = onSelect), shape = shape,
+        color = if(selected) Color(0xFF18282A) else Color(0xFF1C1F1E), contentColor = Color.White,
+        border = BorderStroke(1.dp, if(selected) PaywallAccent else Color(0xFF636969))) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(title, Modifier.weight(1f), color = if(selected) PaywallAccent else Color.White,
+                    style = MaterialTheme.typography.labelLarge)
+                if(selected) AppIcon(UiIcons.CheckFilled, null, Modifier.size(16.dp), tint = PaywallAccent)
+            }
+            Text(price, color = if(selected) PaywallAccent else Color.White, style = MaterialTheme.typography.headlineSmall)
+            Text(unit, style = MaterialTheme.typography.labelMedium, color = PaywallMuted)
+            Spacer(Modifier.weight(1f))
+            Text(detail, color = if(selected) PaywallAccent else PaywallMuted, style = MaterialTheme.typography.labelMedium)
         }
-        SnappPayBanner()
-        PressButton(
-            onClick = { checkoutInfo = true },
-            modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF493300), contentColor = Color(0xFFFFE69A))
-        ) {
-            AppIcon(UiIcons.CrownFilled, null, Modifier.size(20.dp))
-            Spacer(Modifier.width(8.dp))
-            Text(tr("خرید لایسنس پریمیوم", "Buy Premium license"), style = MaterialTheme.typography.titleMedium)
-        }
-        Text(
-            tr("قیمت و مدت اعتبار پس از اتصال خرید از مایکت نمایش داده می‌شود.", "Price and license duration will appear after Myket checkout is integrated."),
-            Modifier.fillMaxWidth(),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
-    if(checkoutInfo) AlertDialog(
-        onDismissRequest = { checkoutInfo = false },
-        title = { Text(tr("خرید هنوز فعال نیست", "Purchase isn’t available yet")) },
-        text = { Text(tr("اتصال به مایکت در این نسخه انجام نشده؛ هیچ مبلغی دریافت نمی‌شود و لایسنسی فعال نخواهد شد.", "Myket isn’t connected in this version. No payment will be taken and no license will be activated.")) },
-        confirmButton = { PressTextButton({ checkoutInfo = false }) { Text(tr("متوجه شدم", "Got it")) } }
-    )
 }
 
 /** Informational only: this card does not initiate checkout or imply an active payment integration. */
@@ -190,42 +184,5 @@ private val PremiumColors = lightColorScheme(
                 "SnappPay installments for Premium are not active in the app yet."),
                 style = MaterialTheme.typography.bodySmall)
         }
-    }
-}
-
-@Composable private fun PremiumHero() {
-    PremiumFlatCard(color = Color(0xFF3A2C0C), contentColor = Color.White) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            AppIcon(UiIcons.CrownFilled, null, Modifier.size(20.dp), Color(0xFFFFDF80))
-            Text(tr("ری‌دنس پریمیوم", "REEDANCE PREMIUM"), color = Color(0xFFFFDF80),
-                style = MaterialTheme.typography.labelLarge)
-        }
-        Text(tr("یادگیری، بی‌وقفه و بی‌مرز", "Learn without limits"), style = MaterialTheme.typography.headlineSmall)
-        Text(tr("با موسیقی بیشتر یاد بگیر؛ همهٔ امکانات پریمیوم، یک‌جا.", "Go further with music and unlock the full learning experience."))
-    }
-}
-
-@Composable private fun PremiumBenefit(icon: Int, title: String, description: String, freeLimit: String) {
-    PremiumFlatCard {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
-            Surface(Modifier.size(42.dp), shape = RoundedCornerShape(14.dp), color = Color(0xFFFFE69A), contentColor = Color(0xFF765000)) {
-                Box(contentAlignment = Alignment.Center) { AppIcon(icon, null, Modifier.size(22.dp), Color(0xFF765000)) }
-            }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                Text(title, style = MaterialTheme.typography.titleMedium)
-                Text(description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(freeLimit, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-            }
-        }
-    }
-}
-
-@Composable private fun PremiumFlatCard(
-    color: Color = MaterialTheme.colorScheme.surface,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp), color = color, contentColor = contentColor) {
-        Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
     }
 }

@@ -76,7 +76,7 @@ import com.hydro.reedance.data.*
     val message by model.message.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val settings by model.settings.collectAsStateWithLifecycle()
-    val lightSystemBars = page == "premium" || MaterialTheme.colorScheme.background.luminance() > .5f
+    val lightSystemBars = page != "premium" && MaterialTheme.colorScheme.background.luminance() > .5f
     SideEffect {
         if(page != "song-story") (context as? android.app.Activity)?.window?.let { window ->
             WindowCompat.getInsetsController(window, window.decorView).apply {
@@ -186,21 +186,18 @@ import com.hydro.reedance.data.*
     }
     SearchDismissHost {
      Box(Modifier.fillMaxSize()) {
-      if(page == "premium") PremiumBackdrop(Modifier.matchParentSize())
-      val scaffoldInsets = if(page == "song-story") WindowInsets(0, 0, 0, 0) else ScaffoldDefaults.contentWindowInsets
+      val scaffoldInsets = if(page == "song-story" || page == "premium") WindowInsets(0, 0, 0, 0) else ScaffoldDefaults.contentWindowInsets
       Scaffold(Modifier.fillMaxSize(), contentWindowInsets = scaffoldInsets, containerColor = Color.Transparent, snackbarHost = { SnackbarHost(snackbar) }, topBar = {
-        if(!songPage) Surface(color = if(page == "premium") Color.Transparent else MaterialTheme.colorScheme.background, contentColor = if(page == "premium") Color(0xFF493300) else MaterialTheme.colorScheme.onSurface) { Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            if(page in listOf("quiz", "premium", "profile")) {
+        if(!songPage && page != "premium") Surface(color = MaterialTheme.colorScheme.background, contentColor = MaterialTheme.colorScheme.onSurface) { Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            if(page == "quiz" || page == "profile") {
                 PressIconButton({
                     navigate(when(page) {
                         "quiz" -> if(reviewQuiz) "review" else "song-playback"
-                        "premium" -> premiumReturnPage
                         else -> profileReturnPage
                     })
                 }) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
                 Text(when(page) {
                     "quiz" -> tr("آزمون", "Practice")
-                    "premium" -> tr("پریمیوم", "Premium")
                     else -> tr("پروفایل", "Profile")
                 }, style = MaterialTheme.typography.titleLarge)
             } else {
@@ -260,7 +257,9 @@ import com.hydro.reedance.data.*
                                             .fillMaxSize()
                                             .then(if(active) Modifier else Modifier.offset(x = 10_000.dp).clearAndSetSemantics {})
                                     ) {
-                                        PageEntrance(mountedPage) {
+                                        if(mountedPage == "premium") {
+                                            if(active) PremiumScreen { navigateAction(premiumReturnPage) }
+                                        } else PageEntrance(mountedPage) {
                                             ShellPageContent(
                                                 page = mountedPage,
                                                 model = model,
@@ -352,7 +351,6 @@ import com.hydro.reedance.data.*
             model, songId, songTab, setSongTab, { navigate("home") }, { navigate("song-download") },
             { setReviewQuiz(false); navigate("quiz") }, { navigate("song-story") }
         ) { setPremiumReturnPage("song-playback"); navigate("premium") }
-        "premium" -> PremiumScreen()
         "game" -> GameScreen(model) { setPremiumReturnPage("game"); navigate("premium") }
         "quiz" -> QuizScreen(model, reviewQuiz, { navigate(if(reviewQuiz) "review" else "song-playback") }, { navigate("review") })
         "review" -> ReviewScreen(model) { setReviewQuiz(true); navigate("quiz") }
