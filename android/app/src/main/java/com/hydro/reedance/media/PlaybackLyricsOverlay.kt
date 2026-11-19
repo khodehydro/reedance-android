@@ -4,12 +4,17 @@ import android.app.KeyguardManager
 import android.content.Context
 import android.graphics.Color
 import android.graphics.PixelFormat
+import android.graphics.Point
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings as AndroidSettings
 import android.text.TextUtils
 import android.view.Gravity
+import android.view.MotionEvent
+import android.view.ViewConfiguration
+import android.view.WindowInsets
 import android.view.View
 import android.view.WindowManager
 import android.widget.Button
@@ -140,25 +145,37 @@ private class LyricsOverlayWindow(private val context: Context) {
     private var meaning: TextView? = null
     private var last: OverlayLyric? = null
     private var width = 0
+    private var layoutParams: WindowManager.LayoutParams? = null
+    // Keep the user's position across lyric gaps and mode changes for this playback service.
+    private var draggedPosition: Point? = null
+    private var windowArea = Point()
     private fun dp(value: Int) = (value * context.resources.displayMetrics.density).roundToInt()
 
     fun show(line: OverlayLyric, mode: Int, fa: Boolean, onMode: () -> Unit, onClose: () -> Unit): Boolean {
-        val targetWidth = dp((context.resources.configuration.screenWidthDp - 28).coerceIn(160, 380))
+        val configWidth = context.resources.configuration.screenWidthDp
+        val targetWidth = dp((configWidth - 48).coerceIn(160, 330))
         if(width != targetWidth) hide()
         if(root == null) {
+            windowArea = availableArea()
             val overlay = create(mode, fa, onMode, onClose)
-            val params = WindowManager.LayoutParams(targetWidth, WindowManager.LayoutParams.WRAP_CONTENT,
+            val initial = draggedPosition ?: Point((windowArea.x - targetWidth) / 2, dp(52))
+            val params = WindowManager.LayoutParams(targetWidth.coerceAtMost(windowArea.x), WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
                 PixelFormat.TRANSLUCENT).apply {
-                gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-                y = dp(52)
+                gravity = Gravity.TOP or Gravity.LEFT
+                x = initial.x.coerceIn(0, (windowArea.x - this.width).coerceAtLeast(0))
+                y = initial.y.coerceIn(0, (windowArea.y - dp(84)).coerceAtLeast(0))
                 setTitle("Reedance floating lyrics")
+            }
+            overlay.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+                if(root === overlay) moveTo(params.x, params.y, fromDrag = false)
             }
             try {
                 val wm = manager ?: return false
                 wm.addView(overlay, params)
                 root = overlay
+                layoutParams = params
                 width = targetWidth
             } catch(_: RuntimeException) {
                 // Restricted profiles, OEM policies and permission changes can reject this window.
@@ -179,32 +196,92 @@ private class LyricsOverlayWindow(private val context: Context) {
         return true
     }
 
+    @Suppress("DEPRECATION")
+    private fun availableArea(): Point {
+        if(Build.VERSION.SDK_INT >= 30 && manager != null) {
+            runCatching {
+                val metrics = manager.currentWindowMetrics
+                val insets = metrics.windowInsets.getInsetsIgnoringVisibility(
+                    WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+                return Point((metrics.bounds.width() - insets.left - insets.right).coerceAtLeast(1),
+                    (metrics.bounds.height() - insets.top - insets.bottom).coerceAtLeast(1))
+            }
+        }
+        val metrics = context.resources.displayMetrics
+        return Point(metrics.widthPixels.coerceAtLeast(1), metrics.heightPixels.coerceAtLeast(1))
+    }
+
+    private fun moveTo(x: Int, y: Int, fromDrag: Boolean) {
+        val card = root ?: return
+        val params = layoutParams ?: return
+        val left = x.coerceIn(0, (windowArea.x - params.width).coerceAtLeast(0))
+        val top = y.coerceIn(0, (windowArea.y - card.height).coerceAtLeast(0))
+        if(fromDrag) draggedPosition = Point(left, top)
+        if(params.x == left && params.y == top) return
+        params.x = left
+        params.y = top
+        runCatching { manager?.updateViewLayout(card, params) }
+    }
+
+    @Suppress("ClickableViewAccessibility")
+    private fun enableDrag(handle: View) {
+        val slop = ViewConfiguration.get(context).scaledTouchSlop
+        var touch = Point()
+        var start = Point()
+        var dragging = false
+        var pointer = -1
+        handle.setOnTouchListener { _, event ->
+            when(event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    val params = layoutParams ?: return@setOnTouchListener false
+                    windowArea = availableArea()
+                    touch = Point(event.rawX.roundToInt(), event.rawY.roundToInt())
+                    start = Point(params.x, params.y)
+                    pointer = event.getPointerId(0)
+                    dragging = false
+                }
+                MotionEvent.ACTION_MOVE -> if(event.getPointerId(0) == pointer) {
+                    val dx = event.rawX.roundToInt() - touch.x
+                    val dy = event.rawY.roundToInt() - touch.y
+                    if(kotlin.math.abs(dx) > slop || kotlin.math.abs(dy) > slop) dragging = true
+                    if(dragging) moveTo(start.x + dx, start.y + dy, fromDrag = true)
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> pointer = -1
+            }
+            true
+        }
+    }
+
     private fun create(mode: Int, fa: Boolean, onMode: () -> Unit, onClose: () -> Unit): LinearLayout {
         val modeName = if(fa) listOf("متن اصلی", "ترجمهٔ خطی", "کلمه‌به‌کلمه")[mode]
             else listOf("Original", "Line by line", "Word by word")[mode]
         return LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(14), dp(6), dp(14), dp(13))
+            setPadding(dp(12), 0, dp(12), dp(14))
             background = GradientDrawable().apply {
-                setColor(0xF21A2340.toInt())
-                cornerRadius = dp(18).toFloat()
-                setStroke(dp(1), 0xFF5279B5.toInt())
+                setColor(0xC9000000.toInt())
+                cornerRadius = dp(20).toFloat()
             }
             addView(LinearLayout(context).apply {
                 gravity = Gravity.CENTER_VERTICAL
                 layoutDirection = if(fa) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
-                addView(TextView(context).apply {
-                    text = if(fa) "ری‌دنس" else "Reedance"
-                    setTextColor(0xFFBBD3FF.toInt()); textSize = 12f
-                    maxLines = 1
-                }, LinearLayout.LayoutParams(0, WindowManager.LayoutParams.WRAP_CONTENT, 1f))
+                val grip = TextView(context).apply {
+                    text = "⠿"
+                    textSize = 23f
+                    gravity = Gravity.CENTER_VERTICAL
+                    setTextColor(Color.WHITE)
+                    contentDescription = if(fa) "برای جابه‌جایی بکش" else "Drag to move floating lyrics"
+                    setPadding(dp(8), 0, 0, 0)
+                }
+                enableDrag(grip)
+                addView(grip, LinearLayout.LayoutParams(0, dp(48), 1f))
                 addView(control(modeName, if(fa) "تغییر حالت متن: $modeName" else "Change lyric mode: $modeName", onMode),
                     LinearLayout.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT, dp(48)))
-                addView(control("×", if(fa) "بستن متن شناور" else "Close floating lyrics", onClose),
+                addView(control("×", if(fa) "بستن متن شناور" else "Close floating lyrics", onClose).apply { textSize = 24f },
                     LinearLayout.LayoutParams(dp(48), dp(48)))
             })
             original = lyricText(18f, Color.WHITE, 3).also { addView(it) }
-            meaning = lyricText(14f, 0xFFC6DBFF.toInt(), 5).apply { setPadding(0, dp(6), 0, 0) }.also { addView(it) }
+            meaning = lyricText(14f, Color.WHITE, 5).apply { setPadding(0, dp(6), 0, 0) }.also { addView(it) }
         }
     }
 
@@ -234,6 +311,7 @@ private class LyricsOverlayWindow(private val context: Context) {
     fun hide() {
         root?.let { view -> runCatching { manager?.removeViewImmediate(view) } }
         root = null
+        layoutParams = null
         original = null
         meaning = null
         last = null

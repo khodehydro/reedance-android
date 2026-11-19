@@ -304,7 +304,6 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
         }
     }
     fun lyricsOverlay(enabled: Boolean) { operation("ذخیره تنظیمات ناموفق / Settings save failed") { preferences.lyricsOverlay(enabled) } }
-    fun lyricsOverlayMode(mode: Int) { operation("ذخیره تنظیمات ناموفق / Settings save failed") { preferences.lyricsOverlayMode(mode) } }
     fun reminders(enabled: Boolean) { operation("ذخیره تنظیمات ناموفق / Settings save failed") { preferences.reminders(enabled) } }
     fun completePermissionSetup() { operation("ذخیره تنظیمات ناموفق / Settings save failed") { preferences.completeSetup() } }
     fun recordVisit() { operation("ذخیره تنظیمات ناموفق / Settings save failed") { preferences.visited(); com.hydro.reedance.notifications.LearningReminders.schedule(getApplication(), preferences.flow.first().reminders) } }

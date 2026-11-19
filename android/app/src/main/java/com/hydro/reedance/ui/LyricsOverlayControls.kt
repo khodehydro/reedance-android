@@ -54,10 +54,7 @@ import com.hydro.reedance.domain.backgroundPlaybackAllowed
                 "In Android settings, select Reedance and allow display over other apps."), style = MaterialTheme.typography.bodySmall)
             if(settingsUnavailable) Text(tr("این تنظیم در دستگاه در دسترس نیست.", "This setting is unavailable on this device."),
                 style = MaterialTheme.typography.bodySmall)
-            if(settings.lyricsOverlay && granted) {
-                ChoiceRow(listOf(tr("اصلی", "Original"), tr("خط‌به‌خط", "Line by line"), tr("کلمه‌به‌کلمه", "Word by word")),
-                    settings.lyricsOverlayMode, model::lyricsOverlayMode)
-            }
+
         }
     }
 }
