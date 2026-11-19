@@ -1,5 +1,6 @@
 package com.hydro.reedance.ui
 
+import androidx.activity.compose.BackHandler
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.LruCache
@@ -15,6 +16,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -36,16 +38,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hydro.reedance.R
 import com.hydro.reedance.data.*
 import com.google.gson.JsonObject
 import com.hydro.reedance.domain.latestSongs
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
 
 fun cover(id: String): Int? = when(id) {
     "pending-gulum-ii", "gulum-2" -> R.drawable.gulum_ii
@@ -137,25 +140,43 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
         }
     }
 }
+internal data class ExploreArtist(val key: String, val name: String, val songs: List<JsonObject>)
+
+internal fun exploreArtists(songs: List<JsonObject>): List<ExploreArtist> = songs
+    .filter { it.s("artist").isNotBlank() }
+    .groupBy { it.s("artist").trim().replace(artistSpace, " ").lowercase(Locale.ROOT) }
+    .map { (key, songs) -> ExploreArtist(key, songs.first().s("artist").trim(), songs) }
+    .sortedBy { it.key }
+
+private val artistSpace = Regex("\\s+")
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable private fun ExploreCatalogScreen(model: AppModel, openSong: (String) -> Unit) {
     val catalog by model.catalog.collectAsStateWithLifecycle()
     val settings by model.settings.collectAsStateWithLifecycle()
-    val installedIds by model.installedIds.collectAsStateWithLifecycle()
-    val query = rememberSaveable { mutableStateOf("") }
     val targetLanguage = settings.targetLanguage
-    val filters = listOf(
-        PillOption(tr("همه", "All"), UiIcons.All, filledIcon = UiIcons.AllFilled),
-        PillOption(tr("رایگان", "Free"), UiIcons.Play, filledIcon = UiIcons.PlayFilled),
-        PillOption(tr("پریمیوم", "Premium"), UiIcons.Crown, filledIcon = UiIcons.CrownFilled),
-        PillOption(tr("دانلودشده‌ها", "Downloaded"), UiIcons.Check, filledIcon = UiIcons.CheckFilled)
+    val songs = remember(catalog, targetLanguage) { catalog.filter { it.s("language") == targetLanguage } }
+    val artists = remember(songs) { exploreArtists(songs) }
+    var query by rememberSaveable { mutableStateOf("") }
+    var artistKey by rememberSaveable(targetLanguage) { mutableStateOf<String?>(null) }
+    val selectedArtist = artists.firstOrNull { it.key == artistKey }
+    val tabOptions = listOf(
+        PillOption(tr("آهنگ‌ها", "Songs"), UiIcons.Lyrics, filledIcon = UiIcons.LyricsFilled),
+        PillOption(tr("آرتیست‌ها", "Artists"), UiIcons.User)
     )
-    val pagerState = rememberPagerState(pageCount = { filters.size })
+    val pagerState = rememberPagerState { tabOptions.size }
     val scope = rememberCoroutineScope()
-    val compactPages = remember(filters.size) {
-        mutableStateListOf<Boolean>().apply { repeat(filters.size) { add(false) } }
+    var compact by rememberSaveable(targetLanguage) { mutableStateOf(false) }
+    val songGrid = rememberLazyGridState()
+    val artistGrid = rememberLazyGridState()
+    val pageActive = LocalPageActive.current
+    BackHandler(pageActive && selectedArtist != null) { artistKey = null }
+    if(selectedArtist != null) {
+        key(selectedArtist.key) {
+            ArtistSongs(selectedArtist, { artistKey = null }, openSong)
+        }
+        return
     }
-    val compact = compactPages[pagerState.currentPage]
 
     Column(Modifier.fillMaxSize()) {
         AnimatedVisibility(
@@ -165,81 +186,109 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
         ) {
             Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Heading(tr("کشف موسیقی", "Discover music"), tr("موسیقی را بشنو، کلمه‌ها را کشف کن.", "Good music. Words that stay with you."))
-                CatalogSearchField(query.value, { query.value = it },
-                    tr("جست‌وجوی آهنگ یا خواننده", "Search songs or artists"), visible = !compact)
+                CatalogSearchField(query, { query = it },
+                    if(pagerState.settledPage == 1) tr("جست‌وجوی آرتیست", "Search artists")
+                    else tr("جست‌وجوی آهنگ یا خواننده", "Search songs or artists"), visible = !compact)
             }
         }
         Surface(color = MaterialTheme.colorScheme.background) {
             Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
-                CollapsingPillTabs(filters, pagerState.currentPage, compact) { target ->
-                    scope.launch {
-                        if(kotlin.math.abs(target - pagerState.currentPage) > 1) pagerState.scrollToPage(target)
-                        else pagerState.animateScrollToPage(target)
-                    }
+                CollapsingPillTabs(tabOptions, pagerState.currentPage, compact) { target ->
+                    scope.launch { pagerState.animateScrollToPage(target) }
                 }
             }
         }
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.weight(1f),
-            key = { filters[it].label }
-        ) { page ->
-            val gridState = rememberLazyGridState()
+        val term = query.trim()
+        val visibleSongs = remember(songs, term) {
+            songs.filter { term.isEmpty() || it.s("title").contains(term, true) || it.s("artist").contains(term, true) }
+        }
+        val visibleArtists = remember(artists, term) { artists.filter { it.name.contains(term, true) } }
+        LaunchedEffect(term, targetLanguage) {
+            if(songGrid.firstVisibleItemIndex != 0 || songGrid.firstVisibleItemScrollOffset != 0) songGrid.requestScrollToItem(0)
+            if(artistGrid.firstVisibleItemIndex != 0 || artistGrid.firstVisibleItemScrollOffset != 0) artistGrid.requestScrollToItem(0)
+        }
+        HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { page ->
             val threshold = with(LocalDensity.current) { 40.dp.toPx() }
             val scrollConnection = remember(page, threshold) {
-                LibraryScrollConnection(threshold) { compactPages[page] = it }
-            }
-            val filtered = remember(catalog, targetLanguage, page, installedIds, query.value) {
-                catalog.filter { song ->
-                    song.s("language") == targetLanguage &&
-                        (query.value.isBlank() || listOf(song.s("title"), song.s("artist")).any { it.contains(query.value.trim(), ignoreCase = true) }) &&
-                        when(page) {
-                            1 -> song.s("access") == "free"
-                            2 -> song.s("access") == "paid"
-                            3 -> song.s("id") in installedIds
-                            else -> true
-                        }
+                LibraryScrollConnection(threshold) { collapsed ->
+                    if(pagerState.settledPage == page && !pagerState.isScrollInProgress) compact = collapsed
                 }
             }
-            LaunchedEffect(gridState, scrollConnection) {
-                snapshotFlow { gridState.canScrollForward || gridState.canScrollBackward }
-                    .distinctUntilChanged().collectLatest { scrollable ->
-                        if(!scrollable) scrollConnection.reset()
-                    }
-            }
-            LaunchedEffect(query.value, targetLanguage, gridState) { gridState.scrollToItem(0) }
-            val reduced = LocalReducedMotion.current
+            val gridState = if(page == 0) songGrid else artistGrid
             LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                state = gridState,
+                columns = GridCells.Fixed(2), state = gridState,
                 modifier = Modifier.fillMaxSize().nestedScroll(scrollConnection),
                 contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 20.dp + LocalOverlayBottomInset.current),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                items(filtered, key = { it.s("id") }, contentType = { "song" }) { song ->
-                    SongTile(song, Modifier.fillMaxWidth().animateItem(
-                        fadeInSpec = tween(if(reduced) 0 else 180),
-                        placementSpec = tween(if(reduced) 0 else 220),
-                        fadeOutSpec = tween(if(reduced) 0 else 140)
-                    )) { openSong(song.s("id")) }
+                if(page == 0) {
+                    items(visibleSongs, key = { it.s("id") }, contentType = { "song" }) { song ->
+                        SongTile(song, Modifier.fillMaxWidth()) { openSong(song.s("id")) }
+                    }
+                } else {
+                    items(visibleArtists, key = { it.key }, contentType = { "artist" }) { artist ->
+                        ArtistTile(artist) { artistKey = artist.key }
+                    }
                 }
-                if(filtered.isEmpty()) item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
-                    Panel { Text(tr("آهنگی پیدا نشد؛ جست‌وجو یا فیلترها را تغییر بده.", "No songs found. Try another search or filter.")) }
-                }
-                item(key = "credits", span = { GridItemSpan(maxLineSpan) }) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) { DeveloperCredit() }
+                if(if(page == 0) visibleSongs.isEmpty() else visibleArtists.isEmpty()) item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
+                    Panel { Text(if(page == 0) tr("آهنگی پیدا نشد.", "No songs found.") else tr("آرتیستی پیدا نشد.", "No artists found.")) }
                 }
             }
         }
     }
 }
 
+@Composable private fun ArtistTile(artist: ExploreArtist, onClick: () -> Unit) {
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).clickable(onClick = onClick).padding(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        ArtistCover(artist, Modifier.fillMaxWidth(.86f).aspectRatio(1f))
+        Text(artist.name, textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.titleMedium)
+        Text(artistSongCount(artist.songs.size), style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable private fun ArtistCover(artist: ExploreArtist, modifier: Modifier) {
+    val coverId = artist.songs.asSequence().map { songCoverId(it) }.firstOrNull { cover(it) != null }
+    if(coverId != null) CoverImage(coverId, "", modifier, shapeProgress = 1f)
+    else Box(modifier.clip(CircleShape).background(MaterialTheme.colorScheme.secondaryContainer), contentAlignment = Alignment.Center) {
+        Text(artist.name.split(artistSpace).take(2).joinToString("") { it.take(1).uppercase(Locale.ROOT) },
+            color = MaterialTheme.colorScheme.onSecondaryContainer, style = MaterialTheme.typography.headlineMedium)
+    }
+}
+
+@Composable private fun artistSongCount(count: Int) = tr("$count آهنگ", if(count == 1) "1 song" else "$count songs")
+
+@Composable private fun ArtistSongs(artist: ExploreArtist, back: () -> Unit, openSong: (String) -> Unit) {
+    LazyVerticalGrid(columns = GridCells.Fixed(2), modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 20.dp + LocalOverlayBottomInset.current),
+        horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+        item(key = "artist-header", span = { GridItemSpan(maxLineSpan) }) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                PressIconButton(back) { AppIcon(UiIcons.Back, tr("بازگشت به آرتیست‌ها", "Back to artists")) }
+                ArtistCover(artist, Modifier.size(56.dp))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text(artist.name, style = MaterialTheme.typography.titleLarge)
+                    Text(artistSongCount(artist.songs.size), style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+        items(artist.songs, key = { it.s("id") }, contentType = { "song" }) { song ->
+            SongTile(song, Modifier.fillMaxWidth()) { openSong(song.s("id")) }
+        }
+    }
+}
+
+private fun songCoverId(song: JsonObject): String =
+    if(song.s("distributionRef") == "gulum-ii") "pending-gulum-ii" else song.s("id")
+
 @Composable private fun SongTile(song: JsonObject, modifier: Modifier, onClick: () -> Unit) {
     val entrance = if(LocalItemEntranceEnabled.current) modifier.itemEntrance() else modifier
     Column(entrance.clickable(onClick = onClick), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Box {
-            CoverImage(if(song.s("distributionRef") == "gulum-ii") "pending-gulum-ii" else song.s("id"), song.s("title"), Modifier.fillMaxWidth().aspectRatio(1f))
+            CoverImage(songCoverId(song), song.s("title"), Modifier.fillMaxWidth().aspectRatio(1f))
         }
         SongTitle(song.s("title"), premium = song.s("access") == "paid")
         Text(song.s("artist"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

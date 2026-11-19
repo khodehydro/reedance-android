@@ -66,6 +66,7 @@ import com.hydro.reedance.data.*
 }
 @Composable internal fun MainShell(model: AppModel) {
     var page by rememberSaveable { mutableStateOf("home") }
+    var songReturnPage by rememberSaveable { mutableStateOf("home") }
     var songId by rememberSaveable { mutableStateOf("") }
     var songTab by rememberSaveable { mutableIntStateOf(0) }
     var reviewQuiz by rememberSaveable { mutableStateOf(false) }
@@ -159,6 +160,7 @@ import com.hydro.reedance.data.*
         }
     }
     fun openSong(id: String) {
+        if(page !in songPageTypes) songReturnPage = page
         songId = id
         navigate(if(id in installedIds) "song-playback" else "song-download")
     }
@@ -178,6 +180,7 @@ import com.hydro.reedance.data.*
     BackHandler(page != "home") {
         navigate(when(page) {
             "song-story" -> "song-playback"
+            "song-download", "song-playback" -> songReturnPage
             "quiz" -> if(reviewQuiz) "review" else "song-playback"
             "premium" -> premiumReturnPage
             "profile" -> profileReturnPage
@@ -271,7 +274,8 @@ import com.hydro.reedance.data.*
                                                 starter = starterAction,
                                                 reviewQuiz = if(mountedPage == "quiz") reviewQuiz else false,
                                                 setReviewQuiz = setReviewQuizAction,
-                                                setPremiumReturnPage = setPremiumReturnAction
+                                                setPremiumReturnPage = setPremiumReturnAction,
+                                                songReturnPage = songReturnPage
                                             )
                                         }
                                     }
@@ -316,7 +320,8 @@ import com.hydro.reedance.data.*
                                             starter = starterAction,
                                             reviewQuiz = reviewQuiz,
                                             setReviewQuiz = setReviewQuizAction,
-                                            setPremiumReturnPage = setPremiumReturnAction
+                                            setPremiumReturnPage = setPremiumReturnAction,
+                                                songReturnPage = songReturnPage
                                         )
                                     }
                                 }
@@ -342,13 +347,14 @@ import com.hydro.reedance.data.*
     starter: () -> Unit,
     reviewQuiz: Boolean,
     setReviewQuiz: (Boolean) -> Unit,
-    setPremiumReturnPage: (String) -> Unit
+    setPremiumReturnPage: (String) -> Unit,
+    songReturnPage: String
 ) {
     when(page) {
         "home", "explore" -> CatalogScreen(model, page == "home", openSong, starter, { navigate("library") }) { navigate("explore") }
-        "song-download" -> SongDownloadScreen(model, songId, { navigate("home") }) { navigate("song-playback") }
+        "song-download" -> SongDownloadScreen(model, songId, { navigate(songReturnPage) }) { navigate("song-playback") }
         "song-playback" -> SongPlaybackScreen(
-            model, songId, songTab, setSongTab, { navigate("home") }, { navigate("song-download") },
+            model, songId, songTab, setSongTab, { navigate(songReturnPage) }, { navigate("song-download") },
             { setReviewQuiz(false); navigate("quiz") }, { navigate("song-story") }
         ) { setPremiumReturnPage("song-playback"); navigate("premium") }
         "game" -> GameScreen(model) { setPremiumReturnPage("game"); navigate("premium") }
