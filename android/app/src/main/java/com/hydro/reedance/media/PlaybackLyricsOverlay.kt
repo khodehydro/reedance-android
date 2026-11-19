@@ -149,8 +149,10 @@ private class LyricsOverlayWindow(private val context: Context) {
     private var last: OverlayLyric? = null
     private var width = 0
     private var layoutParams: WindowManager.LayoutParams? = null
-    // Keep the user's position across lyric gaps and mode changes for this playback service.
-    private var draggedPosition: Point? = null
+    private val positionStore = context.applicationContext.getSharedPreferences("floating_lyrics_position", Context.MODE_PRIVATE)
+    private var draggedPosition: Point? = if(positionStore.contains("x") && positionStore.contains("y"))
+        Point(positionStore.getInt("x", 0), positionStore.getInt("y", 0)) else null
+    private var positionChanged = false
     private var windowArea = Point()
     private fun dp(value: Int) = (value * context.resources.displayMetrics.density).roundToInt()
 
@@ -219,46 +221,75 @@ private class LyricsOverlayWindow(private val context: Context) {
         val params = layoutParams ?: return
         val left = x.coerceIn(0, (windowArea.x - params.width).coerceAtLeast(0))
         val top = y.coerceIn(0, (windowArea.y - card.height).coerceAtLeast(0))
-        if(fromDrag) draggedPosition = Point(left, top)
+        if(fromDrag) {
+            draggedPosition = Point(left, top)
+            positionChanged = true
+        }
         if(params.x == left && params.y == top) return
         params.x = left
         params.y = top
         runCatching { manager?.updateViewLayout(card, params) }
     }
 
-    @Suppress("ClickableViewAccessibility")
-    private fun enableDrag(handle: View) {
-        val slop = ViewConfiguration.get(context).scaledTouchSlop
-        var touch = Point()
-        var start = Point()
-        var dragging = false
-        var pointer = -1
-        handle.setOnTouchListener { _, event ->
+    private fun savePosition() {
+        if(!positionChanged) return
+        draggedPosition?.let { point -> positionStore.edit().putInt("x", point.x).putInt("y", point.y).apply() }
+        positionChanged = false
+    }
+
+    /** Intercept movement anywhere in the card, but let the child buttons handle ordinary taps. */
+    private inner class DraggableCard : LinearLayout(context) {
+        private val slop = ViewConfiguration.get(context).scaledTouchSlop
+        private var touch = Point()
+        private var start = Point()
+        private var dragging = false
+        private var pointer = -1
+
+        private fun begin(event: MotionEvent) {
+            val params = layoutParams as? WindowManager.LayoutParams ?: return
+            windowArea = availableArea()
+            touch = Point(event.rawX.roundToInt(), event.rawY.roundToInt())
+            start = Point(params.x, params.y)
+            pointer = event.getPointerId(0)
+            dragging = false
+        }
+
+        private fun move(event: MotionEvent): Boolean {
+            if(event.getPointerId(0) != pointer) return dragging
+            val dx = event.rawX.roundToInt() - touch.x
+            val dy = event.rawY.roundToInt() - touch.y
+            if(kotlin.math.abs(dx) > slop || kotlin.math.abs(dy) > slop) dragging = true
+            if(dragging) moveTo(start.x + dx, start.y + dy, fromDrag = true)
+            return dragging
+        }
+
+        private fun finish() {
+            savePosition()
+            dragging = false
+            pointer = -1
+        }
+
+        override fun onInterceptTouchEvent(event: MotionEvent): Boolean = when(event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> { begin(event); false }
+            MotionEvent.ACTION_MOVE -> move(event)
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> { finish(); false }
+            else -> false
+        }
+
+        override fun onTouchEvent(event: MotionEvent): Boolean {
             when(event.actionMasked) {
-                MotionEvent.ACTION_DOWN -> {
-                    val params = layoutParams ?: return@setOnTouchListener false
-                    windowArea = availableArea()
-                    touch = Point(event.rawX.roundToInt(), event.rawY.roundToInt())
-                    start = Point(params.x, params.y)
-                    pointer = event.getPointerId(0)
-                    dragging = false
-                }
-                MotionEvent.ACTION_MOVE -> if(event.getPointerId(0) == pointer) {
-                    val dx = event.rawX.roundToInt() - touch.x
-                    val dy = event.rawY.roundToInt() - touch.y
-                    if(kotlin.math.abs(dx) > slop || kotlin.math.abs(dy) > slop) dragging = true
-                    if(dragging) moveTo(start.x + dx, start.y + dy, fromDrag = true)
-                }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> pointer = -1
+                MotionEvent.ACTION_DOWN -> if(pointer == -1) begin(event)
+                MotionEvent.ACTION_MOVE -> move(event)
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> finish()
             }
-            true
+            return true
         }
     }
 
     private fun create(mode: Int, fa: Boolean, onMode: () -> Unit, onClose: () -> Unit): LinearLayout {
         val modeName = if(fa) listOf("متن اصلی", "ترجمهٔ خطی", "کلمه‌به‌کلمه")[mode]
             else listOf("Original", "Line by line", "Word by word")[mode]
-        return LinearLayout(context).apply {
+        return DraggableCard().apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(12), 0, dp(12), dp(14))
             background = GradientDrawable().apply {
@@ -276,7 +307,6 @@ private class LyricsOverlayWindow(private val context: Context) {
                     contentDescription = if(fa) "برای جابه‌جایی بکش" else "Drag to move floating lyrics"
                     setPadding(dp(8), 0, 0, 0)
                 }
-                enableDrag(grip)
                 addView(grip, LinearLayout.LayoutParams(0, dp(48), 1f))
                 addView(ImageButton(context).apply {
                     setImageResource(when(mode) {
@@ -286,7 +316,7 @@ private class LyricsOverlayWindow(private val context: Context) {
                     })
                     setColorFilter(Color.WHITE)
                     scaleType = ImageView.ScaleType.CENTER_INSIDE
-                    setPadding(dp(12), dp(12), dp(12), dp(12))
+                    setPadding(dp(14), dp(14), dp(14), dp(14))
                     setBackgroundColor(Color.TRANSPARENT)
                     contentDescription = if(fa) "تغییر حالت متن: $modeName" else "Change lyric mode: $modeName"
                     setOnClickListener { onMode() }
@@ -323,6 +353,7 @@ private class LyricsOverlayWindow(private val context: Context) {
     }
 
     fun hide() {
+        savePosition()
         root?.let { view -> runCatching { manager?.removeViewImmediate(view) } }
         root = null
         layoutParams = null
