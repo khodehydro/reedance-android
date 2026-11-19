@@ -76,12 +76,12 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
         bitmap?.let { Image(it.asImageBitmap(), description, Modifier.matchParentSize(), contentScale = ContentScale.Crop) }
     }
 }
-@Composable fun CatalogScreen(model: AppModel, home: Boolean, openSong: (String) -> Unit, starter: () -> Unit, explore: () -> Unit) {
-    if(home) CatalogFeed(model, true, openSong, starter, explore)
+@Composable fun CatalogScreen(model: AppModel, home: Boolean, openSong: (String) -> Unit, starter: () -> Unit, openLibrary: () -> Unit, explore: () -> Unit) {
+    if(home) CatalogFeed(model, true, openSong, starter, openLibrary, explore)
     else ExploreCatalogScreen(model, openSong)
 }
 
-@Composable private fun CatalogFeed(model: AppModel, home: Boolean, openSong: (String) -> Unit, starter: () -> Unit, explore: () -> Unit) {
+@Composable private fun CatalogFeed(model: AppModel, home: Boolean, openSong: (String) -> Unit, starter: () -> Unit, openLibrary: () -> Unit, explore: () -> Unit) {
     val catalog by model.catalog.collectAsStateWithLifecycle()
     val settings by model.settings.collectAsStateWithLifecycle()
     val targetLanguage = settings.targetLanguage
@@ -126,6 +126,9 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
         }
         if(filtered.isEmpty()) item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
             Panel { Text(if(home) tr("هنوز آهنگی برای این زبان منتشر نشده است.", "No songs published for this language yet.") else tr("آهنگی پیدا نشد؛ فیلترها را تغییر بده.", "No songs found. Try another filter.")) }
+        }
+        if(home) item(key = "saved-preview", span = { GridItemSpan(maxLineSpan) }) {
+            HomeSavedPreview(model, catalog, openSong, openLibrary)
         }
         item(key = "credits", span = { GridItemSpan(maxLineSpan) }) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {

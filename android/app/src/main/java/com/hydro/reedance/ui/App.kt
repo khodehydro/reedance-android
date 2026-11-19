@@ -345,7 +345,7 @@ import com.hydro.reedance.data.*
     setPremiumReturnPage: (String) -> Unit
 ) {
     when(page) {
-        "home", "explore" -> CatalogScreen(model, page == "home", openSong, starter) { navigate("explore") }
+        "home", "explore" -> CatalogScreen(model, page == "home", openSong, starter, { navigate("library") }) { navigate("explore") }
         "song-download" -> SongDownloadScreen(model, songId, { navigate("home") }) { navigate("song-playback") }
         "song-playback" -> SongPlaybackScreen(
             model, songId, songTab, setSongTab, { navigate("home") }, { navigate("song-download") },
