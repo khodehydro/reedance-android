@@ -270,6 +270,7 @@ private class LyricsOverlayWindow(private val context: Context) {
             }
             wm.updateViewLayout(card, params)
             locked = value
+            updateLockedStyle(card, value)
             controls?.visibility = if(value) View.INVISIBLE else View.VISIBLE
             card.importantForAccessibility = if(value) View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS else View.IMPORTANT_FOR_ACCESSIBILITY_AUTO
             if(!value) removeUnlockButton()
@@ -279,14 +280,27 @@ private class LyricsOverlayWindow(private val context: Context) {
             removeUnlockButton()
             params.flags = baseFlags
             params.alpha = 1f
+            updateLockedStyle(card, false)
             controls?.visibility = View.VISIBLE
             card.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_AUTO
             if(runCatching { wm.updateViewLayout(card, params) }.isFailure) hide()
         }
     }
 
-    private fun unlockX(card: WindowManager.LayoutParams): Int =
-        card.x + if(rtlControls) dp(12) else (card.width - dp(12) - dp(48)).coerceAtLeast(0)
+    private fun updateLockedStyle(card: View, isLocked: Boolean) {
+        // Window alpha must remain below Android's touch-through threshold. A darker backing
+        // and medium-weight lettering preserve contrast without making the card touchable.
+        val dimmedBySystem = isLocked && Build.VERSION.SDK_INT >= 31
+        (card.background as? GradientDrawable)?.setColor(if(dimmedBySystem) Color.BLACK else 0xAD000000.toInt())
+        val weight = if(dimmedBySystem) Typeface.create("sans-serif-medium", Typeface.NORMAL) else Typeface.DEFAULT
+        original?.typeface = weight
+        meaning?.typeface = weight
+    }
+
+    private fun unlockX(card: WindowManager.LayoutParams): Int {
+        val inset = dp(12) + dp(32) // Same leading padding and grip width as the unlocked header.
+        return card.x + if(rtlControls) (card.width - inset - dp(48)).coerceAtLeast(0) else inset
+    }
 
     private fun repositionUnlockButton() {
         val button = unlockButton ?: return
@@ -380,7 +394,10 @@ private class LyricsOverlayWindow(private val context: Context) {
                     contentDescription = if(fa) "برای جابه‌جایی بکش" else "Drag to move floating lyrics"
                     setPadding(dp(8), 0, 0, 0)
                 }
-                addView(grip, LinearLayout.LayoutParams(0, dp(48), 1f))
+                addView(grip, LinearLayout.LayoutParams(dp(32), dp(48)))
+                addView(iconControl(R.drawable.uicon_lock_open, if(fa) "قفل کردن متن شناور" else "Lock floating lyrics") { setLocked(true) },
+                    LinearLayout.LayoutParams(dp(48), dp(48)))
+                addView(View(context), LinearLayout.LayoutParams(0, 1, 1f))
                 val modeIcon = when(mode) {
                     1 -> R.drawable.uicon_lines
                     2 -> R.drawable.uicon_word_mode
@@ -389,8 +406,6 @@ private class LyricsOverlayWindow(private val context: Context) {
                 addView(iconControl(modeIcon, if(fa) "تغییر حالت متن: $modeName" else "Change lyric mode: $modeName", onMode),
                     LinearLayout.LayoutParams(dp(48), dp(48)))
                 addView(control("×", if(fa) "بستن متن شناور" else "Close floating lyrics", onClose).apply { textSize = 24f },
-                    LinearLayout.LayoutParams(dp(48), dp(48)))
-                addView(iconControl(R.drawable.uicon_lock_open, if(fa) "قفل کردن متن شناور" else "Lock floating lyrics") { setLocked(true) },
                     LinearLayout.LayoutParams(dp(48), dp(48)))
             }.also { controls = it })
             original = lyricText(18f, Color.WHITE, 3).also { addView(it) }
