@@ -18,6 +18,8 @@ import android.view.WindowInsets
 import android.view.View
 import android.view.WindowManager
 import android.widget.Button
+import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -25,6 +27,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.media3.common.Player
+import com.hydro.reedance.R
 import com.hydro.reedance.data.LearningDatabase
 import com.hydro.reedance.data.LocalContentRepository
 import com.hydro.reedance.data.SettingsRepository
@@ -153,7 +156,7 @@ private class LyricsOverlayWindow(private val context: Context) {
 
     fun show(line: OverlayLyric, mode: Int, fa: Boolean, onMode: () -> Unit, onClose: () -> Unit): Boolean {
         val configWidth = context.resources.configuration.screenWidthDp
-        val targetWidth = dp((configWidth - 48).coerceIn(160, 330))
+        val targetWidth = dp((configWidth - 24).coerceIn(160, 400))
         if(width != targetWidth) hide()
         if(root == null) {
             windowArea = availableArea()
@@ -259,7 +262,7 @@ private class LyricsOverlayWindow(private val context: Context) {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(12), 0, dp(12), dp(14))
             background = GradientDrawable().apply {
-                setColor(0xC9000000.toInt())
+                setColor(0xAD000000.toInt())
                 cornerRadius = dp(20).toFloat()
             }
             addView(LinearLayout(context).apply {
@@ -275,8 +278,19 @@ private class LyricsOverlayWindow(private val context: Context) {
                 }
                 enableDrag(grip)
                 addView(grip, LinearLayout.LayoutParams(0, dp(48), 1f))
-                addView(control(modeName, if(fa) "تغییر حالت متن: $modeName" else "Change lyric mode: $modeName", onMode),
-                    LinearLayout.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT, dp(48)))
+                addView(ImageButton(context).apply {
+                    setImageResource(when(mode) {
+                        1 -> R.drawable.uicon_lines
+                        2 -> R.drawable.uicon_word_mode
+                        else -> R.drawable.uicon_original
+                    })
+                    setColorFilter(Color.WHITE)
+                    scaleType = ImageView.ScaleType.CENTER_INSIDE
+                    setPadding(dp(12), dp(12), dp(12), dp(12))
+                    setBackgroundColor(Color.TRANSPARENT)
+                    contentDescription = if(fa) "تغییر حالت متن: $modeName" else "Change lyric mode: $modeName"
+                    setOnClickListener { onMode() }
+                }, LinearLayout.LayoutParams(dp(48), dp(48)))
                 addView(control("×", if(fa) "بستن متن شناور" else "Close floating lyrics", onClose).apply { textSize = 24f },
                     LinearLayout.LayoutParams(dp(48), dp(48)))
             })
