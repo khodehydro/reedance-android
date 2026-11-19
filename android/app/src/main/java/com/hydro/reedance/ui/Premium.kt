@@ -75,7 +75,8 @@ private val PaywallColors = darkColorScheme(
                 PaywallPlan(tr("ماهیانه", "Monthly"), tr("۲۸۰٬۰۰۰", "280,000"), unit,
                     tr("اشتراک یک‌ماهه", "One-month plan"), !quarterly, Modifier.weight(1f)) { quarterly = false }
                 PaywallPlan(tr("سه‌ماهه", "Three months"), tr("۵۶۰٬۰۰۰", "560,000"), unit,
-                    tr("یک ماه رایگان", "One month free"), quarterly, Modifier.weight(1f)) { quarterly = true }
+                    tr("یک ماه رایگان", "One month free"), quarterly, Modifier.weight(1f),
+                    savings = tr("۲۸۰٬۰۰۰ تومان صرفه‌جویی", "Save 280,000 T")) { quarterly = true }
             }
             PressButton(onClick = { dialog = "subscribe" }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
                 shape = CircleShape, colors = ButtonDefaults.buttonColors(containerColor = Blue, contentColor = Color.White)) {
@@ -142,7 +143,7 @@ private val PaywallColors = darkColorScheme(
 }
 
 @Composable private fun PaywallPlan(title: String, price: String, unit: String, detail: String,
-    selected: Boolean, modifier: Modifier, onSelect: () -> Unit) {
+    selected: Boolean, modifier: Modifier, savings: String? = null, onSelect: () -> Unit) {
     val shape = RoundedCornerShape(18.dp)
     val ink = if(selected) PaywallAccent else Color.White
     Surface(modifier.fillMaxHeight().heightIn(min = 128.dp).clip(shape)
@@ -157,6 +158,12 @@ private val PaywallColors = darkColorScheme(
             }
             Text(price, color = ink, style = MaterialTheme.typography.headlineSmall)
             Text(unit, style = MaterialTheme.typography.labelMedium, color = PaywallMuted)
+            if(savings != null) {
+                Surface(shape = CircleShape, color = PaywallAccent, contentColor = Deep) {
+                    Text(savings, Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall)
+                }
+            }
             Spacer(Modifier.weight(1f))
             Text(detail, color = if(selected) PaywallAccent else PaywallMuted, style = MaterialTheme.typography.labelMedium)
         }
