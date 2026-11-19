@@ -77,6 +77,7 @@ import com.hydro.reedance.data.*
     val message by model.message.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val settings by model.settings.collectAsStateWithLifecycle()
+    var exploreArtistKey by rememberSaveable(settings.targetLanguage) { mutableStateOf<String?>(null) }
     val lightSystemBars = page != "premium" && MaterialTheme.colorScheme.background.luminance() > .5f
     SideEffect {
         if(page != "song-story") (context as? android.app.Activity)?.window?.let { window ->
@@ -176,9 +177,11 @@ import com.hydro.reedance.data.*
     val setPremiumReturnAction = remember { { destination: String -> setPremiumReturnLatest.value(destination) } }
     val starterAction = remember(context) { { context.startActivity(android.content.Intent(context, com.hydro.reedance.StarterActivity::class.java)) } }
     val songPage = page in songPageTypes
-    val independent = songPage || page in listOf("quiz", "premium", "profile")
+    val artistDetail = page == "explore" && exploreArtistKey != null
+    val independent = artistDetail || songPage || page in listOf("quiz", "premium", "profile")
     BackHandler(page != "home") {
-        navigate(when(page) {
+        if(artistDetail) exploreArtistKey = null
+        else navigate(when(page) {
             "song-story" -> "song-playback"
             "song-download", "song-playback" -> songReturnPage
             "quiz" -> if(reviewQuiz) "review" else "song-playback"
@@ -189,9 +192,9 @@ import com.hydro.reedance.data.*
     }
     SearchDismissHost {
      Box(Modifier.fillMaxSize()) {
-      val scaffoldInsets = if(page == "song-story" || page == "premium") WindowInsets(0, 0, 0, 0) else ScaffoldDefaults.contentWindowInsets
+      val scaffoldInsets = if(artistDetail || page == "song-story" || page == "premium") WindowInsets(0, 0, 0, 0) else ScaffoldDefaults.contentWindowInsets
       Scaffold(Modifier.fillMaxSize(), contentWindowInsets = scaffoldInsets, containerColor = Color.Transparent, snackbarHost = { SnackbarHost(snackbar) }, topBar = {
-        if(!songPage && page != "premium") Surface(color = MaterialTheme.colorScheme.background, contentColor = MaterialTheme.colorScheme.onSurface) { Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        if(!artistDetail && !songPage && page != "premium") Surface(color = MaterialTheme.colorScheme.background, contentColor = MaterialTheme.colorScheme.onSurface) { Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             if(page == "quiz" || page == "profile") {
                 PressIconButton({
                     navigate(when(page) {
@@ -275,7 +278,9 @@ import com.hydro.reedance.data.*
                                                 reviewQuiz = if(mountedPage == "quiz") reviewQuiz else false,
                                                 setReviewQuiz = setReviewQuizAction,
                                                 setPremiumReturnPage = setPremiumReturnAction,
-                                                songReturnPage = songReturnPage
+                                                songReturnPage = songReturnPage,
+                                                exploreArtistKey = exploreArtistKey,
+                                                setExploreArtist = { exploreArtistKey = it }
                                             )
                                         }
                                     }
@@ -321,7 +326,9 @@ import com.hydro.reedance.data.*
                                             reviewQuiz = reviewQuiz,
                                             setReviewQuiz = setReviewQuizAction,
                                             setPremiumReturnPage = setPremiumReturnAction,
-                                                songReturnPage = songReturnPage
+                                                songReturnPage = songReturnPage,
+                                                exploreArtistKey = exploreArtistKey,
+                                                setExploreArtist = { exploreArtistKey = it }
                                         )
                                     }
                                 }
@@ -348,10 +355,12 @@ import com.hydro.reedance.data.*
     reviewQuiz: Boolean,
     setReviewQuiz: (Boolean) -> Unit,
     setPremiumReturnPage: (String) -> Unit,
-    songReturnPage: String
+    songReturnPage: String,
+    exploreArtistKey: String?,
+    setExploreArtist: (String?) -> Unit
 ) {
     when(page) {
-        "home", "explore" -> CatalogScreen(model, page == "home", openSong, starter, { navigate("library") }) { navigate("explore") }
+        "home", "explore" -> CatalogScreen(model, page == "home", openSong, starter, { navigate("library") }, exploreArtistKey, setExploreArtist) { navigate("explore") }
         "song-download" -> SongDownloadScreen(model, songId, { navigate(songReturnPage) }) { navigate("song-playback") }
         "song-playback" -> SongPlaybackScreen(
             model, songId, songTab, setSongTab, { navigate(songReturnPage) }, { navigate("song-download") },

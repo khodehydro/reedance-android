@@ -1,6 +1,5 @@
 package com.hydro.reedance.ui
 
-import androidx.activity.compose.BackHandler
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.LruCache
@@ -79,9 +78,10 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
         bitmap?.let { Image(it.asImageBitmap(), description, Modifier.matchParentSize(), contentScale = ContentScale.Crop) }
     }
 }
-@Composable fun CatalogScreen(model: AppModel, home: Boolean, openSong: (String) -> Unit, starter: () -> Unit, openLibrary: () -> Unit, explore: () -> Unit) {
+@Composable fun CatalogScreen(model: AppModel, home: Boolean, openSong: (String) -> Unit, starter: () -> Unit, openLibrary: () -> Unit,
+    artistKey: String?, onArtist: (String?) -> Unit, explore: () -> Unit) {
     if(home) CatalogFeed(model, true, openSong, starter, openLibrary, explore)
-    else ExploreCatalogScreen(model, openSong)
+    else ExploreCatalogScreen(model, openSong, artistKey, onArtist)
 }
 
 @Composable private fun CatalogFeed(model: AppModel, home: Boolean, openSong: (String) -> Unit, starter: () -> Unit, openLibrary: () -> Unit, explore: () -> Unit) {
@@ -151,14 +151,13 @@ internal fun exploreArtists(songs: List<JsonObject>): List<ExploreArtist> = song
 private val artistSpace = Regex("\\s+")
 
 @OptIn(ExperimentalFoundationApi::class)
-@Composable private fun ExploreCatalogScreen(model: AppModel, openSong: (String) -> Unit) {
+@Composable private fun ExploreCatalogScreen(model: AppModel, openSong: (String) -> Unit, artistKey: String?, onArtist: (String?) -> Unit) {
     val catalog by model.catalog.collectAsStateWithLifecycle()
     val settings by model.settings.collectAsStateWithLifecycle()
     val targetLanguage = settings.targetLanguage
     val songs = remember(catalog, targetLanguage) { catalog.filter { it.s("language") == targetLanguage } }
     val artists = remember(songs) { exploreArtists(songs) }
     var query by rememberSaveable { mutableStateOf("") }
-    var artistKey by rememberSaveable(targetLanguage) { mutableStateOf<String?>(null) }
     val selectedArtist = artists.firstOrNull { it.key == artistKey }
     val tabOptions = listOf(
         PillOption(tr("آهنگ‌ها", "Songs"), UiIcons.Lyrics, filledIcon = UiIcons.LyricsFilled),
@@ -169,11 +168,9 @@ private val artistSpace = Regex("\\s+")
     var compact by rememberSaveable(targetLanguage) { mutableStateOf(false) }
     val songGrid = rememberLazyGridState()
     val artistGrid = rememberLazyGridState()
-    val pageActive = LocalPageActive.current
-    BackHandler(pageActive && selectedArtist != null) { artistKey = null }
-    if(selectedArtist != null) {
-        key(selectedArtist.key) {
-            ArtistSongs(selectedArtist, { artistKey = null }, openSong)
+    if(artistKey != null) {
+        key(artistKey) {
+            ArtistSongs(selectedArtist, { onArtist(null) }, openSong)
         }
         return
     }
@@ -227,7 +224,7 @@ private val artistSpace = Regex("\\s+")
                     }
                 } else {
                     items(visibleArtists, key = { it.key }, contentType = { "artist" }) { artist ->
-                        ArtistTile(artist) { artistKey = artist.key }
+                        ArtistTile(artist) { onArtist(artist.key) }
                     }
                 }
                 if(if(page == 0) visibleSongs.isEmpty() else visibleArtists.isEmpty()) item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
@@ -260,23 +257,32 @@ private val artistSpace = Regex("\\s+")
 
 @Composable private fun artistSongCount(count: Int) = tr("$count آهنگ", if(count == 1) "1 song" else "$count songs")
 
-@Composable private fun ArtistSongs(artist: ExploreArtist, back: () -> Unit, openSong: (String) -> Unit) {
-    LazyVerticalGrid(columns = GridCells.Fixed(2), modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 20.dp + LocalOverlayBottomInset.current),
-        horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        item(key = "artist-header", span = { GridItemSpan(maxLineSpan) }) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                PressIconButton(back) { AppIcon(UiIcons.Back, tr("بازگشت به آرتیست‌ها", "Back to artists")) }
-                ArtistCover(artist, Modifier.size(56.dp))
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text(artist.name, style = MaterialTheme.typography.titleLarge)
-                    Text(artistSongCount(artist.songs.size), style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+@Composable private fun ArtistSongs(artist: ExploreArtist?, back: () -> Unit, openSong: (String) -> Unit) {
+    Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))) {
+        HeaderSurface {
+            Box(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 8.dp, vertical = 8.dp)) {
+                if(artist != null) {
+                    Column(Modifier.align(Alignment.TopCenter).padding(horizontal = 52.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        ArtistCover(artist, Modifier.size(48.dp))
+                        Text(artist.name, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center,
+                            maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Text(artistSongCount(artist.songs.size), style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                PressIconButton(back, Modifier.align(Alignment.TopStart)) {
+                    AppIcon(UiIcons.Back, tr("بازگشت به آرتیست‌ها", "Back to artists"))
                 }
             }
         }
-        items(artist.songs, key = { it.s("id") }, contentType = { "song" }) { song ->
-            SongTile(song, Modifier.fillMaxWidth()) { openSong(song.s("id")) }
+        if(artist == null) return@Column
+        LazyVerticalGrid(columns = GridCells.Fixed(2), modifier = Modifier.weight(1f).navigationBarsPadding(),
+            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+            items(artist.songs, key = { it.s("id") }, contentType = { "song" }) { song ->
+                SongTile(song, Modifier.fillMaxWidth()) { openSong(song.s("id")) }
+            }
         }
     }
 }
