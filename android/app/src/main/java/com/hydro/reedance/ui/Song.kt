@@ -57,6 +57,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     } }
     val motionDuration = if(LocalReducedMotion.current) 0 else 180
     val hasStory = remember(lesson, songId) { lessonStory(lesson, songId) != null }
+    val openStory = if(!access.preview && hasStory) story else null
     val available = lesson?.s("songId") == songId
     val entryState = songEntryState(available, loading, loadError)
     LaunchedEffect(songId, reload) {
@@ -86,7 +87,17 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                 AnimatedVisibility(available && compactController,
                     enter = fadeIn(tween(motionDuration)) + expandVertically(tween(motionDuration)),
                     exit = fadeOut(tween(motionDuration)) + shrinkVertically(tween(motionDuration))) {
-                    lesson?.let { data -> CompactSongController(model, data, { scope.launch { scroll.animateScrollToItem(0) } }) }
+                    Column {
+                        lesson?.let { data -> CompactSongController(model, data, { scope.launch { scroll.animateScrollToItem(0) } }) }
+                        Box(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, bottom = 8.dp)) {
+                            LessonTabs(tab, { next ->
+                                if(next != tab) {
+                                    setTab(next)
+                                    scroll.requestScrollToItem(2) // The first lesson item, after player and tab slots.
+                                }
+                            }, mode, { mode = it }, singleLyric, { singleLyric = !singleLyric }, openQuiz, openStory, compact = true)
+                        }
+                    }
                 }
             }
         }
@@ -107,7 +118,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                 val data = lesson!!
                 item(key = "player", contentType = "player") { PlayerPanel(model, data) }
                 item(key = "tabs") {
-                    LessonTabs(tab, setTab, mode, { mode = it }, singleLyric, { singleLyric = !singleLyric }, openQuiz, if(!access.preview && hasStory) story else null)
+                    if(!compactController) LessonTabs(tab, setTab, mode, { mode = it }, singleLyric, { singleLyric = !singleLyric }, openQuiz, openStory)
                 }
                 when(tab) {
                     0 -> {
