@@ -144,21 +144,21 @@ private val PaywallColors = darkColorScheme(
 @Composable private fun PaywallPlan(title: String, price: String, unit: String, detail: String,
     selected: Boolean, modifier: Modifier, onSelect: () -> Unit) {
     val shape = RoundedCornerShape(18.dp)
-    val ink = if(selected) Color.White else Deep
+    val ink = if(selected) PaywallAccent else Color.White
     Surface(modifier.fillMaxHeight().heightIn(min = 128.dp).clip(shape)
         .selectable(selected, role = Role.RadioButton, onClick = onSelect), shape = shape,
-        color = if(selected) Blue else Color.White, contentColor = ink,
-        border = BorderStroke(1.dp, if(selected) PaywallAccent else Paper)) {
+        color = Color.Transparent, contentColor = ink,
+        border = BorderStroke(1.dp, if(selected) PaywallAccent else Color(0xFF636969))) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(title, Modifier.weight(1f), color = ink,
                     style = MaterialTheme.typography.labelLarge)
-                if(selected) AppIcon(UiIcons.CheckFilled, null, Modifier.size(16.dp), tint = Color.White)
+                if(selected) AppIcon(UiIcons.CheckFilled, null, Modifier.size(16.dp), tint = PaywallAccent)
             }
             Text(price, color = ink, style = MaterialTheme.typography.headlineSmall)
-            Text(unit, style = MaterialTheme.typography.labelMedium, color = ink)
+            Text(unit, style = MaterialTheme.typography.labelMedium, color = PaywallMuted)
             Spacer(Modifier.weight(1f))
-            Text(detail, color = ink, style = MaterialTheme.typography.labelMedium)
+            Text(detail, color = if(selected) PaywallAccent else PaywallMuted, style = MaterialTheme.typography.labelMedium)
         }
     }
 }
