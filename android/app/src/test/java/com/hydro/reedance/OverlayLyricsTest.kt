@@ -1,6 +1,8 @@
 package com.hydro.reedance
 
+import androidx.media3.common.Player
 import com.hydro.reedance.media.OverlayLyric
+import com.hydro.reedance.media.overlaySongForPlayback
 import com.hydro.reedance.media.timedOverlayLyric
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -17,5 +19,12 @@ class OverlayLyricsTest {
         assertEquals(second, timedOverlayLyric(lines, 3_000))
         assertEquals(first, timedOverlayLyric(lines, 1_500)) // Seek backwards.
         assertNull(timedOverlayLyric(emptyList(), 10_000))
+    }
+    @Test fun pauseKeepsTheSameSongButStoppingOrReplacingDismissesIt() {
+        assertEquals("song", overlaySongForPlayback("song", null, true, Player.STATE_READY))
+        assertEquals("song", overlaySongForPlayback("song", "song", false, Player.STATE_READY))
+        assertNull(overlaySongForPlayback("song", "song", false, Player.STATE_ENDED))
+        assertNull(overlaySongForPlayback("song", "song", false, Player.STATE_IDLE))
+        assertNull(overlaySongForPlayback("next", "song", false, Player.STATE_READY))
     }
 }

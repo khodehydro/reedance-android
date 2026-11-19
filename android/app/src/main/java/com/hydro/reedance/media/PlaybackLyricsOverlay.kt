@@ -66,6 +66,13 @@ internal fun timedOverlayLyric(lines: List<OverlayLyric>, position: Long): Overl
     return lines.getOrNull(low - 1)?.takeIf { it.end == null || position < it.end }
 }
 
+/** A paused song stays eligible, but a prepared-only, finished or replaced track does not. */
+internal fun overlaySongForPlayback(song: String?, previous: String?, playing: Boolean, state: Int): String? =
+    song?.takeIf {
+        it.isNotBlank() && (state == Player.STATE_READY || state == Player.STATE_BUFFERING) &&
+            (playing || it == previous)
+    }
+
 /** Owned by the Media3 service, not an Activity. No extra foreground service or background launch. */
 internal class PlaybackLyricsOverlay(private val context: Context, private val player: Player) :
     DefaultLifecycleObserver, Player.Listener {
@@ -74,7 +81,7 @@ internal class PlaybackLyricsOverlay(private val context: Context, private val p
     private val content by lazy { LocalContentRepository(context.applicationContext, LearningDatabase.get(context).learning()) }
     private val lifecycle = ProcessLifecycleOwner.get().lifecycle
     private val foreground = MutableStateFlow(lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
-    private val playingSong = MutableStateFlow<String?>(null)
+    private val overlaySong = MutableStateFlow<String?>(null)
     private val dismissed = MutableStateFlow(false)
     private val window = LyricsOverlayWindow(context)
     private val power = context.getSystemService(PowerManager::class.java)
@@ -84,9 +91,9 @@ internal class PlaybackLyricsOverlay(private val context: Context, private val p
     init {
         lifecycle.addObserver(this)
         player.addListener(this)
-        updatePlayingSong()
+        updateOverlaySong()
         scope.launch {
-            combine(preferences.flow, PremiumEntitlement.active, foreground, playingSong, dismissed) { prefs, premium, inApp, song, hidden ->
+            combine(preferences.flow, PremiumEntitlement.active, foreground, overlaySong, dismissed) { prefs, premium, inApp, song, hidden ->
                 song?.takeIf { prefs.lyricsOverlay && backgroundPlaybackAllowed(premium) && !inApp && !hidden }
                     ?.let { Display(it, prefs.lyricsOverlayMode, prefs.language == "fa") }
             }.distinctUntilChanged().collectLatest { request ->
@@ -107,9 +114,15 @@ internal class PlaybackLyricsOverlay(private val context: Context, private val p
                         }.sortedBy { it.start }
                     }
                     if(lines.isEmpty()) return@collectLatest
+                    var displayedLine: OverlayLyric? = null
                     while(isActive) {
-                        val line = if(power?.isInteractive == true && keyguard?.isKeyguardLocked == false &&
-                            AndroidSettings.canDrawOverlays(context)) timedOverlayLyric(lines, player.currentPosition) else null
+                        if(player.isPlaying || displayedLine == null) {
+                            displayedLine = timedOverlayLyric(lines, player.currentPosition)
+                        }
+                        val line = displayedLine?.takeIf {
+                            power?.isInteractive == true && keyguard?.isKeyguardLocked == false &&
+                                AndroidSettings.canDrawOverlays(context)
+                        }
                         val shown = if(line == null) { window.hide(); true } else window.show(line, request.mode, request.fa,
                             onMode = { scope.launch { preferences.lyricsOverlayMode((request.mode + 1) % 3) } },
                             onClose = { dismissed.value = true; window.hide() })
@@ -126,10 +139,11 @@ internal class PlaybackLyricsOverlay(private val context: Context, private val p
         }
     }
 
-    private fun updatePlayingSong() {
-        playingSong.value = player.currentMediaItem?.mediaId?.takeIf { it.isNotBlank() && player.isPlaying }
+    private fun updateOverlaySong() {
+        overlaySong.value = overlaySongForPlayback(player.currentMediaItem?.mediaId, overlaySong.value,
+            player.isPlaying, player.playbackState)
     }
-    override fun onEvents(player: Player, events: Player.Events) { updatePlayingSong() }
+    override fun onEvents(player: Player, events: Player.Events) { updateOverlaySong() }
     override fun onStart(owner: LifecycleOwner) { foreground.value = true; dismissed.value = false; window.hide() }
     override fun onStop(owner: LifecycleOwner) { foreground.value = false }
 
