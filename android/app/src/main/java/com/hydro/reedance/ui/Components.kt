@@ -126,7 +126,7 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
         }
     }
 }
-@Composable fun LearningTable(table: JsonObject, fitToWidth: Boolean = false) {
+@Composable fun LearningTable(table: JsonObject, fitWhenPossible: Boolean = false) {
     val fa = LearningLanguage.persian
     val columns = remember(table) { table.getAsJsonArray("columns")?.toList().orEmpty() }
     val rows = remember(table) { table.getAsJsonArray("rows")?.map { it.asJsonArray.toList() }.orEmpty() }
@@ -134,18 +134,14 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
         PersianText(table.tr("title", fa), style = MaterialTheme.typography.titleSmall)
         table.tr("intro", fa).takeIf { it.isNotEmpty() }?.let { PersianText(it) }
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-            if(fitToWidth) {
+            if(fitWhenPossible) {
                 BoxWithConstraints(Modifier.fillMaxWidth()) {
-                    // Keep wide tables readable without introducing a horizontal gesture inside the pager.
-                    val columnsPerBlock = (maxWidth / 104.dp).toInt().coerceAtLeast(1)
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        columns.indices.chunked(columnsPerBlock).forEach { indices ->
-                            LearningTableGrid(columns, rows, indices, fa, fitToWidth = true)
-                        }
-                    }
+                    // Only overflow gets its own horizontal gesture; a fitting table leaves swipes to the pager.
+                    val fits = maxWidth >= 104.dp * columns.size
+                    LearningTableGrid(columns, rows, fa, fitToWidth = fits)
                 }
             } else {
-                LearningTableGrid(columns, rows, columns.indices.toList(), fa, fitToWidth = false)
+                LearningTableGrid(columns, rows, fa, fitToWidth = false)
             }
         }
         table.tr("footer", fa).takeIf { it.isNotEmpty() }?.let { PersianText(it, style = MaterialTheme.typography.bodySmall) }
@@ -153,12 +149,12 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
 }
 
 @Composable private fun LearningTableGrid(columns: List<JsonElement>, rows: List<List<JsonElement>>,
-    indices: List<Int>, fa: Boolean, fitToWidth: Boolean) {
+    fa: Boolean, fitToWidth: Boolean) {
     val shape = RoundedCornerShape(12.dp)
     val scroll = if(fitToWidth) Modifier else Modifier.horizontalScroll(rememberScrollState())
-    Column(Modifier.fillMaxWidth().then(scroll).clip(shape).border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape)) {
+    Column(Modifier.fillMaxWidth().clip(shape).border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape).then(scroll)) {
         Row(Modifier.background(MaterialTheme.colorScheme.secondaryContainer)) {
-            indices.forEach { index ->
+            columns.indices.forEach { index ->
                 LearningCell(columns[index].cell(fa), "", MaterialTheme.typography.titleSmall,
                     if(fitToWidth) Modifier.weight(1f) else Modifier.width(152.dp))
             }
@@ -166,7 +162,7 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
         rows.forEach { row ->
             HorizontalDivider()
             Row {
-                indices.forEach { index ->
+                columns.indices.forEach { index ->
                     val cell = row.getOrNull(index)
                     LearningCell(cell?.cell(fa).orEmpty(), if(cell?.isJsonObject == true) cell.asJsonObject.s("dir") else "",
                         MaterialTheme.typography.bodyMedium, if(fitToWidth) Modifier.weight(1f) else Modifier.width(152.dp))
@@ -176,7 +172,7 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
     }
 }
 
-@Composable fun LearningNote(note: JsonObject, fitTablesToWidth: Boolean = false, save: (@Composable () -> Unit)? = null) {
+@Composable fun LearningNote(note: JsonObject, fitTablesWhenPossible: Boolean = false, save: (@Composable () -> Unit)? = null) {
     val fa = LearningLanguage.persian
     var answer by remember(note) { mutableStateOf(false) }
     val tables = remember(note) { note.a("tables") }
@@ -202,7 +198,7 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
                 }
             }
         }
-        tables.forEach { LearningTable(it, fitToWidth = fitTablesToWidth) }
+        tables.forEach { LearningTable(it, fitWhenPossible = fitTablesWhenPossible) }
         note.tr("takeaway", fa).takeIf { it.isNotEmpty() }?.let { PersianText(it, style = MaterialTheme.typography.titleSmall) }
         if(note.has("check")) {
             PersianText(note.obj("check").tr("prompt", fa))
