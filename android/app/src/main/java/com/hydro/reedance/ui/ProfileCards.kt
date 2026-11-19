@@ -12,18 +12,16 @@ import androidx.compose.ui.unit.dp
 
 /** Local builds have no verified entitlement provider; never imply that a purchase succeeded. */
 @Composable internal fun ProfileMembershipCard(onUpgrade: () -> Unit, clickableCard: Boolean = false) {
-    val gold = Color(0xFFFFDF80)
-    val ink = Color(0xFF42310B)
     Surface(Modifier.fillMaxWidth().then(if(clickableCard) Modifier.clickable(onClick = onUpgrade) else Modifier),
-        shape = RoundedCornerShape(22.dp), color = gold, contentColor = ink) {
+        shape = RoundedCornerShape(22.dp), color = Blue, contentColor = Color.White) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                AppIcon(UiIcons.CrownFilled, null, Modifier.size(32.dp), tint = ink)
+                AppIcon(UiIcons.CrownFilled, null, Modifier.size(32.dp), tint = Color.White)
                 Text(tr("عضویت پریمیوم", "Premium membership"), style = MaterialTheme.typography.titleLarge)
             }
             Text(tr("با پریمیوم، فراتر یاد بگیر.", "Take your learning further with Premium."))
             PressButton(onUpgrade, Modifier.fillMaxWidth().heightIn(min = 48.dp), shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = ink, contentColor = gold)) {
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Deep)) {
                 Text(tr("تهیهٔ پریمیوم", "Get Premium"))
             }
             Text(tr("خرید اشتراک هنوز فعال نیست.", "Membership checkout is not available yet."), style = MaterialTheme.typography.bodySmall)
