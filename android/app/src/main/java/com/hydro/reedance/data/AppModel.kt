@@ -120,7 +120,7 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
                 } else coroutineScope {
                     // Independent reads run concurrently; I/O and JSON CPU work have separate dispatchers.
                     val catalogTask = async {
-                        com.hydro.reedance.install.PackInstaller(app).recover()
+                        withContext(Dispatchers.IO) { com.hydro.reedance.install.PackInstaller(app).recover() }
                         content.catalog()
                     }
                     val startersTask = async { content.starters() }

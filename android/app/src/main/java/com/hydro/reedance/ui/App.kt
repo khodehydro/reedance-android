@@ -6,13 +6,11 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.input.nestedscroll.*
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import kotlinx.coroutines.delay
+import androidx.compose.ui.layout.layout
 import kotlin.math.abs
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -91,17 +89,24 @@ import com.hydro.reedance.data.*
     val activePlayback by model.activePlayback.collectAsStateWithLifecycle()
     val installedIds by model.installedIds.collectAsStateWithLifecycle()
     val pageStates = rememberSaveableStateHolder()
-    val preloadablePages = remember { setOf("home", "explore", "review", "gym", "game", "library", "profile", "quiz", "premium") }
+    val mainPageTypes = remember { setOf("home", "explore", "review", "gym", "game", "library", "profile", "quiz", "premium") }
     val songPageTypes = remember { setOf("song-download", "song-playback", "song-story") }
-    val mountedPages = remember { mutableStateListOf("home") }
-    val mountedSongPages = remember { mutableStateListOf<Pair<String, String>>() }
-    var pendingRoute by remember { mutableStateOf<Pair<String, String>?>(null) }
+    val mountedPages = remember {
+        mutableStateListOf<String>().apply { if(page in mainPageTypes) add(page) }
+    }
+    val mountedSongPages = remember {
+        mutableStateListOf<Pair<String, String>>().apply {
+            if(page in songPageTypes && songId.isNotBlank()) add(page to songId)
+            if(page in setOf("quiz", "song-story") && songId.isNotBlank()) add("song-playback" to songId)
+        }
+    }
     var compactNavigation by remember(page) { mutableStateOf(false) }
-    val navigationWidth by animateDpAsState(
+    val navigationWidth = animateDpAsState(
         targetValue = navigationMenuWidth(compactNavigation),
         animationSpec = tween(if(LocalReducedMotion.current) 0 else 150, easing = FastOutSlowInEasing),
         label = "navigation-menu-width"
     )
+    val navigationWidthInLayout = remember(navigationWidth) { { navigationWidth.value } }
     val threshold = with(LocalDensity.current) { 36.dp.toPx() }
     val scrollConnection = remember(page, threshold) {
         object : NestedScrollConnection {
@@ -121,36 +126,14 @@ import com.hydro.reedance.data.*
         }
     }
     LaunchedEffect(message) { if(message.isNotEmpty()) { snackbar.showSnackbar(message); model.message.value = "" } }
-    LaunchedEffect(Unit) {
-        // Warm the common navigation destinations gradually after the first screen settles.
-        delay(1_000)
-        listOf("explore", "review", "gym", "game", "library", "profile", "quiz", "premium").forEach { destination ->
-            if(destination !in mountedPages) mountedPages += destination
-            delay(700)
-        }
-    }
     fun navigate(to: String) {
         if(to == "quiz" || to == "song-story") model.pause()
-        if(to in preloadablePages) {
-            if(to !in mountedPages) {
-                pendingRoute = to to ""
-                mountedPages += to
-                return
-            }
-            pendingRoute = null
-            page = to
-            return
-        }
+        if(to in mainPageTypes && to !in mountedPages) mountedPages += to
         if(to in songPageTypes) {
             val route = to to songId
             mountedSongPages.removeAll { it.first == to && it.second != songId }
-            if(route !in mountedSongPages) {
-                pendingRoute = route
-                mountedSongPages += route
-                return
-            }
+            if(route !in mountedSongPages) mountedSongPages += route
         }
-        pendingRoute = null
         page = to
     }
     LaunchedEffect(model) {
@@ -219,12 +202,12 @@ import com.hydro.reedance.data.*
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             if(started) activePlayback?.let { active ->
-                MiniPlayer(active, playing, model::toggleActivePlayback, { openSong(active.songId) }, compact = compactNavigation, menuWidth = navigationWidth)
+                MiniPlayer(active, playing, model::toggleActivePlayback, { openSong(active.songId) }, compact = compactNavigation, menuWidth = navigationWidthInLayout)
             }
-            FloatingNavigation(page, compactNavigation, ::navigate, navigationWidth)
+            FloatingNavigation(page, compactNavigation, navigateAction, navigationWidthInLayout)
         }
     }) { padding ->
-        // Keep common tabs composed off-screen so their content and scroll state are ready on selection.
+        // Keep visited tabs composed for return-state, but do not measure or place hidden pages.
         // The bottom bar floats over the scroll viewport; its height is trailing content space.
         Box(
             Modifier
@@ -239,73 +222,46 @@ import com.hydro.reedance.data.*
         ) {
             CompositionLocalProvider(LocalOverlayBottomInset provides padding.calculateBottomPadding()) {
                 mountedPages.forEach { mountedPage ->
-                        val active = page == mountedPage
-                        key(mountedPage) {
-                            LaunchedEffect(mountedPage, pendingRoute) {
-                                if(pendingRoute == (mountedPage to "")) {
-                                    withFrameNanos { }
-                                    if(pendingRoute == (mountedPage to "")) {
-                                        page = mountedPage
-                                        pendingRoute = null
-                                    }
-                                }
-                            }
-                            pageStates.SaveableStateProvider(mountedPage) {
-                                CompositionLocalProvider(
-                                    LocalPageActive provides active,
-                                    LocalItemEntranceEnabled provides active
-                                ) {
-                                    Box(
-                                        Modifier
-                                            .fillMaxSize()
-                                            .then(if(active) Modifier else Modifier.offset(x = 10_000.dp).clearAndSetSemantics {})
-                                    ) {
-                                        if(mountedPage == "premium") {
-                                            if(active) PremiumScreen { navigateAction(premiumReturnPage) }
-                                        } else PageEntrance(mountedPage) {
-                                            ShellPageContent(
-                                                page = mountedPage,
-                                                model = model,
-                                                songId = if(mountedPage == "song-playback" || mountedPage == "song-download") songId else "",
-                                                songTab = if(mountedPage == "song-playback") songTab else 0,
-                                                setSongTab = setSongTabAction,
-                                                navigate = navigateAction,
-                                                openSong = openSongAction,
-                                                starter = starterAction,
-                                                setPremiumReturnPage = setPremiumReturnAction,
-                                                songReturnPage = songReturnPage,
-                                                exploreArtistKey = exploreArtistKey,
-                                                setExploreArtist = { exploreArtistKey = it }
-                                            )
-                                        }
+                    val active = page == mountedPage
+                    key(mountedPage) {
+                        pageStates.SaveableStateProvider(mountedPage) {
+                            CompositionLocalProvider(
+                                LocalPageActive provides active,
+                                LocalItemEntranceEnabled provides active
+                            ) {
+                                Box(Modifier.visiblePageLayout(active)) {
+                                    if(mountedPage == "premium") {
+                                        if(active) PremiumScreen { navigateAction(premiumReturnPage) }
+                                    } else PageEntrance(mountedPage) {
+                                        ShellPageContent(
+                                            page = mountedPage,
+                                            model = model,
+                                            songId = if(mountedPage == "song-playback" || mountedPage == "song-download") songId else "",
+                                            songTab = if(mountedPage == "song-playback") songTab else 0,
+                                            setSongTab = setSongTabAction,
+                                            navigate = navigateAction,
+                                            openSong = openSongAction,
+                                            starter = starterAction,
+                                            setPremiumReturnPage = setPremiumReturnAction,
+                                            songReturnPage = songReturnPage,
+                                            exploreArtistKey = exploreArtistKey,
+                                            setExploreArtist = { exploreArtistKey = it }
+                                        )
                                     }
                                 }
                             }
                         }
                     }
+                }
                 mountedSongPages.forEach { (route, routeSongId) ->
                     val active = page == route && songId == routeSongId
                     key(route, routeSongId) {
-                        LaunchedEffect(route, routeSongId, pendingRoute) {
-                            if(pendingRoute == (route to routeSongId)) {
-                                withFrameNanos { }
-                                if(pendingRoute == (route to routeSongId)) {
-                                    page = route
-                                    songId = routeSongId
-                                    pendingRoute = null
-                                }
-                            }
-                        }
                         pageStates.SaveableStateProvider(route) {
                             CompositionLocalProvider(
                                 LocalPageActive provides active,
                                 LocalItemEntranceEnabled provides active
                             ) {
-                                Box(
-                                    Modifier
-                                        .fillMaxSize()
-                                        .then(if(active) Modifier else Modifier.offset(x = 10_000.dp).clearAndSetSemantics {})
-                                ) {
+                                Box(Modifier.visiblePageLayout(active)) {
                                     if(route == "song-story") {
                                         if(active) SongStoryScreen(model, routeSongId) { navigateAction("song-playback") }
                                     } else PageEntrance("$route:$routeSongId") {
@@ -319,9 +275,9 @@ import com.hydro.reedance.data.*
                                             openSong = openSongAction,
                                             starter = starterAction,
                                             setPremiumReturnPage = setPremiumReturnAction,
-                                                songReturnPage = songReturnPage,
-                                                exploreArtistKey = exploreArtistKey,
-                                                setExploreArtist = { exploreArtistKey = it }
+                                            songReturnPage = songReturnPage,
+                                            exploreArtistKey = exploreArtistKey,
+                                            setExploreArtist = { exploreArtistKey = it }
                                         )
                                     }
                                 }
@@ -335,6 +291,13 @@ import com.hydro.reedance.data.*
     }
     }
 }
+
+// Retain visited compositions and remember state, without sending Scaffold constraint
+// changes through every hidden lazy list or placing it outside the viewport.
+internal fun Modifier.visiblePageLayout(active: Boolean): Modifier = if(active) fillMaxSize() else
+    clearAndSetSemantics {}.layout { _, constraints ->
+        layout(constraints.minWidth, constraints.minHeight) {}
+    }
 
 @Composable private fun ShellPageContent(
     page: String,

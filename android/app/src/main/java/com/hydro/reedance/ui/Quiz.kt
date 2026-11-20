@@ -2,6 +2,7 @@ package com.hydro.reedance.ui
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -90,11 +91,11 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
     onGrade: suspend (GymQuestion, List<String>, Grade) -> Unit,
     finish: @Composable () -> Unit
 ) {
-    val questions = entries.map { it.question }
+    val questionCount = entries.size
     var index by remember { mutableIntStateOf(0) }
     var answer by remember(index) { mutableStateOf<List<String>>(emptyList()) }
     var checked by remember(index) { mutableStateOf<Grade?>(null) }
-    var grades by remember { mutableStateOf<List<Triple<JsonObject, List<String>, Grade>>>(emptyList()) }
+    val grades = remember { mutableStateListOf<Pair<List<String>, Grade>>() }
     var busy by remember { mutableStateOf(false) }
     var saveFailed by remember(index) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -103,33 +104,49 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
     // This effect is cancelled when leaving the screen or changing the question/session.
     LaunchedEffect(index, checked) {
         val result = checked ?: return@LaunchedEffect
-        if(result.correct && index < questions.size) {
+        if(result.correct && index < questionCount) {
             delay(850) // Keep success visible, including when decorative motion is disabled.
-            grades = grades + Triple(questions[index], answer.toList(), result)
+            grades.add(answer.toList() to result)
             index++
         }
     }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 24.dp + LocalOverlayBottomInset.current), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        if(gym) Heading(tr("تمرین", "Gym"), tr("سؤال‌هایی از آهنگ‌های نصب‌شده", "Mixed questions from your installed songs"))
-        if(skipped > 0) PersianText("$skipped سؤال ناقص، ناسازگار یا بدون ترجمهٔ لازم از این تمرین کنار گذاشته شد؛ پیشرفت آن‌ها تغییر نکرد.",
-            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        if(index >= questions.size) {
-            Heading(if(questions.isEmpty() && skipped > 0) tr("سؤال معتبری در دسترس نیست", "No valid questions available") else if(questions.isEmpty()) tr("فعلاً مروری نداری", "All caught up") else tr("یک قدم جلوتر!", "One step further!"), tr("پیشرفتت روی همین دستگاه ذخیره شد.", "Your progress is saved on this device."))
-            Text("${grades.count { it.third.correct }} / ${questions.size}", style = MaterialTheme.typography.headlineLarge)
-            grades.forEachIndexed { gradeIndex, (q,userAnswer,g) -> Panel {
-                PersianText(q.tr("prompt", fa), style = MaterialTheme.typography.titleMedium)
-                Text(if(g.correct) tr("✓ درست", "✓ Correct") else tr("نیاز به مرور", "Needs review"))
-                Text(tr("پاسخ تو", "Your answer"), style = MaterialTheme.typography.labelMedium)
-                if(q.s("type") == "choice" || q.s("type") == "match") PersianText(formattedAnswer(q, userAnswer, fa))
-                else Foreign(formattedAnswer(q, userAnswer, fa, entries[gradeIndex].listening?.distractors.orEmpty()))
-                Text(tr("پاسخ درست", "Correct answer"), style = MaterialTheme.typography.labelMedium)
-                if(q.s("type") == "match") MatchBoard(q, correctAnswer(q), true, false, onAnswer = {}, solution = true)
-                else if(q.s("type") == "choice") PersianText(formattedAnswer(q, correctAnswer(q), fa))
-                else Foreign(formattedAnswer(q, correctAnswer(q), fa))
-                PersianText(q.tr("explanation", fa))
-            } }
-            finish()
-        } else {
+    val inset = LocalOverlayBottomInset.current
+    if(index >= questionCount) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 24.dp + inset),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            if(gym) item(key = "gym-heading") { GymPracticeHeading() }
+            if(skipped > 0) item(key = "skipped") { SkippedPracticeQuestions(skipped) }
+            item(key = "summary") {
+                Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                    Heading(if(questionCount == 0 && skipped > 0) tr("سؤال معتبری در دسترس نیست", "No valid questions available") else if(questionCount == 0) tr("فعلاً مروری نداری", "All caught up") else tr("یک قدم جلوتر!", "One step further!"), tr("پیشرفتت روی همین دستگاه ذخیره شد.", "Your progress is saved on this device."))
+                    Text("${grades.count { it.second.correct }} / ${questionCount}", style = MaterialTheme.typography.headlineLarge)
+                }
+            }
+            items(grades.size, key = { "answer:$it" }, contentType = { "answer" }) { gradeIndex ->
+                val q = entries[gradeIndex].question
+                val (userAnswer, g) = grades[gradeIndex]
+                Panel {
+                    PersianText(q.tr("prompt", fa), style = MaterialTheme.typography.titleMedium)
+                    Text(if(g.correct) tr("✓ درست", "✓ Correct") else tr("نیاز به مرور", "Needs review"))
+                    Text(tr("پاسخ تو", "Your answer"), style = MaterialTheme.typography.labelMedium)
+                    if(q.s("type") == "choice" || q.s("type") == "match") PersianText(formattedAnswer(q, userAnswer, fa))
+                    else Foreign(formattedAnswer(q, userAnswer, fa, entries[gradeIndex].listening?.distractors.orEmpty()))
+                    Text(tr("پاسخ درست", "Correct answer"), style = MaterialTheme.typography.labelMedium)
+                    if(q.s("type") == "match") MatchBoard(q, correctAnswer(q), true, false, onAnswer = {}, solution = true)
+                    else if(q.s("type") == "choice") PersianText(formattedAnswer(q, correctAnswer(q), fa))
+                    else Foreign(formattedAnswer(q, correctAnswer(q), fa))
+                    PersianText(q.tr("explanation", fa))
+                }
+            }
+            item(key = "finish") { Column(verticalArrangement = Arrangement.spacedBy(20.dp)) { finish() } }
+        }
+    } else {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 24.dp + inset), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+            if(gym) GymPracticeHeading()
+            if(skipped > 0) SkippedPracticeQuestions(skipped)
             val entry = entries[index]
             val q = entry.question
             val data = entry.source
@@ -156,10 +173,10 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
                     }
                 }
             }
-            Text(tr("سؤال ${index+1} از ${questions.size}", "Question ${index+1} of ${questions.size}"), color = MaterialTheme.colorScheme.primary)
+            Text(tr("سؤال ${index+1} از ${questionCount}", "Question ${index+1} of ${questionCount}"), color = MaterialTheme.colorScheme.primary)
             if(gym) Text(data.s("title"), style = MaterialTheme.typography.labelLarge)
             if(saveFailed) Text(tr("پاسخ ذخیره نشد؛ دوباره امتحان کن.", "Could not save your answer. Try again."), color = MaterialTheme.colorScheme.error)
-            LinearProgressIndicator(progress = { index.toFloat()/questions.size }, modifier = Modifier.fillMaxWidth())
+            LinearProgressIndicator(progress = { index.toFloat()/questionCount }, modifier = Modifier.fillMaxWidth())
             val questionIndex = index
             Deck(questionIndex) {
                 Panel {
@@ -203,7 +220,7 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
                         if(!checked!!.correct) Action(tr("ادامه", "Continue"), enabled = !busy) {
                             if(!busy) { busy = true; scope.launch {
                                 if(!reduced) delay(220)
-                                grades = grades + Triple(q, answer.toList(), checked!!)
+                                grades.add(answer.toList() to checked!!)
                                 index++; busy = false
                             } }
                         }
@@ -212,4 +229,13 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
             }
         }
     }
+}
+
+@Composable private fun GymPracticeHeading() {
+    Heading(tr("تمرین", "Gym"), tr("سؤال‌هایی از آهنگ‌های نصب‌شده", "Mixed questions from your installed songs"))
+}
+
+@Composable private fun SkippedPracticeQuestions(skipped: Int) {
+    PersianText("$skipped سؤال ناقص، ناسازگار یا بدون ترجمهٔ لازم از این تمرین کنار گذاشته شد؛ پیشرفت آن‌ها تغییر نکرد.",
+        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }

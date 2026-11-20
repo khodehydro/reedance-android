@@ -48,13 +48,14 @@ import kotlin.math.sin
         colors = SliderDefaults.colors(thumbColor = ink, activeTrackColor = ink, inactiveTrackColor = ink.copy(alpha = .45f)),
         thumb = { Spacer(Modifier.size(0.dp)) },
         track = { state ->
+            val path = remember { Path() }
             Canvas(Modifier.fillMaxWidth().height(24.dp)) {
                 val end = size.width * (state.value / maximum).coerceIn(0f, 1f)
                 val center = size.height / 2f
                 val stroke = 2.dp.toPx()
                 drawLine(ink.copy(alpha = if(enabled) .45f else .22f), Offset(end, center), Offset(size.width, center), stroke, StrokeCap.Round)
                 if(end > 0f) {
-                    val path = Path()
+                    path.rewind()
                     val wavelength = 20.dp.toPx()
                     val amplitude = 3.dp.toPx()
                     val steps = (end / 2.dp.toPx()).toInt().coerceAtLeast(1)

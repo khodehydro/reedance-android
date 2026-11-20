@@ -37,7 +37,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     var loading by remember(songId) { mutableStateOf(true) }
     var loadError by remember(songId) { mutableStateOf(false) }
     var reload by remember(songId) { mutableIntStateOf(0) }
-    val activeLineId by model.activeLineId.collectAsStateWithLifecycle()
+    val activeLineId = model.activeLineId.collectAsStateWithLifecycle()
     val playing by model.playing.collectAsStateWithLifecycle()
     val activePlayback by model.activePlayback.collectAsStateWithLifecycle()
     val bookmarks by model.bookmarks.collectAsStateWithLifecycle()
@@ -125,7 +125,8 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                         item(key = "lyric-help") { Text(tr("برای پخش از هر خط، روی آیکون پخش کنار آن بزن؛ برای معنی روی واژه بزن.", "Tap the play icon beside a line to play from there, or a word to explore it."), style = MaterialTheme.typography.bodySmall) }
                         val visibleLines = lines.take(access.limit("lyrics"))
                         val renderLine: @Composable (JsonObject) -> Unit = { line ->
-                            val active = activeLineId == line.s("id")
+                            val lineId = line.s("id")
+                            val active by remember(activeLineId, lineId) { derivedStateOf { activeLineId.value == lineId } }
                             LyricLine(line, mode, active, single = singleLyric, playing = playing && active && activePlayback?.songId == songId,
                                 onPlay = {
                                     if(playing && active && activePlayback?.songId == songId) model.pause()

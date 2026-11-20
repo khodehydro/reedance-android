@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -25,11 +26,18 @@ private data class Destination(val id: String, val label: String, val outline: I
 internal val navigationMenuHorizontalInset = 12.dp
 internal fun navigationMenuWidth(compact: Boolean) = if(compact) 282.dp else 368.dp
 
+// Read animated width during measurement, not in the shell's composition.
+internal fun Modifier.navigationBarWidth(width: () -> Dp): Modifier = layout { measurable, constraints ->
+    val px = width().roundToPx().coerceIn(constraints.minWidth, constraints.maxWidth)
+    val child = measurable.measure(constraints.copy(minWidth = px, maxWidth = px))
+    layout(child.width, child.height) { child.placeRelative(0, 0) }
+}
+
 @Composable fun FloatingNavigation(
     page: String,
     compact: Boolean,
     onNavigate: (String) -> Unit,
-    menuWidth: Dp = navigationMenuWidth(compact)
+    menuWidth: () -> Dp = { navigationMenuWidth(compact) }
 ) {
     val duration = if(LocalReducedMotion.current) 0 else 150
     val destinations = listOf(
@@ -45,7 +53,7 @@ internal fun navigationMenuWidth(compact: Boolean) = if(compact) 282.dp else 368
     // width animation, so text and rounded corners never get cropped mid-transition.
     Box(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = navigationMenuHorizontalInset), contentAlignment = Alignment.BottomCenter) {
         Surface(
-            modifier = Modifier.widthIn(max = menuWidth).fillMaxWidth(),
+            modifier = Modifier.navigationBarWidth(menuWidth),
             shape = RoundedCornerShape(28.dp),
             color = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,

@@ -45,16 +45,18 @@ internal enum class FluidPalette { Ocean, Aurora, Midnight }
             }
         }
     }
+    val contrast = remember { Brush.verticalGradient(listOf(Color(0x33000410), Color.Transparent, Color(0x55000312))) }
+    val ribbonPath = remember { Path() }
     Canvas(modifier) {
         val t = seconds
         if(Build.VERSION.SDK_INT >= 33 && fluid != null) {
             fluid.shader.setFloatUniform("resolution", size.width.coerceAtLeast(1f), size.height.coerceAtLeast(1f))
             fluid.shader.setFloatUniform("time", t)
             drawRect(fluid.brush)
-        } else if(palette == FluidPalette.Midnight) drawFluidFallback(t, midnight = true)
-        else if(palette == FluidPalette.Aurora) drawFluidFallback(t, true) else drawFluidFallback(t)
+        } else if(palette == FluidPalette.Midnight) drawFluidFallback(t, ribbonPath, midnight = true)
+        else if(palette == FluidPalette.Aurora) drawFluidFallback(t, ribbonPath, true) else drawFluidFallback(t, ribbonPath)
         // Preserve the light text's contrast; the fluid itself remains unblurred text-wise.
-        drawRect(Brush.verticalGradient(listOf(Color(0x33000410), Color.Transparent, Color(0x55000312))))
+        drawRect(contrast)
     }
 }
 
@@ -131,14 +133,14 @@ internal val MIDNIGHT_FLUID_SHADER = FLUID_SHADER
     .replace("float3(0.0, 0.56, 0.72)", "float3(0.20, 0.27, 0.52)")
 
 /** API 26–32 / shader-failure fallback: soft nested ribbons, no bitmap/CPU noise loop. */
-private fun DrawScope.drawFluidFallback(t: Float, aurora: Boolean = false, midnight: Boolean = false) {
+private fun DrawScope.drawFluidFallback(t: Float, path: Path, aurora: Boolean = false, midnight: Boolean = false) {
     drawRect(if(midnight) Color(0xFF03050E) else if(aurora) Color(0xFF180923) else Color(0xFF01020A))
     drawRect(Brush.radialGradient(listOf(if(midnight) Color(0xFF191044) else if(aurora) Color(0xFF7427A8) else Color(0xFF1010A8), Color.Transparent),
         center = Offset(size.width * .08f, size.height * .55f), radius = size.maxDimension * .8f))
     val drift = if(midnight) .55f else .14f
     val counterDrift = if(midnight) .36f else .09f
     repeat(2) { ribbon ->
-        val path = Path()
+        path.rewind()
         for(step in 0..48) {
             val y = size.height * (step / 48f * 1.4f - .2f)
             val n = step / 48f

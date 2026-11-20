@@ -1,6 +1,10 @@
 package com.hydro.reedance
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -92,6 +96,31 @@ class LayoutTest {
         compose.onNodeWithText("Explore").assertIsDisplayed()
         compose.onNodeWithContentDescription("Gym").performClick().assertIsSelected()
         compose.onNodeWithText("Gym").assertIsDisplayed()
+    }
+
+    @Test fun hiddenNavigationPageIsNotMeasuredAndRetainsItsState() {
+        var active by mutableStateOf(false)
+        var measures = 0
+        compose.setContent {
+            Box(Modifier.visiblePageLayout(active)) {
+                var count by remember { mutableIntStateOf(0) }
+                androidx.compose.material3.Button(onClick = { count++ }, modifier = Modifier.layout { child, constraints ->
+                    measures++
+                    val placeable = child.measure(constraints)
+                    layout(placeable.width, placeable.height) { placeable.placeRelative(0, 0) }
+                }) { Text("Visited $count") }
+            }
+        }
+        compose.runOnIdle {
+            org.junit.Assert.assertEquals(0, measures)
+            active = true
+        }
+        compose.onNodeWithText("Visited 0").performClick()
+        compose.onNodeWithText("Visited 1").assertIsDisplayed()
+        compose.runOnIdle { active = false }
+        compose.onNodeWithText("Visited 1").assertDoesNotExist()
+        compose.runOnIdle { active = true }
+        compose.onNodeWithText("Visited 1").assertIsDisplayed()
     }
 
     @Test fun pressFeedbackPreservesClickSemanticsAndCancel() {
