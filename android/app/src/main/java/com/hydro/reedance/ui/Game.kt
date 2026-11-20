@@ -16,6 +16,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -29,6 +31,20 @@ import com.hydro.reedance.domain.buildHoneycombBoard
 import com.hydro.reedance.domain.gameWordKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+
+internal data class SolvedWordColor(val tile: Color, val onDarkSurface: Color)
+
+// A level has at most five words. Use its saved positions, not discovery order.
+private val solvedWordPalette = listOf(
+    SolvedWordColor(Color(0xFF187451), Color(0xFF80DCB2)), // green
+    SolvedWordColor(Color(0xFF6B49AA), Color(0xFFD0B7FF)), // violet
+    SolvedWordColor(Color(0xFFA84C19), Color(0xFFFFB990)), // orange
+    SolvedWordColor(Color(0xFF2363A4), Color(0xFF9FCBFF)), // blue
+    SolvedWordColor(Color(0xFFA53868), Color(0xFFFFAACF))  // rose
+)
+
+@Composable internal fun SolvedWordColor.ink(): Color =
+    if (MaterialTheme.colorScheme.background.luminance() > .5f) tile else onDarkSurface
 
 internal object GameSounds {
     private val lock = Any()
@@ -110,6 +126,9 @@ internal object GameSounds {
     val boardIdentity = roundTargets.joinToString("|") { "${it.songId}:${it.lexemeId}:${it.letterAnswer}" }
     val letterBoard = remember(boardIdentity) { buildHoneycombBoard(roundTargets) }
     val solvedTargetKeys = words.filter { it.solved }.map { gameWordKey(it.songId, it.lexemeId) }.toSet()
+    val wordColors = words.associate { word ->
+        gameWordKey(word.songId, word.lexemeId) to solvedWordPalette[word.positionInLevel % solvedWordPalette.size]
+    }
     val solvedCellIndices = words.filter { it.solved }.associate { word ->
         val saved = word.solvedCellIndices.split(',').mapNotNull { it.toIntOrNull() }
         val wordKey = gameWordKey(word.songId, word.lexemeId)
@@ -160,12 +179,15 @@ internal object GameSounds {
                         roundIndex = roundIndex,
                         targets = roundTargets,
                         solvedTargetKeys = solvedTargetKeys,
-                        solvedCellIndices = solvedCellIndices
+                        solvedCellIndices = solvedCellIndices,
+                        wordColors = wordColors
                     )
                     Panel {
                         Text(tr("واژه‌های این مرحله", "Words in this level"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                         words.forEach { word ->
                             val target = byKey[key(word.songId, word.lexemeId)] ?: return@forEach
+                            val wordColor = if (word.solved) wordColors.getValue(gameWordKey(word.songId, word.lexemeId)).ink()
+                                else MaterialTheme.colorScheme.onSurfaceVariant
                             Row(
                                 Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
                                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .32f))
@@ -176,7 +198,7 @@ internal object GameSounds {
                                     if(word.solved) UiIcons.CheckFilled else UiIcons.Words,
                                     null,
                                     Modifier.size(20.dp),
-                                    if(word.solved) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                    wordColor
                                 )
                                 Spacer(Modifier.width(10.dp))
                                 Text(
@@ -185,7 +207,7 @@ internal object GameSounds {
                                 )
                                 Text(
                                     if(word.solved) target.lemma else "${target.letterAnswer.length} ${tr("حرف", "letters")}",
-                                    color = if(word.solved) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = wordColor,
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = if(word.solved) FontWeight.SemiBold else FontWeight.Normal
                                 )

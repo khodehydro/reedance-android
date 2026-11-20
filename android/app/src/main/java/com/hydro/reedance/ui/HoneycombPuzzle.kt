@@ -39,7 +39,8 @@ import kotlinx.coroutines.delay
     roundIndex: Int,
     targets: List<GameWordDefinition>,
     solvedTargetKeys: Set<String>,
-    solvedCellIndices: Map<String, List<Int>>
+    solvedCellIndices: Map<String, List<Int>>,
+    wordColors: Map<String, SolvedWordColor>
 ) {
     val boardKey = remember(targets) { targets.joinToString("|") { gameWordKey(it.songId, it.lexemeId) } }
     var selected by rememberSaveable(boardKey) { mutableStateOf(emptyList<Int>()) }
@@ -65,11 +66,16 @@ import kotlinx.coroutines.delay
         feedback = ""
     }
 
-    val solvedCells = remember(board, solvedCellIndices) {
-        solvedCellIndices.values.flatten().toSet()
+    val solvedColors = remember(solvedCellIndices, wordColors) {
+        buildMap {
+            solvedCellIndices.forEach { (word, cells) ->
+                wordColors[word]?.tile?.let { color -> cells.forEach { put(it, color) } }
+            }
+        }
     }
     val winningCells = remember(pendingWinCells) { pendingWinCells.toSet() }
-    val lockedCells = remember(solvedCells, winningCells) { solvedCells + winningCells }
+    val lockedCells = remember(solvedColors, winningCells) { solvedColors.keys + winningCells }
+    val winningColor = wordColors[pendingWinKey]
     val canInteract = pendingWinKey.isEmpty() && !rejecting
 
     Panel {
@@ -98,6 +104,8 @@ import kotlinx.coroutines.delay
             selectedCells = selected.toSet(),
             lockedCells = lockedCells,
             winningCells = winningCells,
+            solvedColors = solvedColors,
+            winningColor = winningColor?.tile,
             roundIndex = roundIndex,
             targetLanguage = targetLanguage,
             canInteract = canInteract
@@ -154,7 +162,7 @@ import kotlinx.coroutines.delay
         }
         if(feedback.isNotBlank()) Text(
             feedback,
-            color = if(pendingWinKey.isNotEmpty()) Color(0xFF2F9E62) else MaterialTheme.colorScheme.error,
+            color = winningColor?.ink() ?: MaterialTheme.colorScheme.error,
             style = MaterialTheme.typography.bodySmall
         )
     }
@@ -165,6 +173,8 @@ import kotlinx.coroutines.delay
     selectedCells: Set<Int>,
     lockedCells: Set<Int>,
     winningCells: Set<Int>,
+    solvedColors: Map<Int, Color>,
+    winningColor: Color?,
     roundIndex: Int,
     targetLanguage: String,
     canInteract: Boolean,
@@ -188,7 +198,6 @@ import kotlinx.coroutines.delay
             Color(0xFF284A70), Color(0xFF315987), Color(0xFF3B6794), Color(0xFF244366)
         )
         val idleLetterColor = if(lightTheme) Color(0xFF183653) else Color(0xFFEAF3FF)
-        val solvedColor = if(lightTheme) Color(0xFF287B55) else Color(0xFF398D66)
         val tileWidth = minOf(42.dp, (maxWidth - 8.dp) / (columns + .5f))
         val tileHeight = tileWidth * 1.12f
         val rowStep = tileHeight * .75f
@@ -203,9 +212,10 @@ import kotlinx.coroutines.delay
                     val locked = index in lockedCells
                     val selected = index in selectedCells
                     val winning = index in winningCells
+                    val solvedColor = if(winning) winningColor else solvedColors[index]
                     val color by animateColorAsState(
                         targetValue = when {
-                            winning || locked -> solvedColor
+                            solvedColor != null -> solvedColor
                             selected -> MaterialTheme.colorScheme.primary
                             else -> blueRange[index % blueRange.size]
                         },
