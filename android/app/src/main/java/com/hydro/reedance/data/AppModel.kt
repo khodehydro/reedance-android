@@ -436,7 +436,7 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
                 preparePracticeQuestions(source) + prepareListeningQuestions(source)
             }
         }
-        return withContext(Dispatchers.Default) { selectGymRound(candidates, history, 5) }
+        return withContext(Dispatchers.Default) { selectGymRound(candidates, history) }
     }
 
     internal suspend fun listeningAudio(source: JsonObject): File = content.audioFile(source.s("songId"), source)
