@@ -433,7 +433,7 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
             catch (_: Exception) { null }
             if (source == null || source.s("targetLanguage") != targetLanguage || source.s("songId") != row.songId) continue
             candidates += withContext(Dispatchers.Default) {
-                source.a("questions").filter(::usablePracticeQuestion).map { GymQuestion(it, source) }
+                preparePracticeQuestions(source)
             }
         }
         return withContext(Dispatchers.Default) { selectGymRound(candidates, history, 5) }

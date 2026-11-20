@@ -35,7 +35,7 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
     val session by produceState<QuizSessionData?>(null, data) {
         value = withContext(Dispatchers.Default) {
             val source = data.a("questions")
-            val questions = source.filter(::usablePracticeQuestion).distinctBy { it.s("id") }.map { GymQuestion(it, data) }
+            val questions = preparePracticeQuestions(data)
             QuizSessionData(questions, source.size - questions.size, data)
         }
     }
@@ -110,7 +110,7 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 24.dp + LocalOverlayBottomInset.current), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         if(gym) Heading(tr("تمرین", "Gym"), tr("سؤال‌هایی از آهنگ‌های نصب‌شده", "Mixed questions from your installed songs"))
-        if(skipped > 0) PersianText("$skipped سؤال ناقص یا ناسازگار از این تمرین کنار گذاشته شد؛ پیشرفت آن‌ها تغییر نکرد.",
+        if(skipped > 0) PersianText("$skipped سؤال ناقص، ناسازگار یا بدون ترجمهٔ لازم از این تمرین کنار گذاشته شد؛ پیشرفت آن‌ها تغییر نکرد.",
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         if(index >= questions.size) {
             Heading(if(questions.isEmpty() && skipped > 0) tr("سؤال معتبری در دسترس نیست", "No valid questions available") else if(questions.isEmpty()) tr("فعلاً مروری نداری", "All caught up") else tr("یک قدم جلوتر!", "One step further!"), tr("پیشرفتت روی همین دستگاه ذخیره شد.", "Your progress is saved on this device."))
@@ -157,6 +157,10 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
                     PersianText(q.tr("skill", fa), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                     PersianText(q.tr("prompt", fa), style = MaterialTheme.typography.titleLarge)
                     if(q.s("context").isNotEmpty()) Foreign(q.s("context"))
+                    entry.orderMeaningFa?.let { meaning ->
+                        Text(tr("معنی فارسی جمله", "Persian sentence meaning"), style = MaterialTheme.typography.labelMedium)
+                        PersianText(meaning, style = MaterialTheme.typography.bodyLarge)
+                    }
                     if(q.s("type") == "typing") {
                         typingSentenceMeaning(q, data, fa).takeIf { it.isNotBlank() }?.let {
                             PersianText(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

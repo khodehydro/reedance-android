@@ -18,3 +18,9 @@ JSON Schema تنها ساختار را چک می‌کند؛ اتصال صوت م
 هر عضو `pages` می‌تواند متن ساده یا یک شیء با آرایهٔ `lines` باشد. هر خط `text` و در صورت وجود `meaningFa`/`meaningEn` دارد. برای حالت کلمه‌به‌کلمه، `words` را به ترتیب متن با `text` و معنی هر کلمه یا عبارت کوتاه پر کنید؛ همهٔ اجزای متن، حتی اجزای بدون معنی، در `words` قرار بگیرند. روایت در هر حالت از `text` اصلی خوانده می‌شود.
 
 برگه‌های نمایش از روی اندازهٔ صفحه و انتخاب‌های خواننده ساخته می‌شوند؛ مرزهای `pages` فقط برای ساختاردهی محتوا هستند. داستان پیوستهٔ بدون ترجمه می‌تواند به‌جای `pages` یک فیلد `text` داشته باشد.
+
+For `order` questions, supply the complete Persian sentence as `translationFa`,
+keeping the clauses in the order represented by `chunks`. Android can also use
+an existing Persian translation of the same complete sentence from the lesson.
+It skips order questions without either source rather than guessing a translation
+or exposing the answer in `explanationFa`. The packaged chunks remain the grading key.
