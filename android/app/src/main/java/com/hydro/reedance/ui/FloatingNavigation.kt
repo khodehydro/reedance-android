@@ -54,7 +54,7 @@ internal fun navigationMenuWidth(compact: Boolean) = if(compact) 282.dp else 368
         ) {
             Row(
                 Modifier.fillMaxWidth().selectableGroup().padding(5.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 destinations.forEach { destination ->
