@@ -34,24 +34,49 @@ internal fun orderSentenceMeaningFa(question: JsonObject, lesson: JsonObject): S
 private val orderWhitespace = Regex("[\\s\\p{Z}]+")
 private fun orderText(text: String): String = normalizeAnswer(text.replace(orderWhitespace, " "))
 
-/** Pick fresh questions first, then recycle the least recently answered ones. */
+private enum class GymQuestionType { LISTENING, CHOICE, ORDER, MATCH, TYPING, OTHER }
+
+private fun GymQuestion.typeForRound(): GymQuestionType = if (listening != null) GymQuestionType.LISTENING else when (question.s("type")) {
+    "choice" -> GymQuestionType.CHOICE
+    "order" -> GymQuestionType.ORDER
+    "match" -> GymQuestionType.MATCH
+    "typing" -> GymQuestionType.TYPING
+    else -> GymQuestionType.OTHER
+}
+
+/** Mix question types before selecting by history. Each type prefers fresh, then oldest answers. */
 internal fun selectGymRound(
     candidates: List<GymQuestion>, history: Map<PracticeKey, Long>, count: Int,
     random: Random = Random.Default
 ): List<GymQuestion> {
-    val groups = candidates.distinctBy { it.key }.groupBy { history[it.key] }
+    if (count <= 0) return emptyList()
+    val queues = candidates.distinctBy { it.key }.groupBy(GymQuestion::typeForRound)
+        .mapValues { (_, entries) -> entries.shuffled(random).sortedWith(compareBy { history[it.key] }).iterator() }
+    val pickedCounts = mutableMapOf<GymQuestionType, Int>()
+    val listeningLimit = (count / 2).coerceAtLeast(1)
+    val picked = buildList {
+        repeat(count) {
+            val available = queues.keys.filter { queues.getValue(it).hasNext() }
+            if (available.isEmpty()) return@buildList
+            val types = available.filter {
+                it != GymQuestionType.LISTENING || (pickedCounts[it] ?: 0) < listeningLimit
+            }.ifEmpty { available }
+            val fewest = types.minOf { pickedCounts[it] ?: 0 }
+            val type = types.filter { (pickedCounts[it] ?: 0) == fewest }.random(random)
+            add(queues.getValue(type).next())
+            pickedCounts[type] = fewest + 1
+        }
+    }
+    // Presentation has no fixed type sequence. Prefer switching songs where possible.
+    val songs = picked.shuffled(random).groupBy { it.key.songId }
+        .mapValues { (_, entries) -> entries.toMutableList() }.toMutableMap()
     return buildList {
-        for (time in groups.keys.sortedWith(compareBy { it })) {
-            val songs = groups.getValue(time).groupBy { it.key.songId }
-                .mapValues { (_, entries) -> entries.shuffled(random).toMutableList() }.toMutableMap()
-            while (songs.isNotEmpty() && size < count) {
-                val choices = songs.keys.filter { it != lastOrNull()?.key?.songId }.ifEmpty { songs.keys.toList() }
-                val song = choices.random(random)
-                val questions = songs.getValue(song)
-                add(questions.removeAt(questions.lastIndex))
-                if (questions.isEmpty()) songs.remove(song)
-            }
-            if (size >= count) break
+        while (songs.isNotEmpty()) {
+            val choices = songs.keys.filter { it != lastOrNull()?.key?.songId }.ifEmpty { songs.keys.toList() }
+            val song = choices.random(random)
+            val entries = songs.getValue(song)
+            add(entries.removeAt(entries.lastIndex))
+            if (entries.isEmpty()) songs.remove(song)
         }
     }
 }
