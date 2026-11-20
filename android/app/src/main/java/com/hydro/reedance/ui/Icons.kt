@@ -12,6 +12,8 @@ object UiIcons {
     val Headphones = R.drawable.uicon_headphones
     val Game = R.drawable.uicon_game
     val GameFilled = R.drawable.uicon_game_filled
+    val Dumbbell = R.drawable.uicon_dumbbell
+    val DumbbellFilled = R.drawable.uicon_dumbbell_filled
     val Eye = R.drawable.uicon_eye
     val EyeClosed = R.drawable.uicon_eye_closed
     val Lyrics = R.drawable.uicon_lyrics

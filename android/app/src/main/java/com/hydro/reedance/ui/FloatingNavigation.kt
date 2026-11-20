@@ -36,7 +36,7 @@ internal fun navigationMenuWidth(compact: Boolean) = if(compact) 282.dp else 368
         Destination("home", tr("خانه", "Home"), UiIcons.Home, UiIcons.HomeFilled),
         Destination("explore", tr("کشف", "Explore"), UiIcons.Explore, UiIcons.ExploreFilled),
         Destination("review", tr("لایتنر", "Review"), UiIcons.Review, UiIcons.ReviewFilled),
-        Destination("gym", tr("تمرین", "Gym"), UiIcons.Quiz, UiIcons.Quiz),
+        Destination("gym", tr("تمرین", "Gym"), UiIcons.Dumbbell, UiIcons.DumbbellFilled),
         Destination("game", tr("گیم", "Game"), UiIcons.Game, UiIcons.GameFilled),
         Destination("library", tr("کتابخانه", "Library"), UiIcons.Library, UiIcons.LibraryFilled)
     )
