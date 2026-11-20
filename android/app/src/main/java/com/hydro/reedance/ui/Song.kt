@@ -226,7 +226,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     val repeat by model.repeat.collectAsStateWithLifecycle()
     val muted by model.muted.collectAsStateWithLifecycle()
     var dragging by remember(data.s("songId")) { mutableStateOf<Float?>(null) }
-    Surface(Modifier.fillMaxWidth().itemEntrance(), shape = RoundedCornerShape(22.dp), color = Color(0xFF01020A), contentColor = Color.White) {
+    Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp), color = Color(0xFF01020A), contentColor = Color.White) {
         Box {
             BannerGradient(animate = playing, modifier = Modifier.matchParentSize())
             Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {

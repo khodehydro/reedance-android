@@ -189,16 +189,10 @@ class AssetTests(unittest.TestCase):
         self.assertIn('AnimatedContent(saved', bookmark)
         self.assertIn('PressIconButton(onClick', bookmark)
         self.assertIn('selected = saved; stateDescription = state', bookmark)
-        entry = (ui / 'EntryMotion.kt').read_text()
-        self.assertIn('remember(destination)', entry)
-        self.assertIn('graphicsLayer', entry)
-        self.assertIn('rememberSaveable', entry)
-        self.assertIn('if(reduced) progress.snapTo(1f)', entry)
-        self.assertNotIn('AnimatedContent', entry)
-        self.assertIn('PageEntrance(if(page == "song")', (ui / 'App.kt').read_text())
-        self.assertIn('.itemEntrance()', (ui / 'Components.kt').read_text())
-        self.assertIn('modifier.itemEntrance()', (ui / 'Catalog.kt').read_text())
-        self.assertIn('PageEntrance("starter:', (ui / 'StarterDestination.kt').read_text())
+        for name in ['App.kt', 'Song.kt', 'Components.kt', 'Catalog.kt', 'StarterDestination.kt']:
+            code = (ui / name).read_text()
+            self.assertNotIn('PageEntrance(', code)
+            self.assertNotIn('.itemEntrance()', code)
         icons = load(ASSETS / 'main/assets/uicons-provenance.json')['icons']
         self.assertEqual('Solid Rounded', icons['BookmarkFilled']['style'])
 
@@ -243,15 +237,9 @@ class AssetTests(unittest.TestCase):
         self.assertEqual([900], weights)
         provenance = load(ASSETS / 'main/assets/fonts-provenance.json')['headerWordmark']
         self.assertEqual(hashlib.sha256(font).hexdigest(), provenance['sha256'])
-        entry = (ui / 'EntryMotion.kt').read_text()
-        page = entry.split('@Composable internal fun Modifier.itemEntrance')[0]
-        self.assertIn('.graphicsLayer {', page)
-        self.assertNotIn('.offset {', page)
-        self.assertNotIn('alpha =', page)
-        self.assertIn('compositingStrategy = CompositingStrategy.ModulateAlpha', entry)
         app = (ui / 'App.kt').read_text()
-        self.assertIn('key(page) {', app)
-        self.assertIn('pageStates.SaveableStateProvider(page)', app)
+        self.assertIn('Modifier.visiblePageLayout(active)', app)
+        self.assertIn('pageStates.SaveableStateProvider(mountedPage)', app)
 
     def test_solid_minimized_players_icon_tabs_and_line_play_action(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'
@@ -598,9 +586,8 @@ class AssetTests(unittest.TestCase):
         self.assertIn('contentAlignment = Alignment.Center', collapsing)
         self.assertIn('Modifier.clearAndSetSemantics', collapsing)
         self.assertNotIn('.animateContentSize(tween(duration))', tabs)
-        self.assertIn('if(LocalItemEntranceEnabled.current) Modifier.itemEntrance() else Modifier', tabs)
+        self.assertNotIn('.itemEntrance()', tabs)
         library = (ui / 'Library.kt').read_text().split('@Composable fun LibraryScreen')[1]
-        self.assertIn('LocalItemEntranceEnabled provides false', library)
         self.assertIn('delay(100)', library)
         self.assertIn('if(model.cachedLibraryItem(mark) == null) model.libraryItem(mark)', library)
         self.assertNotIn('animateDpAsState', library)
@@ -656,9 +643,6 @@ class AssetTests(unittest.TestCase):
         card = (ui / 'LibraryBookmarkCard.kt').read_text()
         self.assertLess(card.index('if(preloaded) {'), card.index('model.libraryItem(mark)'))
         self.assertIn('return@produceState', card)
-        page = (ui / 'EntryMotion.kt').read_text().split('internal fun PageEntrance')[1].split('/** Lazy')[0]
-        self.assertNotIn('.offset {', page)
-        self.assertIn('translationY = distance * (1f - progress.value)', page)
 
     def test_profile_has_no_manual_package_file_import(self):
         ui = ASSETS / 'main/java/com/hydro/reedance/ui'
@@ -962,7 +946,7 @@ class AssetTests(unittest.TestCase):
             self.assertIn(token, hearts)
         app = (ui / 'App.kt').read_text()
         self.assertIn('HeartOverlay {', app)
-        self.assertIn('!settings.permissionsSetup -> PageEntrance("permissions") { PermissionSetup(model) }', app)
+        self.assertIn('!settings.permissionsSetup -> Setup(model)', app)
         manifest = (ASSETS / 'main/AndroidManifest.xml').read_text()
         self.assertIn('android.permission.POST_NOTIFICATIONS', manifest)
         for permission in ['WRITE_EXTERNAL_STORAGE', 'READ_EXTERNAL_STORAGE', 'MANAGE_EXTERNAL_STORAGE', 'SCHEDULE_EXACT_ALARM']:

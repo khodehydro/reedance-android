@@ -288,8 +288,7 @@ private fun songCoverId(song: JsonObject): String =
     if(song.s("distributionRef") == "gulum-ii") "pending-gulum-ii" else song.s("id")
 
 @Composable private fun SongTile(song: JsonObject, modifier: Modifier, onClick: () -> Unit) {
-    val entrance = if(LocalItemEntranceEnabled.current) modifier.itemEntrance() else modifier
-    Column(entrance.clickable(onClick = onClick), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(modifier.clickable(onClick = onClick), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Box {
             CoverImage(songCoverId(song), song.s("title"), Modifier.fillMaxWidth().aspectRatio(1f))
         }

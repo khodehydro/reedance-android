@@ -48,7 +48,7 @@ import com.hydro.reedance.data.*
             HeartOverlay { Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                 when {
                     !ready -> Box(Modifier.fillMaxSize()) // Covered by the single system splash.
-                    !settings.permissionsSetup -> PageEntrance("setup") { Setup(model) }
+                    !settings.permissionsSetup -> Setup(model)
                     destination != null -> destination()
                     else -> MainShell(model)
                 }
@@ -195,14 +195,11 @@ import com.hydro.reedance.data.*
                     val active = page == mountedPage
                     key(mountedPage) {
                         pageStates.SaveableStateProvider(mountedPage) {
-                            CompositionLocalProvider(
-                                LocalPageActive provides active,
-                                LocalItemEntranceEnabled provides active
-                            ) {
+                            CompositionLocalProvider(LocalPageActive provides active) {
                                 Box(Modifier.visiblePageLayout(active)) {
                                     if(mountedPage == "premium") {
                                         if(active) PremiumScreen { navigateAction(premiumReturnPage) }
-                                    } else PageEntrance(mountedPage) {
+                                    } else {
                                         ShellPageContent(
                                             page = mountedPage,
                                             model = model,
@@ -227,14 +224,11 @@ import com.hydro.reedance.data.*
                     val active = page == route && songId == routeSongId
                     key(route, routeSongId) {
                         pageStates.SaveableStateProvider(route) {
-                            CompositionLocalProvider(
-                                LocalPageActive provides active,
-                                LocalItemEntranceEnabled provides active
-                            ) {
+                            CompositionLocalProvider(LocalPageActive provides active) {
                                 Box(Modifier.visiblePageLayout(active)) {
                                     if(route == "song-story") {
                                         if(active) SongStoryScreen(model, routeSongId) { navigateAction("song-playback") }
-                                    } else PageEntrance("$route:$routeSongId") {
+                                    } else {
                                         ShellPageContent(
                                             page = route,
                                             model = model,

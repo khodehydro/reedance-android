@@ -185,29 +185,27 @@ import kotlinx.coroutines.flow.collectLatest
                             }
                     }
                 }
-                CompositionLocalProvider(LocalItemEntranceEnabled provides false) {
-                    androidx.compose.foundation.lazy.LazyColumn(
-                        Modifier.fillMaxSize().nestedScroll(scrollConnection),
-                        state = listState,
-                        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 20.dp + LocalOverlayBottomInset.current),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        if(preparingEntries) item(key = "preparing") {
-                            LinearProgressIndicator(Modifier.fillMaxWidth())
+                androidx.compose.foundation.lazy.LazyColumn(
+                    Modifier.fillMaxSize().nestedScroll(scrollConnection),
+                    state = listState,
+                    contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 20.dp + LocalOverlayBottomInset.current),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    if(preparingEntries) item(key = "preparing") {
+                        LinearProgressIndicator(Modifier.fillMaxWidth())
+                    }
+                    else if(entries.isEmpty()) item(key = "empty") {
+                        Panel {
+                            if(query.isNotBlank() || sourceFilter.isNotEmpty()) {
+                                Text(tr("نتیجه‌ای پیدا نشد.", "No matching saved items."))
+                                PressTextButton({ query = ""; sourceFilter = "" }) { Text(tr("پاک‌کردن جستجو و فیلتر", "Clear search and filters")) }
+                            } else Text(tr("در این بخش هنوز موردی نشان نکرده‌ای.", "No saved items in this tab yet."))
                         }
-                        else if(entries.isEmpty()) item(key = "empty") {
-                            Panel {
-                                if(query.isNotBlank() || sourceFilter.isNotEmpty()) {
-                                    Text(tr("نتیجه‌ای پیدا نشد.", "No matching saved items."))
-                                    PressTextButton({ query = ""; sourceFilter = "" }) { Text(tr("پاک‌کردن جستجو و فیلتر", "Clear search and filters")) }
-                                } else Text(tr("در این بخش هنوز موردی نشان نکرده‌ای.", "No saved items in this tab yet."))
-                            }
-                        }
-                        items(entries, key = { "${it.songId}:${it.itemType}:${it.itemId}" }, contentType = { it.itemType }) { mark ->
-                            LibraryBookmarkCard(model, mark, catalogById[mark.songId], song,
-                                preloaded = prepared?.initialWindow?.containsKey(mark) == true,
-                                preloadedContent = prepared?.initialWindow?.get(mark))
-                        }
+                    }
+                    items(entries, key = { "${it.songId}:${it.itemType}:${it.itemId}" }, contentType = { it.itemType }) { mark ->
+                        LibraryBookmarkCard(model, mark, catalogById[mark.songId], song,
+                            preloaded = prepared?.initialWindow?.containsKey(mark) == true,
+                            preloadedContent = prepared?.initialWindow?.get(mark))
                     }
                 }
             }
