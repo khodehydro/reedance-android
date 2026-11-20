@@ -177,11 +177,14 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val listeni
             if(gym) Text(data.s("title"), style = MaterialTheme.typography.labelLarge)
             if(saveFailed) Text(tr("پاسخ ذخیره نشد؛ دوباره امتحان کن.", "Could not save your answer. Try again."), color = MaterialTheme.colorScheme.error)
             LinearProgressIndicator(progress = { index.toFloat()/questions.size }, modifier = Modifier.fillMaxWidth())
-            if (clip != null && checked == null && !busy) key(entry.key) { ListeningAudio(model, entry) }
-            Deck(index) {
+            val questionIndex = index
+            Deck(questionIndex) {
                 Panel {
                     PersianText(q.tr("skill", fa), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                     PersianText(q.tr("prompt", fa), style = MaterialTheme.typography.titleLarge)
+                    if (clip != null && index == questionIndex && checked == null && !busy) {
+                        key(entry.key) { ListeningAudio(model, entry) }
+                    }
                     if(q.s("context").isNotEmpty()) Foreign(q.s("context"))
                     entry.orderMeaningFa?.let { meaning ->
                         Text(tr("معنی فارسی جمله", "Persian sentence meaning"), style = MaterialTheme.typography.labelMedium)
