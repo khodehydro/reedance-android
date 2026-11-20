@@ -86,6 +86,8 @@ class LayoutTest {
         compose.onNodeWithText("Toggle size").performClick()
         compose.onNodeWithText("Explore").assertDoesNotExist()
         compose.onNodeWithContentDescription("Explore").assertIsSelected()
+        val compactTab = compose.onNodeWithContentDescription("Explore").fetchSemanticsNode().boundsInRoot
+        check(kotlin.math.abs(compactTab.width - compactTab.height) <= 1f) { "Compact tab must be square: $compactTab" }
         compose.onNodeWithText("Toggle size").performClick()
         compose.onNodeWithText("Explore").assertIsDisplayed()
         compose.onNodeWithContentDescription("Gym").performClick().assertIsSelected()

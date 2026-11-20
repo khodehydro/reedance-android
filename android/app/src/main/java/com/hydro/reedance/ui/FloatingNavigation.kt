@@ -52,46 +52,48 @@ internal fun navigationMenuWidth(compact: Boolean) = if(compact) 282.dp else 368
             shadowElevation = 3.dp,
             tonalElevation = 0.dp
         ) {
-            Row(
-                Modifier.fillMaxWidth().selectableGroup().padding(5.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                destinations.forEach { destination ->
-                    val active = page == destination.id
-                    val chipColor by animateColorAsState(
-                        if(active) Blue else Color.Transparent,
-                        tween(duration),
-                        label = "nav-selected-color-${destination.id}"
-                    )
-                    val tabShape = if(compact) CircleShape else RoundedCornerShape(24.dp)
-                    Row(
-                        Modifier.clip(tabShape)
-                            .background(chipColor)
-                            .selectable(active, role = Role.Tab, onClick = { onNavigate(destination.id) })
-                            .semantics { contentDescription = destination.label }
-                            .height(48.dp)
-                            .padding(horizontal = if(compact) 10.dp else 6.dp),
-                        horizontalArrangement = Arrangement.spacedBy(7.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        AppIcon(
-                            if(active) destination.filled else destination.outline,
-                            null,
-                            Modifier.size(22.dp),
-                            if(active) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+            BoxWithConstraints(Modifier.fillMaxWidth().padding(5.dp)) {
+                val compactSize = minOf(44.dp, maxWidth / destinations.size)
+                Row(
+                    Modifier.fillMaxWidth().selectableGroup(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    destinations.forEach { destination ->
+                        val active = page == destination.id
+                        val chipColor by animateColorAsState(
+                            if(active) Blue else Color.Transparent,
+                            tween(duration),
+                            label = "nav-selected-color-${destination.id}"
                         )
-                        AnimatedVisibility(
-                            visible = active && !compact,
-                            enter = fadeIn(tween(duration)) + expandHorizontally(tween(duration), clip = false),
-                            exit = fadeOut(tween(duration)) + shrinkHorizontally(tween(duration), clip = false)
+                        val tabShape = if(compact) CircleShape else RoundedCornerShape(24.dp)
+                        Row(
+                            Modifier.clip(tabShape)
+                                .background(chipColor)
+                                .selectable(active, role = Role.Tab, onClick = { onNavigate(destination.id) })
+                                .semantics { contentDescription = destination.label }
+                                .then(if(compact) Modifier.size(compactSize) else Modifier.height(48.dp).padding(horizontal = 6.dp)),
+                            horizontalArrangement = if(compact) Arrangement.Center else Arrangement.spacedBy(7.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                destination.label,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = Color.White,
-                                maxLines = 1
+                            AppIcon(
+                                if(active) destination.filled else destination.outline,
+                                null,
+                                Modifier.size(22.dp),
+                                if(active) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                            if(!compact) AnimatedVisibility(
+                                visible = active,
+                                enter = fadeIn(tween(duration)) + expandHorizontally(tween(duration), clip = false),
+                                exit = fadeOut(tween(duration)) + shrinkHorizontally(tween(duration), clip = false)
+                            ) {
+                                Text(
+                                    destination.label,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = Color.White,
+                                    maxLines = 1
+                                )
+                            }
                         }
                     }
                 }
