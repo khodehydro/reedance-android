@@ -44,6 +44,7 @@ android {
         }
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             buildConfigField("String", "PACK_ENC_MAIN_KEY", buildConfigString(configuredPackKey))
             buildConfigField("boolean", "PACK_ENC_TEST_KEY", "false")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")

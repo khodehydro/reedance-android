@@ -23,6 +23,12 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --stacktrace
         working-directory: android
+      - name: Report debug APK size
+        run: |
+          for apk in android/app/build/outputs/apk/debug/*.apk; do
+            bytes=$(wc -c < "$apk")
+            printf -- '- `%s`: %s bytes (debug, not a release download estimate)\n' "$(basename "$apk")" "$bytes" | tee -a "$GITHUB_STEP_SUMMARY"
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: reedance-debug-apk

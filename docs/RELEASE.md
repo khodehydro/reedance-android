@@ -22,3 +22,17 @@ A real WorkManager/staging installer is now implemented; see
 This supersedes “fixture-only path” descriptions for source implementation, **not**
 release readiness. Real Gülüm II authentication/playback and native/device validation
 remain blocked/unverified; release guard stays closed.
+
+## Download size
+
+Release uses R8 code optimization and resource shrinking. Once the release gate
+is satisfied, prefer the Android App Bundle for stores that support it so users
+receive device-specific APKs instead of a universal APK. Measure download size
+with the store console or `bundletool get-size total` on the generated APK set;
+the Android workflow reports debug APK bytes separately for tracking only.
+
+Keep lesson media in downloadable packs, not the base app. Resource shrinking
+removes unreferenced Android resources, not files under `src/main/assets`.
+Review the base APK with APK Analyzer before publishing: the current app does
+bundle some referenced artwork, fonts, and a game sound in addition to icons
+and text, and dependencies also contribute to download size.
