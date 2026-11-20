@@ -69,7 +69,6 @@ import com.hydro.reedance.data.*
     var songReturnPage by rememberSaveable { mutableStateOf("home") }
     var songId by rememberSaveable { mutableStateOf("") }
     var songTab by rememberSaveable { mutableIntStateOf(0) }
-    var reviewQuiz by rememberSaveable { mutableStateOf(false) }
     var premiumReturnPage by rememberSaveable { mutableStateOf("profile") }
     var profileReturnPage by rememberSaveable { mutableStateOf("home") }
     val currentPage by rememberUpdatedState(page)
@@ -92,7 +91,7 @@ import com.hydro.reedance.data.*
     val activePlayback by model.activePlayback.collectAsStateWithLifecycle()
     val installedIds by model.installedIds.collectAsStateWithLifecycle()
     val pageStates = rememberSaveableStateHolder()
-    val preloadablePages = remember { setOf("home", "explore", "game", "review", "library", "profile", "quiz", "premium") }
+    val preloadablePages = remember { setOf("home", "explore", "review", "gym", "game", "library", "profile", "quiz", "premium") }
     val songPageTypes = remember { setOf("song-download", "song-playback", "song-story") }
     val mountedPages = remember { mutableStateListOf("home") }
     val mountedSongPages = remember { mutableStateListOf<Pair<String, String>>() }
@@ -125,7 +124,7 @@ import com.hydro.reedance.data.*
     LaunchedEffect(Unit) {
         // Warm the common navigation destinations gradually after the first screen settles.
         delay(1_000)
-        listOf("explore", "game", "review", "library", "profile", "quiz", "premium").forEach { destination ->
+        listOf("explore", "review", "gym", "game", "library", "profile", "quiz", "premium").forEach { destination ->
             if(destination !in mountedPages) mountedPages += destination
             delay(700)
         }
@@ -171,8 +170,6 @@ import com.hydro.reedance.data.*
     val openSongAction = remember { { id: String -> openSongLatest.value(id) } }
     val setSongTabLatest = rememberUpdatedState<(Int) -> Unit>({ songTab = it })
     val setSongTabAction = remember { { tab: Int -> setSongTabLatest.value(tab) } }
-    val setReviewQuizLatest = rememberUpdatedState<(Boolean) -> Unit>({ reviewQuiz = it })
-    val setReviewQuizAction = remember { { review: Boolean -> setReviewQuizLatest.value(review) } }
     val setPremiumReturnLatest = rememberUpdatedState<(String) -> Unit>({ premiumReturnPage = it })
     val setPremiumReturnAction = remember { { destination: String -> setPremiumReturnLatest.value(destination) } }
     val starterAction = remember(context) { { context.startActivity(android.content.Intent(context, com.hydro.reedance.StarterActivity::class.java)) } }
@@ -184,7 +181,7 @@ import com.hydro.reedance.data.*
         else navigate(when(page) {
             "song-story" -> "song-playback"
             "song-download", "song-playback" -> songReturnPage
-            "quiz" -> if(reviewQuiz) "review" else "song-playback"
+            "quiz" -> "song-playback"
             "premium" -> premiumReturnPage
             "profile" -> profileReturnPage
             else -> "home"
@@ -198,7 +195,7 @@ import com.hydro.reedance.data.*
             if(page == "quiz" || page == "profile") {
                 PressIconButton({
                     navigate(when(page) {
-                        "quiz" -> if(reviewQuiz) "review" else "song-playback"
+                        "quiz" -> "song-playback"
                         else -> profileReturnPage
                     })
                 }) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
@@ -275,8 +272,6 @@ import com.hydro.reedance.data.*
                                                 navigate = navigateAction,
                                                 openSong = openSongAction,
                                                 starter = starterAction,
-                                                reviewQuiz = if(mountedPage == "quiz") reviewQuiz else false,
-                                                setReviewQuiz = setReviewQuizAction,
                                                 setPremiumReturnPage = setPremiumReturnAction,
                                                 songReturnPage = songReturnPage,
                                                 exploreArtistKey = exploreArtistKey,
@@ -323,8 +318,6 @@ import com.hydro.reedance.data.*
                                             navigate = navigateAction,
                                             openSong = openSongAction,
                                             starter = starterAction,
-                                            reviewQuiz = reviewQuiz,
-                                            setReviewQuiz = setReviewQuizAction,
                                             setPremiumReturnPage = setPremiumReturnAction,
                                                 songReturnPage = songReturnPage,
                                                 exploreArtistKey = exploreArtistKey,
@@ -352,8 +345,6 @@ import com.hydro.reedance.data.*
     navigate: (String) -> Unit,
     openSong: (String) -> Unit,
     starter: () -> Unit,
-    reviewQuiz: Boolean,
-    setReviewQuiz: (Boolean) -> Unit,
     setPremiumReturnPage: (String) -> Unit,
     songReturnPage: String,
     exploreArtistKey: String?,
@@ -364,11 +355,12 @@ import com.hydro.reedance.data.*
         "song-download" -> SongDownloadScreen(model, songId, { navigate(songReturnPage) }) { navigate("song-playback") }
         "song-playback" -> SongPlaybackScreen(
             model, songId, songTab, setSongTab, { navigate(songReturnPage) }, { navigate("song-download") },
-            { setReviewQuiz(false); navigate("quiz") }, { navigate("song-story") }
+            { navigate("quiz") }, { navigate("song-story") }
         ) { setPremiumReturnPage("song-playback"); navigate("premium") }
         "game" -> GameScreen(model) { setPremiumReturnPage("game"); navigate("premium") }
-        "quiz" -> QuizScreen(model, reviewQuiz, { navigate(if(reviewQuiz) "review" else "song-playback") }, { navigate("review") })
-        "review" -> ReviewScreen(model) { setReviewQuiz(true); navigate("quiz") }
+        "quiz" -> QuizScreen(model, { navigate("song-playback") }, { navigate("review") })
+        "review" -> ReviewScreen(model)
+        "gym" -> GymScreen(model) { navigate("explore") }
         "library" -> LibraryScreen(model, openSong)
         "profile" -> ProfileScreen(model, { navigate("library") }) { setPremiumReturnPage("profile"); navigate("premium") }
     }

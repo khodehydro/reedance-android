@@ -74,7 +74,7 @@ class LayoutTest {
                 ReedanceTheme(Settings(language = "en")) {
                     androidx.compose.foundation.layout.Column {
                         androidx.compose.material3.Button(onClick = { compact = !compact }) { androidx.compose.material3.Text("Toggle size") }
-                        FloatingNavigation(page, compact) { page = it }
+                        FloatingNavigation(page, compact, onNavigate = { page = it })
                     }
                 }
             }
@@ -88,6 +88,8 @@ class LayoutTest {
         compose.onNodeWithContentDescription("Explore").assertIsSelected()
         compose.onNodeWithText("Toggle size").performClick()
         compose.onNodeWithText("Explore").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Gym").performClick().assertIsSelected()
+        compose.onNodeWithText("Gym").assertIsDisplayed()
     }
 
     @Test fun pressFeedbackPreservesClickSemanticsAndCancel() {

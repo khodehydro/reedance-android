@@ -25,7 +25,11 @@ data class GameWordProgress(
     val addedAt: Long = System.currentTimeMillis(),
     @ColumnInfo(defaultValue = "''") val solvedCellIndices: String = ""
 )
+data class QuestionHistory(val songId: String, val questionId: String, val lastAnswered: Long)
+
 @Dao interface LearningDao {
+    @Query("SELECT songId, questionId, MAX(gradedAt) AS lastAnswered FROM QuizResult GROUP BY songId, questionId")
+    suspend fun questionHistory(): List<QuestionHistory>
     @Query("SELECT * FROM Bookmark ORDER BY createdAt DESC") fun bookmarks(): Flow<List<Bookmark>>
     @Query("SELECT * FROM Bookmark WHERE songId = :song AND itemType = :type AND itemId = :id") suspend fun bookmark(song: String, type: String, id: String): Bookmark?
     @Query("SELECT COUNT(*) FROM Bookmark WHERE itemType = :type") suspend fun bookmarkCount(type: String): Int

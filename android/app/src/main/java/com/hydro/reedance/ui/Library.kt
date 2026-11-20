@@ -28,7 +28,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.collectLatest
 
-@Composable fun ReviewScreen(model: AppModel, quiz: () -> Unit) {
+@Composable fun ReviewScreen(model: AppModel) {
     val reviews by model.reviews.collectAsStateWithLifecycle()
     val pageActive = LocalPageActive.current
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
@@ -77,7 +77,6 @@ import kotlinx.coroutines.flow.collectLatest
                     }
                 }
             }
-            PressOutlinedButton({ card?.let { scope.launch { model.openInstalled(it.songId); quiz() } } }, Modifier.fillMaxWidth()) { Text(tr("مرور با سؤال", "Practice with questions")) }
         } else Panel {
             Text(if(reviews.isEmpty()) tr("در تب لغت‌های آهنگ، واژه‌ای را نشان کن تا به جعبه‌ات بیاید.", "Save a word in the song lesson to start your collection.") else if(card != null) tr("برای نمایش کارت‌ها، بستهٔ آهنگ را دوباره نصب کن. پیشرفتت حفظ شده است.", "Reinstall the song to view these cards. Your progress is preserved.") else tr("عالی بود! واژه‌ها در موعد بعدی برمی‌گردند.", "All caught up! Your words will return when they are due."))
         }

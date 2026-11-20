@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 private data class Destination(val id: String, val label: String, val outline: Int, val filled: Int)
 
 internal val navigationMenuHorizontalInset = 12.dp
-internal fun navigationMenuWidth(compact: Boolean) = if(compact) 270.dp else 344.dp
+internal fun navigationMenuWidth(compact: Boolean) = if(compact) 282.dp else 368.dp
 
 @Composable fun FloatingNavigation(
     page: String,
@@ -35,8 +35,9 @@ internal fun navigationMenuWidth(compact: Boolean) = if(compact) 270.dp else 344
     val destinations = listOf(
         Destination("home", tr("خانه", "Home"), UiIcons.Home, UiIcons.HomeFilled),
         Destination("explore", tr("کشف", "Explore"), UiIcons.Explore, UiIcons.ExploreFilled),
-        Destination("game", tr("گیم", "Game"), UiIcons.Game, UiIcons.GameFilled),
         Destination("review", tr("لایتنر", "Review"), UiIcons.Review, UiIcons.ReviewFilled),
+        Destination("gym", tr("تمرین", "Gym"), UiIcons.Quiz, UiIcons.Quiz),
+        Destination("game", tr("گیم", "Game"), UiIcons.Game, UiIcons.GameFilled),
         Destination("library", tr("کتابخانه", "Library"), UiIcons.Library, UiIcons.LibraryFilled)
     )
 
@@ -70,7 +71,7 @@ internal fun navigationMenuWidth(compact: Boolean) = if(compact) 270.dp else 344
                             .selectable(active, role = Role.Tab, onClick = { onNavigate(destination.id) })
                             .semantics { contentDescription = destination.label }
                             .height(48.dp)
-                            .padding(horizontal = 12.dp),
+                            .padding(horizontal = if(compact) 10.dp else 6.dp),
                         horizontalArrangement = Arrangement.spacedBy(7.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {

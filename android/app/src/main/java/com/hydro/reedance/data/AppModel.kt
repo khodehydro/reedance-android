@@ -424,6 +424,27 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
         return definitions
     }
 
+    internal suspend fun gymRound(targetLanguage: String): List<GymQuestion> {
+        val history = dao.questionHistory().associate { PracticeKey(it.songId, it.questionId) to it.lastAnswered }
+        val candidates = mutableListOf<GymQuestion>()
+        for (row in dao.installedPackages()) {
+            val source = try { content.installedLesson(row.songId) }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { null }
+            if (source == null || source.s("targetLanguage") != targetLanguage || source.s("songId") != row.songId) continue
+            candidates += withContext(Dispatchers.Default) {
+                source.a("questions").filter(::usablePracticeQuestion).map { GymQuestion(it, source) }
+            }
+        }
+        return withContext(Dispatchers.Default) { selectGymRound(candidates, history, 5) }
+    }
+
+    internal suspend fun recordGym(entry: GymQuestion, answer: List<String>, grade: Grade) {
+        val song = entry.key.songId
+        val encoded = withContext(Dispatchers.Default) { Gson().toJson(answer) }
+        dao.saveResult(QuizResult(song, entry.key.questionId, dao.installed(song)?.activeVersionCode ?: 1, encoded, grade.correct))
+    }
+
     fun record(q: JsonObject, answer: List<String>, grade: Grade) {
         val sourceLesson = lesson.value ?: return
         val sourceSong = sourceLesson.s("songId")

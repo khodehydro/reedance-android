@@ -25,37 +25,82 @@ private fun correctAnswer(q: JsonObject): List<String> = when(q.s("type")) {
     "match" -> q.a("pairs").map { it.s("id") }
     else -> listOf(q.strings("accepted").firstOrNull() ?: "")
 }
-private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val questions: List<JsonObject>, val skipped: Int, val source: JsonObject, val reviewMode: Boolean)
-@Composable fun QuizScreen(model: AppModel, review: Boolean, done: () -> Unit, openReview: () -> Unit) {
+private data class QuizSessionData(val questions: List<GymQuestion>, val skipped: Int, val source: JsonObject)
+
+@Composable fun QuizScreen(model: AppModel, done: () -> Unit, openReview: () -> Unit) {
     val lesson by model.lesson.collectAsStateWithLifecycle()
     val settings by model.settings.collectAsStateWithLifecycle()
     val data = lesson?.takeIf { it.s("targetLanguage") == settings.targetLanguage }
     if(data == null) { Column(Modifier.padding(24.dp)) { Text(tr("ابتدا بستهٔ آهنگ را نصب کن.", "Install a song lesson first.")); PressTextButton(done) { Text(tr("بازگشت", "Back")) } }; return }
-    val session by produceState<QuizSessionData?>(null, data, review) {
-        val due = if(review) model.dueReviewCards() else emptyList()
+    val session by produceState<QuizSessionData?>(null, data) {
         value = withContext(Dispatchers.Default) {
-            val words = data.a("vocabulary")
-            val dueMap = due.associateBy { it.lexemeId }
-            val source = if(review) words.filter { it.s("lexemeId") in dueMap }.distinctBy { it.s("lexemeId") }
-                .mapIndexed { i, word -> reviewQuestion(word, words, i) } else data.a("questions")
-            val questions = source.filterNotNull().filter { usablePracticeQuestion(it) }.distinctBy { it.s("id") }
-            QuizSessionData(dueMap, questions, source.size - questions.size, data, review)
+            val source = data.a("questions")
+            val questions = source.filter(::usablePracticeQuestion).distinctBy { it.s("id") }.map { GymQuestion(it, data) }
+            QuizSessionData(questions, source.size - questions.size, data)
         }
     }
-    val prepared = session?.takeIf { it.source === data && it.reviewMode == review }
-    if(prepared == null) { Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) { CircularProgressIndicator() }; return }
-    val dueCards = prepared.dueCards
-    val questions = prepared.questions
-    var index by remember(data, review) { mutableIntStateOf(0) }
-    var answer by remember(data, review, index) { mutableStateOf<List<String>>(emptyList()) }
-    var checked by remember(data, review, index) { mutableStateOf<Grade?>(null) }
-    var grades by remember(data, review) { mutableStateOf<List<Triple<JsonObject, List<String>, Grade>>>(emptyList()) }
-    var busy by remember(data, review) { mutableStateOf(false) }
+    val prepared = session?.takeIf { it.source === data }
+    if(prepared == null) { QuizLoading(); return }
+    key(prepared) {
+        PracticeSession(prepared.questions, prepared.skipped, onGrade = { entry, answer, result -> model.record(entry.question, answer, result) }) {
+            Action(tr("بازگشت", "Back"), onClick = done)
+            PressOutlinedButton(openReview) { Text(tr("مرور واژه‌ها در لایتنر", "Review words in Leitner")) }
+        }
+    }
+}
+
+@Composable private fun QuizLoading() {
+    Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) { CircularProgressIndicator() }
+}
+
+@Composable fun GymScreen(model: AppModel, explore: () -> Unit) {
+    val settings by model.settings.collectAsStateWithLifecycle()
+    val installed by model.installedIds.collectAsStateWithLifecycle()
+    val active = LocalPageActive.current
+    var round by remember(settings.targetLanguage) { mutableIntStateOf(0) }
+    var entries by remember(settings.targetLanguage, installed, round) { mutableStateOf<List<GymQuestion>?>(null) }
+    var failed by remember(settings.targetLanguage, installed, round) { mutableStateOf(false) }
+    LaunchedEffect(active, settings.targetLanguage, installed, round) {
+        if(active && entries == null && !failed) {
+            try { entries = model.gymRound(settings.targetLanguage) }
+            catch(cancelled: CancellationException) { throw cancelled }
+            catch(_: Exception) { failed = true }
+        }
+    }
+    val current = entries
+    when {
+        failed || current?.isEmpty() == true -> Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Heading(tr("تمرین", "Gym"), if(failed) tr("بارگیری سؤال‌ها ممکن نبود.", "Could not load questions.") else
+                tr("برای تمرین، یک بستهٔ آهنگِ دارای سؤال برای زبان فعلی نصب کن.", "Install a song lesson with questions for your current language to get started."))
+            if(failed) Action(tr("تلاش دوباره", "Try again")) { round++ }
+            else Action(tr("کشف آهنگ‌ها", "Explore songs"), onClick = explore)
+        }
+        current == null -> if(active) QuizLoading()
+        else -> key(current) {
+            PracticeSession(current, 0, gym = true, onGrade = model::recordGym) {
+                Action(tr("دور بعد", "Next round")) { round++ }
+            }
+        }
+    }
+}
+
+@Composable private fun PracticeSession(
+    entries: List<GymQuestion>, skipped: Int, gym: Boolean = false,
+    onGrade: suspend (GymQuestion, List<String>, Grade) -> Unit,
+    finish: @Composable () -> Unit
+) {
+    val questions = entries.map { it.question }
+    var index by remember { mutableIntStateOf(0) }
+    var answer by remember(index) { mutableStateOf<List<String>>(emptyList()) }
+    var checked by remember(index) { mutableStateOf<Grade?>(null) }
+    var grades by remember { mutableStateOf<List<Triple<JsonObject, List<String>, Grade>>>(emptyList()) }
+    var busy by remember { mutableStateOf(false) }
+    var saveFailed by remember(index) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val reduced = LocalReducedMotion.current
     val fa = LearningLanguage.persian
     // This effect is cancelled when leaving the screen or changing the question/session.
-    LaunchedEffect(index, checked, data, review) {
+    LaunchedEffect(index, checked) {
         val result = checked ?: return@LaunchedEffect
         if(result.correct && index < questions.size) {
             delay(850) // Keep success visible, including when decorative motion is disabled.
@@ -63,11 +108,12 @@ private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val qu
             index++
         }
     }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        if(prepared.skipped > 0) PersianText("${prepared.skipped} سؤال ناقص یا ناسازگار از این تمرین کنار گذاشته شد؛ پیشرفت آن‌ها تغییر نکرد.",
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 24.dp + LocalOverlayBottomInset.current), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+        if(gym) Heading(tr("تمرین", "Gym"), tr("سؤال‌هایی از آهنگ‌های نصب‌شده", "Mixed questions from your installed songs"))
+        if(skipped > 0) PersianText("$skipped سؤال ناقص یا ناسازگار از این تمرین کنار گذاشته شد؛ پیشرفت آن‌ها تغییر نکرد.",
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         if(index >= questions.size) {
-            Heading(if(questions.isEmpty() && prepared.skipped > 0) tr("سؤال معتبری در دسترس نیست", "No valid questions available") else if(questions.isEmpty()) tr("فعلاً مروری نداری", "All caught up") else tr("یک قدم جلوتر!", "One step further!"), tr("پیشرفتت روی همین دستگاه ذخیره شد.", "Your progress is saved on this device."))
+            Heading(if(questions.isEmpty() && skipped > 0) tr("سؤال معتبری در دسترس نیست", "No valid questions available") else if(questions.isEmpty()) tr("فعلاً مروری نداری", "All caught up") else tr("یک قدم جلوتر!", "One step further!"), tr("پیشرفتت روی همین دستگاه ذخیره شد.", "Your progress is saved on this device."))
             Text("${grades.count { it.third.correct }} / ${questions.size}", style = MaterialTheme.typography.headlineLarge)
             grades.forEach { (q,userAnswer,g) -> Panel {
                 PersianText(q.tr("prompt", fa), style = MaterialTheme.typography.titleMedium)
@@ -81,25 +127,30 @@ private data class QuizSessionData(val dueCards: Map<String, ReviewCard>, val qu
                 else Foreign(formattedAnswer(q, correctAnswer(q), fa))
                 PersianText(q.tr("explanation", fa))
             } }
-            Action(tr("بازگشت", "Back"), onClick = done)
-            if(!review) PressOutlinedButton(openReview) { Text(tr("مرور واژه‌ها در لایتنر", "Review words in Leitner")) }
+            finish()
         } else {
-            val q = questions[index]
+            val entry = entries[index]
+            val q = entry.question
+            val data = entry.source
             val submit: (List<String>) -> Unit = { submitted ->
                 if(!busy && checked == null && complete(q, submitted)) {
                     busy = true
+                    saveFailed = false
                     answer = submitted
                     scope.launch {
                         try {
                             val result = withContext(Dispatchers.Default) { grade(q, submitted, data.s("locale"), if(fa) "fa" else "en") }
-                            if(review) q.strings("relatedLexemeIds").forEach { dueCards[it]?.let { card -> model.review(card, result.correct) } }
-                            else model.record(q, submitted, result)
+                            onGrade(entry, submitted, result)
                             checked = result
-                        } finally { busy = false }
+                        } catch(cancelled: CancellationException) { throw cancelled }
+                        catch(_: Exception) { saveFailed = true }
+                        finally { busy = false }
                     }
                 }
             }
             Text(tr("سؤال ${index+1} از ${questions.size}", "Question ${index+1} of ${questions.size}"), color = MaterialTheme.colorScheme.primary)
+            if(gym) Text(data.s("title"), style = MaterialTheme.typography.labelLarge)
+            if(saveFailed) Text(tr("پاسخ ذخیره نشد؛ دوباره امتحان کن.", "Could not save your answer. Try again."), color = MaterialTheme.colorScheme.error)
             LinearProgressIndicator(progress = { index.toFloat()/questions.size }, modifier = Modifier.fillMaxWidth())
             Deck(index) {
                 Panel {
