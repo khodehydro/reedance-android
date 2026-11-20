@@ -25,7 +25,7 @@ private fun correctAnswer(q: JsonObject): List<String> = when(q.s("type")) {
     "match" -> q.a("pairs").map { it.s("id") }
     else -> listOf(q.strings("accepted").firstOrNull() ?: "")
 }
-private data class QuizSessionData(val questions: List<GymQuestion>, val listening: List<GymQuestion>, val skipped: Int, val source: JsonObject)
+private data class QuizSessionData(val questions: List<GymQuestion>, val skipped: Int, val source: JsonObject)
 
 @Composable fun QuizScreen(model: AppModel, done: () -> Unit, openReview: () -> Unit) {
     val lesson by model.lesson.collectAsStateWithLifecycle()
@@ -36,29 +36,17 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val listeni
         value = withContext(Dispatchers.Default) {
             val source = data.a("questions")
             val questions = preparePracticeQuestions(data)
-            QuizSessionData(questions, prepareListeningQuestions(data), source.size - questions.size, data)
+            QuizSessionData((questions + prepareListeningQuestions(data)).shuffled(), source.size - questions.size, data)
         }
     }
     val prepared = session?.takeIf { it.source === data }
     if(prepared == null) { QuizLoading(); return }
-    var listeningOnly by remember(data) { mutableStateOf(false) }
-    Column(Modifier.fillMaxSize()) {
-        if (prepared.listening.isNotEmpty()) PracticeModePicker(listeningOnly) { listeningOnly = it }
-        key(prepared, listeningOnly) {
-            val entries = if (listeningOnly) prepared.listening else prepared.questions + prepared.listening
-            PracticeSession(model, entries, if (listeningOnly) 0 else prepared.skipped,
-                onGrade = { entry, answer, result -> model.record(entry.question, answer, result) }) {
-                Action(tr("بازگشت", "Back"), onClick = done)
-                PressOutlinedButton(openReview) { Text(tr("مرور واژه‌ها در لایتنر", "Review words in Leitner")) }
-            }
+    key(prepared) {
+        PracticeSession(model, prepared.questions, prepared.skipped,
+            onGrade = { entry, answer, result -> model.record(entry.question, answer, result) }) {
+            Action(tr("بازگشت", "Back"), onClick = done)
+            PressOutlinedButton(openReview) { Text(tr("مرور واژه‌ها در لایتنر", "Review words in Leitner")) }
         }
-    }
-}
-
-@Composable private fun PracticeModePicker(listeningOnly: Boolean, select: (Boolean) -> Unit) {
-    Row(Modifier.padding(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilterChip(!listeningOnly, { select(false) }, label = { Text(tr("همهٔ سؤال‌ها", "All questions")) })
-        FilterChip(listeningOnly, { select(true) }, label = { Text(tr("شنیداری", "Listening")) })
     }
 }
 
@@ -70,33 +58,28 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val listeni
     val settings by model.settings.collectAsStateWithLifecycle()
     val installed by model.installedIds.collectAsStateWithLifecycle()
     val active = LocalPageActive.current
-    var listeningOnly by remember { mutableStateOf(false) }
-    var round by remember(settings.targetLanguage, listeningOnly) { mutableIntStateOf(0) }
-    var entries by remember(settings.targetLanguage, installed, round, listeningOnly) { mutableStateOf<List<GymQuestion>?>(null) }
-    var failed by remember(settings.targetLanguage, installed, round, listeningOnly) { mutableStateOf(false) }
-    LaunchedEffect(active, settings.targetLanguage, installed, round, listeningOnly) {
+    var round by remember(settings.targetLanguage) { mutableIntStateOf(0) }
+    var entries by remember(settings.targetLanguage, installed, round) { mutableStateOf<List<GymQuestion>?>(null) }
+    var failed by remember(settings.targetLanguage, installed, round) { mutableStateOf(false) }
+    LaunchedEffect(active, settings.targetLanguage, installed, round) {
         if(active && entries == null && !failed) {
-            try { entries = model.gymRound(settings.targetLanguage, listeningOnly) }
+            try { entries = model.gymRound(settings.targetLanguage) }
             catch(cancelled: CancellationException) { throw cancelled }
             catch(_: Exception) { failed = true }
         }
     }
     val current = entries
-    Column(Modifier.fillMaxSize()) {
-        PracticeModePicker(listeningOnly) { listeningOnly = it }
-        when {
-            failed || current?.isEmpty() == true -> Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Heading(tr("تمرین", "Gym"), if(failed) tr("بارگیری سؤال‌ها ممکن نبود.", "Could not load questions.") else
-                    if (listeningOnly) tr("تمرین شنیداری برای زبان فعلی در دسترس نیست.", "No listening exercises are available for your current language.") else
-                    tr("برای تمرین، یک بستهٔ آهنگِ دارای سؤال برای زبان فعلی نصب کن.", "Install a song lesson with questions for your current language to get started."))
-                if(failed) Action(tr("تلاش دوباره", "Try again")) { round++ }
-                else Action(tr("کشف آهنگ‌ها", "Explore songs"), onClick = explore)
-            }
-            current == null -> if(active) QuizLoading()
-            else -> key(current) {
-                PracticeSession(model, current, 0, gym = true, onGrade = model::recordGym) {
-                    Action(tr("دور بعد", "Next round")) { round++ }
-                }
+    when {
+        failed || current?.isEmpty() == true -> Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Heading(tr("تمرین", "Gym"), if(failed) tr("بارگیری سؤال‌ها ممکن نبود.", "Could not load questions.") else
+                tr("برای تمرین، یک بستهٔ آهنگِ دارای سؤال برای زبان فعلی نصب کن.", "Install a song lesson with questions for your current language to get started."))
+            if(failed) Action(tr("تلاش دوباره", "Try again")) { round++ }
+            else Action(tr("کشف آهنگ‌ها", "Explore songs"), onClick = explore)
+        }
+        current == null -> if(active) QuizLoading()
+        else -> key(current) {
+            PracticeSession(model, current, 0, gym = true, onGrade = model::recordGym) {
+                Action(tr("دور بعد", "Next round")) { round++ }
             }
         }
     }
