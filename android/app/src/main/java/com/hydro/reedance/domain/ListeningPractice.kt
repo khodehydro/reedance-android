@@ -5,9 +5,8 @@ import com.google.gson.JsonObject
 import com.hydro.reedance.data.*
 import kotlin.random.Random
 
-internal data class ListeningMeaning(val original: String, val originalOptions: List<String>)
 internal data class ListeningClip(
-    val startMs: Long, val endMs: Long, val distractors: Map<String, String>, val meaning: ListeningMeaning? = null
+    val startMs: Long, val endMs: Long, val distractors: Map<String, String>, val originalForMeaning: String? = null
 )
 
 private val spacing = Regex("[\\s\\p{Z}]+")
@@ -30,8 +29,6 @@ internal fun prepareListeningQuestions(source: JsonObject): List<GymQuestion> {
         .distinctBy { wordKey(it, language) }.filter { wordKey(it, language).isNotBlank() }
     val pool = optionPool("text", locale)
     val persianPool = optionPool("translationFa", "fa")
-    val transcripts = lines.map { it.s("text").trim() }.filter(String::isNotBlank)
-        .map { it to normalizeAnswer(it, locale) }.distinctBy { it.second }
     return lines.mapIndexedNotNull { index, line ->
         val lineId = line.s("id")
         val start = line.n("startMs", -1)
@@ -39,35 +36,28 @@ internal fun prepareListeningQuestions(source: JsonObject): List<GymQuestion> {
         val end = minOf(line.n("endMs", boundary), boundary, duration)
         val sentence = words(line.s("text"))
         if (lineId.isBlank() || start < 0 || end <= start || sentence.isEmpty()) return@mapIndexedNotNull null
-        val original = line.s("text").trim()
         val translation = words(line.s("translationFa"))
         val extraMeanings = if (index % 3 == 1 && translation.size >= 2) {
             distractors(persianPool, translation, "fa", lineId)
         } else emptyList()
-        val otherTranscripts = if (extraMeanings.isNotEmpty()) {
-            val expected = normalizeAnswer(original, locale)
-            val startOption = Random(lineId.hashCode()).nextInt(transcripts.size)
-            transcripts.indices.asSequence().map { transcripts[(it + startOption) % transcripts.size] }
-                .filter { it.second != expected }.map { it.first }.take(2).toList()
-        } else emptyList()
-        val meaning = if (otherTranscripts.isNotEmpty()) ListeningMeaning(original, otherTranscripts + original) else null
-        val correct = if (meaning != null) sentenceParts(translation) else {
+        val buildMeaning = extraMeanings.isNotEmpty()
+        val correct = if (buildMeaning) sentenceParts(translation) else {
             authoredChunks[lineId].orEmpty().asSequence().map { q -> q.a("chunks").map { it.s("text") } }
                 .firstOrNull { it.size in 2..12 && it.all(String::isNotBlank) && words(it.joinToString(" ")) == sentence }
                 ?: sentenceParts(sentence)
         }
-        val extras = if (meaning != null) extraMeanings else distractors(pool, sentence, locale, lineId)
+        val extras = if (buildMeaning) extraMeanings else distractors(pool, sentence, locale, lineId)
         if (extras.isEmpty()) return@mapIndexedNotNull null
-        var id = if (meaning != null) "listen-meaning:$lineId" else "listen:$lineId"
+        var id = if (buildMeaning) "listen-meaning:$lineId" else "listen:$lineId"
         while (id in authoredIds) id = "listen:$id"
         val q = JsonObject().apply {
             addProperty("id", id)
             addProperty("type", "order")
             addProperty("skillFa", "تمرین شنیداری")
             addProperty("skillEn", "Listening practice")
-            addProperty("promptFa", if (meaning == null) "به آهنگ گوش کن و جمله را با قطعه‌های درست بساز." else "به آهنگ گوش کن، جمله‌ای را که شنیدی انتخاب کن و معنی فارسی‌اش را بساز.")
-            addProperty("promptEn", if (meaning == null) "Listen to the song and build the sentence with the right pieces." else "Listen, choose the line you heard, then build its Persian meaning.")
-            if (meaning == null) addProperty("explanationFa", line.s("translationFa"))
+            addProperty("promptFa", if (!buildMeaning) "به آهنگ گوش کن و جمله را با قطعه‌های درست بساز." else "به آهنگ گوش کن و معنی فارسی جمله را با قطعه‌های درست بساز.")
+            addProperty("promptEn", if (!buildMeaning) "Listen to the song and build the sentence with the right pieces." else "Listen to the song and build the Persian meaning with the right pieces.")
+            if (!buildMeaning) addProperty("explanationFa", line.s("translationFa"))
             add("chunks", JsonArray().apply {
                 correct.forEachIndexed { i, text -> add(JsonObject().apply {
                     addProperty("id", "part-$i")
@@ -75,7 +65,7 @@ internal fun prepareListeningQuestions(source: JsonObject): List<GymQuestion> {
                 }) }
             })
         }
-        GymQuestion(q, source, listening = ListeningClip(start, end, extras.mapIndexed { i, text -> "extra-$i" to text }.toMap(), meaning))
+        GymQuestion(q, source, listening = ListeningClip(start, end, extras.mapIndexed { i, text -> "extra-$i" to text }.toMap(), originalForMeaning = line.s("text").trim().takeIf { buildMeaning }))
     }
 }
 
@@ -91,10 +81,10 @@ private fun distractors(pool: List<String>, sentence: List<String>, locale: Stri
 }
 
 /** Identical visible pieces are interchangeable, but extra choices are never in the key. */
-internal fun gradeListening(question: JsonObject, answer: List<String>, meaning: ListeningMeaning? = null, recognized: String? = null): Grade {
+internal fun gradeListening(question: JsonObject, answer: List<String>): Grade {
     val chunks = question.a("chunks")
     val byId = chunks.associate { it.s("id") to it.s("text") }
-    val correct = (meaning == null || recognized == meaning.original) && answer.size == chunks.size && answer.distinct().size == answer.size &&
+    val correct = answer.size == chunks.size && answer.distinct().size == answer.size &&
         answer.map { byId[it] } == chunks.map { it.s("text") }
     return Grade(correct, emptySet())
 }

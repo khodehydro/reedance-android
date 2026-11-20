@@ -6,9 +6,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.gson.*
@@ -29,7 +26,6 @@ private fun correctAnswer(q: JsonObject): List<String> = when(q.s("type")) {
     "match" -> q.a("pairs").map { it.s("id") }
     else -> listOf(q.strings("accepted").firstOrNull() ?: "")
 }
-private data class PracticeResult(val answer: List<String>, val grade: Grade, val recognized: String?)
 private data class QuizSessionData(val questions: List<GymQuestion>, val skipped: Int, val source: JsonObject)
 
 @Composable fun QuizScreen(model: AppModel, done: () -> Unit, openReview: () -> Unit) {
@@ -99,8 +95,7 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
     var index by remember { mutableIntStateOf(0) }
     var answer by remember(index) { mutableStateOf<List<String>>(emptyList()) }
     var checked by remember(index) { mutableStateOf<Grade?>(null) }
-    val grades = remember { mutableStateListOf<PracticeResult>() }
-    var recognized by remember(index) { mutableStateOf<String?>(null) }
+    val grades = remember { mutableStateListOf<Pair<List<String>, Grade>>() }
     var busy by remember { mutableStateOf(false) }
     var saveFailed by remember(index) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -110,7 +105,7 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
         val result = checked ?: return@LaunchedEffect
         if(result.correct && index < questionCount) {
             delay(850) // Keep success visible, including when decorative motion is disabled.
-            grades.add(PracticeResult(answer.toList(), result, recognized))
+            grades.add(answer.toList() to result)
             index++
         }
     }
@@ -126,26 +121,25 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
             item(key = "summary") {
                 Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
                     Heading(if(questionCount == 0 && skipped > 0) tr("سؤال معتبری در دسترس نیست", "No valid questions available") else if(questionCount == 0) tr("فعلاً مروری نداری", "All caught up") else tr("یک قدم جلوتر!", "One step further!"), tr("پیشرفتت روی همین دستگاه ذخیره شد.", "Your progress is saved on this device."))
-                    Text("${grades.count { it.grade.correct }} / ${questionCount}", style = MaterialTheme.typography.headlineLarge)
+                    Text("${grades.count { it.second.correct }} / ${questionCount}", style = MaterialTheme.typography.headlineLarge)
                 }
             }
             items(grades.size, key = { "answer:$it" }, contentType = { "answer" }) { gradeIndex ->
                 val entry = entries[gradeIndex]
                 val q = entry.question
-                val meaning = entry.listening?.meaning
-                val (userAnswer, g, heard) = grades[gradeIndex]
+                val meaning = entry.listening?.originalForMeaning
+                val (userAnswer, g) = grades[gradeIndex]
                 Panel {
                     PersianText(q.tr("prompt", fa), style = MaterialTheme.typography.titleMedium)
                     Text(if(g.correct) tr("✓ درست", "✓ Correct") else tr("نیاز به مرور", "Needs review"))
                     Text(tr("پاسخ تو", "Your answer"), style = MaterialTheme.typography.labelMedium)
                     val renderedAnswer = formattedAnswer(q, userAnswer, fa, entry.listening?.distractors.orEmpty())
-                    if(meaning != null && heard != null) Foreign(heard)
                     if(meaning != null || q.s("type") in listOf("choice", "match")) PersianText(renderedAnswer)
                     else Foreign(renderedAnswer)
                     Text(tr("پاسخ درست", "Correct answer"), style = MaterialTheme.typography.labelMedium)
                     if(q.s("type") == "match") MatchBoard(q, correctAnswer(q), true, false, onAnswer = {}, solution = true)
                     else if(meaning != null) {
-                        Foreign(meaning.original)
+                        Foreign(meaning)
                         PersianText(formattedAnswer(q, correctAnswer(q), fa))
                     }
                     else if(q.s("type") == "choice") PersianText(formattedAnswer(q, correctAnswer(q), fa))
@@ -164,24 +158,22 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
             val q = entry.question
             val data = entry.source
             val clip = entry.listening
-            val meaning = clip?.meaning
-            val transcriptOptions = remember(entry) { meaning?.originalOptions.orEmpty().shuffled() }
+            val meaning = clip?.originalForMeaning
             val optionOrder = remember(index, entry) {
                 val options = practiceOptionOrder(q)
                 if (clip == null) options else (options + clip.distractors.keys).shuffled()
             }
             val submit: (List<String>) -> Unit = { submitted ->
-                val heard = recognized
-                if(index == questionIndex && !busy && checked == null && complete(q, submitted) && (meaning == null || heard != null)) {
+                if(index == questionIndex && !busy && checked == null && complete(q, submitted)) {
                     busy = true
                     saveFailed = false
                     answer = submitted
                     scope.launch {
                         try {
                             val result = withContext(Dispatchers.Default) {
-                                if (clip != null) gradeListening(q, submitted, meaning, heard) else grade(q, submitted, data.s("locale"), if(fa) "fa" else "en")
+                                if (clip != null) gradeListening(q, submitted) else grade(q, submitted, data.s("locale"), if(fa) "fa" else "en")
                             }
-                            onGrade(entry, if (meaning != null && heard != null) submitted + heard else submitted, result)
+                            onGrade(entry, submitted, result)
                             checked = result
                         } catch(cancelled: CancellationException) { throw cancelled }
                         catch(_: Exception) { saveFailed = true }
@@ -210,27 +202,16 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
                             PersianText(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
-                    if(meaning != null) {
-                        Text(tr("جمله‌ای که شنیدی", "The line you heard"), style = MaterialTheme.typography.labelMedium)
-                        transcriptOptions.forEach { option ->
-                            PressOutlinedButton({ recognized = option }, Modifier.fillMaxWidth().semantics { selected = recognized == option },
-                                enabled = checked == null && !busy,
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    containerColor = if (recognized == option) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent
-                                )) { Foreign(option) }
-                        }
-                        if(recognized != null) Text(tr("معنی فارسی را بساز", "Build the Persian meaning"), style = MaterialTheme.typography.labelMedium)
-                    }
                     when(q.s("type")) {
                         "choice" -> PracticeChoices(q, optionOrder, answer.singleOrNull(), checked, busy) { submit(listOf(it)) }
                         "typing" -> PracticeTypingField(answer.firstOrNull().orEmpty(), checked == null && !busy) { answer = listOf(it) }
-                        "order" -> if (meaning == null || recognized != null) SentenceOrder(q, optionOrder, answer, checked, busy,
+                        "order" -> SentenceOrder(q, optionOrder, answer, checked, busy,
                             distractors = clip?.distractors.orEmpty(), persianAnswer = meaning != null) { answer = it }
                         "match" -> MatchBoard(q, answer, checked != null, !busy, onAnswer = { answer = it }, meaningIds = optionOrder)
 
                     }
                     if(checked == null) {
-                        if(q.s("type") != "choice") Action(tr("بررسی پاسخ", "Check answer"), enabled = complete(q, answer) && !busy && (meaning == null || recognized != null)) {
+                        if(q.s("type") != "choice") Action(tr("بررسی پاسخ", "Check answer"), enabled = complete(q, answer) && !busy) {
                             submit(answer.toList())
                         }
                     } else {
@@ -243,14 +224,14 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
                         if(clip != null || (!checked!!.correct && q.s("type") in listOf("order", "typing"))) {
                             Text(tr("پاسخ صحیح", "Correct answer"), style = MaterialTheme.typography.labelLarge)
                             if(meaning != null) {
-                                Foreign(meaning.original, large = true)
+                                Foreign(meaning, large = true)
                                 PersianText(formattedAnswer(q, correctAnswer(q), fa), style = MaterialTheme.typography.bodyLarge)
                             } else Foreign(formattedAnswer(q, correctAnswer(q), fa), large = true)
                         }
                         if(!checked!!.correct) Action(tr("ادامه", "Continue"), enabled = !busy) {
                             val result = checked
                             if(!busy && index == questionIndex && result != null) {
-                                grades.add(PracticeResult(answer.toList(), result, recognized))
+                                grades.add(answer.toList() to result)
                                 index++
                             }
                         }
