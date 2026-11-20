@@ -1,10 +1,18 @@
 package com.hydro.reedance.ui
 
 import android.net.Uri
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -66,11 +74,16 @@ import kotlinx.coroutines.awaitCancellation
             player?.release()
         }
     }
-    PressOutlinedButton({
+    PressButton({
         if (playing) { request = 0; playing = false }
         else { failed = false; playing = true; request = 1 }
-    }, enabled = active) {
-        AppIcon(if (playing) UiIcons.Pause else UiIcons.Play, null)
+    }, modifier = Modifier.heightIn(min = 48.dp), enabled = active, shape = CircleShape,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (playing) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.primary,
+            contentColor = if (playing) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onPrimary
+        )) {
+        AppIcon(if (playing) UiIcons.PauseFilled else UiIcons.PlayFilled, null, Modifier.size(20.dp))
+        Spacer(Modifier.width(8.dp))
         Text(if (playing) tr("توقف صدا", "Stop audio") else tr("پخش تکهٔ آهنگ", "Play song clip"))
     }
     if (failed) Text(tr("پخش این تکه ممکن نیست. دوباره امتحان کن.", "Could not play this clip. Try again."), color = MaterialTheme.colorScheme.error)
