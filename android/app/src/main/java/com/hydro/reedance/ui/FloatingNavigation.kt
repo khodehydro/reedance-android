@@ -87,50 +87,53 @@ internal fun Modifier.navigationBarWidth(width: () -> Dp): Modifier = layout { m
             shadowElevation = 3.dp,
             tonalElevation = 0.dp
         ) {
-            Row(
-                Modifier.fillMaxWidth().drawBehind {
-                    val tab = bounds[page] ?: return@drawBehind
-                    val left = (if(initialized) leading.value else tab.left).coerceIn(0f, size.width)
-                    val right = (if(initialized) trailing.value else tab.right).coerceIn(left, size.width)
-                    drawRoundRect(color = Blue, topLeft = Offset(left, tab.top), size = Size(right - left, tab.height), cornerRadius = CornerRadius(tab.height / 2f))
-                }.padding(5.dp).selectableGroup(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                destinations.forEach { destination ->
-                    val active = page == destination.id
-                    val selectedInk by remember(active, bounds, leading, trailing, destination.id) {
-                        derivedStateOf {
-                            val tab = bounds[destination.id]
-                            active && (!initialized || tab == null ||
-                                (leading.value <= tab.left + tab.width * .10f && trailing.value >= tab.right - tab.width * .10f))
+            // The indicator and the tab bounds share the unpadded row's coordinates.
+            Box(Modifier.padding(5.dp)) {
+                Row(
+                    Modifier.fillMaxWidth().drawBehind {
+                        val tab = bounds[page] ?: return@drawBehind
+                        val left = (if(initialized) leading.value else tab.left).coerceIn(0f, size.width)
+                        val right = (if(initialized) trailing.value else tab.right).coerceIn(left, size.width)
+                        drawRoundRect(color = Blue, topLeft = Offset(left, (size.height - tab.height) / 2f), size = Size(right - left, tab.height), cornerRadius = CornerRadius(tab.height / 2f))
+                    }.selectableGroup(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    destinations.forEach { destination ->
+                        val active = page == destination.id
+                        val selectedInk by remember(active, bounds, leading, trailing, destination.id) {
+                            derivedStateOf {
+                                val tab = bounds[destination.id]
+                                active && (!initialized || tab == null ||
+                                    (leading.value <= tab.left + tab.width * .10f && trailing.value >= tab.right - tab.width * .10f))
+                            }
                         }
-                    }
-                    val tabShape = if(compact) CircleShape else RoundedCornerShape(24.dp)
-                    Row(
-                        Modifier.onGloballyPositioned { coordinates ->
-                            val point = coordinates.positionInParent()
-                            bounds[destination.id] = Rect(point, Size(coordinates.size.width.toFloat(), coordinates.size.height.toFloat()))
-                        }.clip(tabShape)
-                            .selectable(active, role = Role.Tab, onClick = { onNavigate(destination.id) })
-                            .semantics { contentDescription = destination.label }
-                            .then(if(compact) Modifier.size(compactSize) else Modifier.height(48.dp).padding(horizontal = if(active) 10.dp else 6.dp)),
-                        horizontalArrangement = if(compact) Arrangement.Center else Arrangement.spacedBy(7.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        val contentColor = if(selectedInk) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-                        AppIcon(
-                            if(active) destination.filled else destination.outline,
-                            null,
-                            Modifier.size(22.dp),
-                            contentColor
-                        )
-                        if(active && !compact) Text(
-                            destination.label,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = contentColor,
-                            maxLines = 1
-                        )
+                        val tabShape = if(compact) CircleShape else RoundedCornerShape(24.dp)
+                        Row(
+                            Modifier.onGloballyPositioned { coordinates ->
+                                val point = coordinates.positionInParent()
+                                bounds[destination.id] = Rect(point, Size(coordinates.size.width.toFloat(), coordinates.size.height.toFloat()))
+                            }.clip(tabShape)
+                                .selectable(active, role = Role.Tab, onClick = { onNavigate(destination.id) })
+                                .semantics { contentDescription = destination.label }
+                                .then(if(compact) Modifier.size(compactSize) else Modifier.height(48.dp).padding(horizontal = if(active) 12.dp else 6.dp)),
+                            horizontalArrangement = if(compact) Arrangement.Center else Arrangement.spacedBy(7.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val contentColor = if(selectedInk) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                            AppIcon(
+                                if(active) destination.filled else destination.outline,
+                                null,
+                                Modifier.size(22.dp),
+                                contentColor
+                            )
+                            if(active && !compact) Text(
+                                destination.label,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = contentColor,
+                                maxLines = 1
+                            )
+                        }
                     }
                 }
             }
