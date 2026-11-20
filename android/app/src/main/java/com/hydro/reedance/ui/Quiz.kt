@@ -13,9 +13,9 @@ import com.hydro.reedance.domain.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.*
 
-private fun formattedAnswer(q: JsonObject, answer: List<String>, fa: Boolean): String = when(q.s("type")) {
+private fun formattedAnswer(q: JsonObject, answer: List<String>, fa: Boolean, extras: Map<String, String> = emptyMap()): String = when(q.s("type")) {
     "choice" -> q.a("options").find { it.s("id") == answer.firstOrNull() }?.s(if(fa) "fa" else "en") ?: "—"
-    "order" -> answer.joinToString(" ") { id -> q.a("chunks").find { it.s("id") == id }?.s("text") ?: "—" }
+    "order" -> answer.joinToString(" ") { id -> q.a("chunks").find { it.s("id") == id }?.s("text") ?: extras[id] ?: "—" }
     "match" -> q.a("pairs").mapIndexed { i, pair -> pair.s("text") + " → " + (q.a("pairs").find { it.s("id") == answer.getOrNull(i) }?.s(if(fa) "fa" else "en") ?: "—") }.joinToString("\n")
     else -> answer.joinToString(" ")
 }
@@ -25,7 +25,7 @@ private fun correctAnswer(q: JsonObject): List<String> = when(q.s("type")) {
     "match" -> q.a("pairs").map { it.s("id") }
     else -> listOf(q.strings("accepted").firstOrNull() ?: "")
 }
-private data class QuizSessionData(val questions: List<GymQuestion>, val skipped: Int, val source: JsonObject)
+private data class QuizSessionData(val questions: List<GymQuestion>, val listening: List<GymQuestion>, val skipped: Int, val source: JsonObject)
 
 @Composable fun QuizScreen(model: AppModel, done: () -> Unit, openReview: () -> Unit) {
     val lesson by model.lesson.collectAsStateWithLifecycle()
@@ -36,16 +36,29 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
         value = withContext(Dispatchers.Default) {
             val source = data.a("questions")
             val questions = preparePracticeQuestions(data)
-            QuizSessionData(questions, source.size - questions.size, data)
+            QuizSessionData(questions, prepareListeningQuestions(data), source.size - questions.size, data)
         }
     }
     val prepared = session?.takeIf { it.source === data }
     if(prepared == null) { QuizLoading(); return }
-    key(prepared) {
-        PracticeSession(prepared.questions, prepared.skipped, onGrade = { entry, answer, result -> model.record(entry.question, answer, result) }) {
-            Action(tr("بازگشت", "Back"), onClick = done)
-            PressOutlinedButton(openReview) { Text(tr("مرور واژه‌ها در لایتنر", "Review words in Leitner")) }
+    var listeningOnly by remember(data) { mutableStateOf(false) }
+    Column(Modifier.fillMaxSize()) {
+        if (prepared.listening.isNotEmpty()) PracticeModePicker(listeningOnly) { listeningOnly = it }
+        key(prepared, listeningOnly) {
+            val entries = if (listeningOnly) prepared.listening else prepared.questions + prepared.listening
+            PracticeSession(model, entries, if (listeningOnly) 0 else prepared.skipped,
+                onGrade = { entry, answer, result -> model.record(entry.question, answer, result) }) {
+                Action(tr("بازگشت", "Back"), onClick = done)
+                PressOutlinedButton(openReview) { Text(tr("مرور واژه‌ها در لایتنر", "Review words in Leitner")) }
+            }
         }
+    }
+}
+
+@Composable private fun PracticeModePicker(listeningOnly: Boolean, select: (Boolean) -> Unit) {
+    Row(Modifier.padding(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FilterChip(!listeningOnly, { select(false) }, label = { Text(tr("همهٔ سؤال‌ها", "All questions")) })
+        FilterChip(listeningOnly, { select(true) }, label = { Text(tr("شنیداری", "Listening")) })
     }
 }
 
@@ -57,35 +70,40 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
     val settings by model.settings.collectAsStateWithLifecycle()
     val installed by model.installedIds.collectAsStateWithLifecycle()
     val active = LocalPageActive.current
-    var round by remember(settings.targetLanguage) { mutableIntStateOf(0) }
-    var entries by remember(settings.targetLanguage, installed, round) { mutableStateOf<List<GymQuestion>?>(null) }
-    var failed by remember(settings.targetLanguage, installed, round) { mutableStateOf(false) }
-    LaunchedEffect(active, settings.targetLanguage, installed, round) {
+    var listeningOnly by remember { mutableStateOf(false) }
+    var round by remember(settings.targetLanguage, listeningOnly) { mutableIntStateOf(0) }
+    var entries by remember(settings.targetLanguage, installed, round, listeningOnly) { mutableStateOf<List<GymQuestion>?>(null) }
+    var failed by remember(settings.targetLanguage, installed, round, listeningOnly) { mutableStateOf(false) }
+    LaunchedEffect(active, settings.targetLanguage, installed, round, listeningOnly) {
         if(active && entries == null && !failed) {
-            try { entries = model.gymRound(settings.targetLanguage) }
+            try { entries = model.gymRound(settings.targetLanguage, listeningOnly) }
             catch(cancelled: CancellationException) { throw cancelled }
             catch(_: Exception) { failed = true }
         }
     }
     val current = entries
-    when {
-        failed || current?.isEmpty() == true -> Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Heading(tr("تمرین", "Gym"), if(failed) tr("بارگیری سؤال‌ها ممکن نبود.", "Could not load questions.") else
-                tr("برای تمرین، یک بستهٔ آهنگِ دارای سؤال برای زبان فعلی نصب کن.", "Install a song lesson with questions for your current language to get started."))
-            if(failed) Action(tr("تلاش دوباره", "Try again")) { round++ }
-            else Action(tr("کشف آهنگ‌ها", "Explore songs"), onClick = explore)
-        }
-        current == null -> if(active) QuizLoading()
-        else -> key(current) {
-            PracticeSession(current, 0, gym = true, onGrade = model::recordGym) {
-                Action(tr("دور بعد", "Next round")) { round++ }
+    Column(Modifier.fillMaxSize()) {
+        PracticeModePicker(listeningOnly) { listeningOnly = it }
+        when {
+            failed || current?.isEmpty() == true -> Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Heading(tr("تمرین", "Gym"), if(failed) tr("بارگیری سؤال‌ها ممکن نبود.", "Could not load questions.") else
+                    if (listeningOnly) tr("تمرین شنیداری برای زبان فعلی در دسترس نیست.", "No listening exercises are available for your current language.") else
+                    tr("برای تمرین، یک بستهٔ آهنگِ دارای سؤال برای زبان فعلی نصب کن.", "Install a song lesson with questions for your current language to get started."))
+                if(failed) Action(tr("تلاش دوباره", "Try again")) { round++ }
+                else Action(tr("کشف آهنگ‌ها", "Explore songs"), onClick = explore)
+            }
+            current == null -> if(active) QuizLoading()
+            else -> key(current) {
+                PracticeSession(model, current, 0, gym = true, onGrade = model::recordGym) {
+                    Action(tr("دور بعد", "Next round")) { round++ }
+                }
             }
         }
     }
 }
 
 @Composable private fun PracticeSession(
-    entries: List<GymQuestion>, skipped: Int, gym: Boolean = false,
+    model: AppModel, entries: List<GymQuestion>, skipped: Int, gym: Boolean = false,
     onGrade: suspend (GymQuestion, List<String>, Grade) -> Unit,
     finish: @Composable () -> Unit
 ) {
@@ -115,12 +133,12 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
         if(index >= questions.size) {
             Heading(if(questions.isEmpty() && skipped > 0) tr("سؤال معتبری در دسترس نیست", "No valid questions available") else if(questions.isEmpty()) tr("فعلاً مروری نداری", "All caught up") else tr("یک قدم جلوتر!", "One step further!"), tr("پیشرفتت روی همین دستگاه ذخیره شد.", "Your progress is saved on this device."))
             Text("${grades.count { it.third.correct }} / ${questions.size}", style = MaterialTheme.typography.headlineLarge)
-            grades.forEach { (q,userAnswer,g) -> Panel {
+            grades.forEachIndexed { gradeIndex, (q,userAnswer,g) -> Panel {
                 PersianText(q.tr("prompt", fa), style = MaterialTheme.typography.titleMedium)
                 Text(if(g.correct) tr("✓ درست", "✓ Correct") else tr("نیاز به مرور", "Needs review"))
                 Text(tr("پاسخ تو", "Your answer"), style = MaterialTheme.typography.labelMedium)
                 if(q.s("type") == "choice" || q.s("type") == "match") PersianText(formattedAnswer(q, userAnswer, fa))
-                else Foreign(formattedAnswer(q, userAnswer, fa))
+                else Foreign(formattedAnswer(q, userAnswer, fa, entries[gradeIndex].listening?.distractors.orEmpty()))
                 Text(tr("پاسخ درست", "Correct answer"), style = MaterialTheme.typography.labelMedium)
                 if(q.s("type") == "match") MatchBoard(q, correctAnswer(q), true, false, onAnswer = {}, solution = true)
                 else if(q.s("type") == "choice") PersianText(formattedAnswer(q, correctAnswer(q), fa))
@@ -132,7 +150,11 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
             val entry = entries[index]
             val q = entry.question
             val data = entry.source
-            val optionOrder = remember(index, q) { practiceOptionOrder(q) }
+            val clip = entry.listening
+            val optionOrder = remember(index, entry) {
+                val options = practiceOptionOrder(q)
+                if (clip == null) options else (options + clip.distractors.keys).shuffled()
+            }
             val submit: (List<String>) -> Unit = { submitted ->
                 if(!busy && checked == null && complete(q, submitted)) {
                     busy = true
@@ -140,7 +162,9 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
                     answer = submitted
                     scope.launch {
                         try {
-                            val result = withContext(Dispatchers.Default) { grade(q, submitted, data.s("locale"), if(fa) "fa" else "en") }
+                            val result = withContext(Dispatchers.Default) {
+                                if (clip != null) gradeListening(q, submitted) else grade(q, submitted, data.s("locale"), if(fa) "fa" else "en")
+                            }
                             onGrade(entry, submitted, result)
                             checked = result
                         } catch(cancelled: CancellationException) { throw cancelled }
@@ -153,6 +177,7 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
             if(gym) Text(data.s("title"), style = MaterialTheme.typography.labelLarge)
             if(saveFailed) Text(tr("پاسخ ذخیره نشد؛ دوباره امتحان کن.", "Could not save your answer. Try again."), color = MaterialTheme.colorScheme.error)
             LinearProgressIndicator(progress = { index.toFloat()/questions.size }, modifier = Modifier.fillMaxWidth())
+            if (clip != null && checked == null && !busy) key(entry.key) { ListeningAudio(model, entry) }
             Deck(index) {
                 Panel {
                     PersianText(q.tr("skill", fa), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
@@ -170,7 +195,7 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
                     when(q.s("type")) {
                         "choice" -> PracticeChoices(q, optionOrder, answer.singleOrNull(), checked, busy) { submit(listOf(it)) }
                         "typing" -> PracticeTypingField(answer.firstOrNull().orEmpty(), checked == null && !busy) { answer = listOf(it) }
-                        "order" -> SentenceOrder(q, optionOrder, answer, checked, busy) { answer = it }
+                        "order" -> SentenceOrder(q, optionOrder, answer, checked, busy, distractors = clip?.distractors.orEmpty()) { answer = it }
                         "match" -> MatchBoard(q, answer, checked != null, !busy, onAnswer = { answer = it }, meaningIds = optionOrder)
 
                     }
@@ -185,7 +210,7 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
                             Text(tr("پاسخ صحیح", "Correct matches"), style = MaterialTheme.typography.titleMedium)
                             MatchBoard(q, correctAnswer(q), true, false, onAnswer = {}, solution = true, meaningIds = optionOrder)
                         }
-                        if(!checked!!.correct && q.s("type") in listOf("order", "typing")) {
+                        if(clip != null || (!checked!!.correct && q.s("type") in listOf("order", "typing"))) {
                             Text(tr("پاسخ صحیح", "Correct answer"), style = MaterialTheme.typography.labelLarge)
                             Foreign(formattedAnswer(q, correctAnswer(q), fa), large = true)
                         }

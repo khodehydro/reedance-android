@@ -424,7 +424,7 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
         return definitions
     }
 
-    internal suspend fun gymRound(targetLanguage: String): List<GymQuestion> {
+    internal suspend fun gymRound(targetLanguage: String, listeningOnly: Boolean): List<GymQuestion> {
         val history = dao.questionHistory().associate { PracticeKey(it.songId, it.questionId) to it.lastAnswered }
         val candidates = mutableListOf<GymQuestion>()
         for (row in dao.installedPackages()) {
@@ -433,11 +433,14 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
             catch (_: Exception) { null }
             if (source == null || source.s("targetLanguage") != targetLanguage || source.s("songId") != row.songId) continue
             candidates += withContext(Dispatchers.Default) {
-                preparePracticeQuestions(source)
+                val listening = prepareListeningQuestions(source)
+                if (listeningOnly) listening else preparePracticeQuestions(source) + listening
             }
         }
         return withContext(Dispatchers.Default) { selectGymRound(candidates, history, 5) }
     }
+
+    internal suspend fun listeningAudio(source: JsonObject): File = content.audioFile(source.s("songId"), source)
 
     internal suspend fun recordGym(entry: GymQuestion, answer: List<String>, grade: Grade) {
         val song = entry.key.songId

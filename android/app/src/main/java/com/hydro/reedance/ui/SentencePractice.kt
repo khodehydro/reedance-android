@@ -14,8 +14,9 @@ import com.hydro.reedance.domain.Grade
 import com.hydro.reedance.domain.normalizeAnswer
 
 @OptIn(ExperimentalLayoutApi::class)
-@Composable internal fun SentenceOrder(question: JsonObject, order: List<String>, answer: List<String>, result: Grade?, busy: Boolean, onAnswer: (List<String>) -> Unit) {
+@Composable internal fun SentenceOrder(question: JsonObject, order: List<String>, answer: List<String>, result: Grade?, busy: Boolean, distractors: Map<String, String> = emptyMap(), onAnswer: (List<String>) -> Unit) {
     val chunks = question.a("chunks")
+    val labels = chunks.associate { it.s("id") to it.s("text") } + distractors
     val editable = result == null && !busy
     val background = when(result?.correct) {
         true -> androidx.compose.ui.graphics.Color(0xFF176B3A)
@@ -32,15 +33,15 @@ import com.hydro.reedance.domain.normalizeAnswer
                     PressOutlinedButton({ onAnswer(answer.filterIndexed { i, _ -> i != index }) }, enabled = editable,
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = foreground, disabledContentColor = foreground),
                         shape = RoundedCornerShape(12.dp)) {
-                        Text(chunks.firstOrNull { it.s("id") == id }?.s("text").orEmpty())
+                        Text(labels.getValue(id))
                     }
                 }
             }
         }
         FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             order.filter { it !in answer }.forEach { id ->
-                PressOutlinedButton({ onAnswer(answer + id) }, enabled = editable, shape = RoundedCornerShape(12.dp)) {
-                    Text(chunks.first { it.s("id") == id }.s("text"))
+                PressOutlinedButton({ onAnswer(answer + id) }, enabled = editable && answer.size < chunks.size, shape = RoundedCornerShape(12.dp)) {
+                    Text(labels.getValue(id))
                 }
             }
         }

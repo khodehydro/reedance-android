@@ -5,7 +5,7 @@ import com.hydro.reedance.data.*
 import kotlin.random.Random
 
 internal data class PracticeKey(val songId: String, val questionId: String)
-internal data class GymQuestion(val question: JsonObject, val source: JsonObject, val orderMeaningFa: String? = null) {
+internal data class GymQuestion(val question: JsonObject, val source: JsonObject, val orderMeaningFa: String? = null, val listening: ListeningClip? = null) {
     val key = PracticeKey(source.s("songId"), question.s("id"))
 }
 
