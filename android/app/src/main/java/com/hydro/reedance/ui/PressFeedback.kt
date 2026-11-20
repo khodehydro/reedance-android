@@ -2,6 +2,7 @@ package com.hydro.reedance.ui
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.IndicationNodeFactory
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.*
@@ -54,9 +55,10 @@ private class PressNode(private val source: InteractionSource, private val enabl
     Button(onClick, modifier.pressFeedback(source), enabled = enabled && LocalDeckInteractive.current, shape = shape, colors = colors, interactionSource = source, content = content)
 }
 @Composable fun PressOutlinedButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
-    colors: ButtonColors = ButtonDefaults.outlinedButtonColors(), shape: Shape = ButtonDefaults.outlinedShape, content: @Composable RowScope.() -> Unit) {
+    colors: ButtonColors = ButtonDefaults.outlinedButtonColors(), shape: Shape = ButtonDefaults.outlinedShape,
+    border: BorderStroke? = ButtonDefaults.outlinedButtonBorder(enabled), content: @Composable RowScope.() -> Unit) {
     val source = remember { MutableInteractionSource() }
-    OutlinedButton(onClick, modifier.pressFeedback(source), enabled = enabled && LocalDeckInteractive.current, colors = colors, shape = shape, interactionSource = source, content = content)
+    OutlinedButton(onClick, modifier.pressFeedback(source), enabled = enabled && LocalDeckInteractive.current, colors = colors, shape = shape, border = border, interactionSource = source, content = content)
 }
 @Composable fun PressTextButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, content: @Composable RowScope.() -> Unit) {
     val source = remember { MutableInteractionSource() }

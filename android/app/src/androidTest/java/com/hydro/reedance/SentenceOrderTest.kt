@@ -33,5 +33,6 @@ class SentenceOrderTest {
         compose.onNodeWithText("love").performClick()
         compose.runOnIdle { assertEquals(listOf("one", "three", "two"), answer) }
         compose.onNodeWithText("Reset order").assertDoesNotExist()
+        compose.onNodeWithText("Tap a part of your sentence to return it to the options.").assertDoesNotExist()
     }
 }

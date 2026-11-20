@@ -1,6 +1,7 @@
 package com.hydro.reedance.ui
 
 import android.net.Uri
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
@@ -11,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -74,13 +76,14 @@ import kotlinx.coroutines.awaitCancellation
             player?.release()
         }
     }
-    PressButton({
+    PressOutlinedButton({
         if (playing) { request = 0; playing = false }
         else { failed = false; playing = true; request = 1 }
     }, modifier = Modifier.heightIn(min = 48.dp), enabled = active, shape = CircleShape,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = if (playing) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.primary,
-            contentColor = if (playing) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onPrimary
+        border = BorderStroke(1.dp, Color.White),
+        colors = ButtonDefaults.outlinedButtonColors(
+            containerColor = Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.onSurface
         )) {
         AppIcon(if (playing) UiIcons.PauseFilled else UiIcons.PlayFilled, null, Modifier.size(20.dp))
         Spacer(Modifier.width(8.dp))

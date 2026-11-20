@@ -24,7 +24,6 @@ import com.hydro.reedance.domain.normalizeAnswer
         null -> MaterialTheme.colorScheme.surfaceContainerLow
     }
     val foreground = if(result != null) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onSurface
-    if(result == null) Text(tr("برای برگرداندن هر بخش، روی آن در جمله بزن.", "Tap a part of your sentence to return it to the options."), style = MaterialTheme.typography.bodySmall)
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), color = background, contentColor = foreground) {
             FlowRow(Modifier.fillMaxWidth().heightIn(min = 76.dp).padding(10.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
