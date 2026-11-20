@@ -57,9 +57,10 @@ private const val BANNER_MESSAGE_MILLIS = 6_000
         Box(Modifier.weight(1f).fillMaxWidth().clipToBounds()) {
             AnimatedContent(targetState = index, modifier = Modifier.fillMaxWidth(),
                 transitionSpec = {
-                    if(reduced) (fadeIn(tween(0)) togetherWith fadeOut(tween(0)))
+                    val transform = if(reduced) (fadeIn(tween(0)) togetherWith fadeOut(tween(0)))
                     else (slideInVertically(tween(450)) { it } + fadeIn(tween(450))) togetherWith
                         (slideOutVertically(tween(450)) { -it } + fadeOut(tween(450)))
+                    transform using null // The surrounding clipped text viewport owns the size.
                 }, label = "banner-message") { selected ->
                 val copy = bannerCopies[selected]
                 Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {

@@ -3,10 +3,12 @@ package com.hydro.reedance.ui
 import android.graphics.RuntimeShader
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -45,19 +47,19 @@ internal enum class FluidPalette { Ocean, Aurora, Midnight }
             }
         }
     }
-    val contrast = remember { Brush.verticalGradient(listOf(Color(0x33000410), Color.Transparent, Color(0x55000312))) }
-    val ribbonPath = remember { Path() }
-    Canvas(modifier) {
-        val t = seconds
-        if(Build.VERSION.SDK_INT >= 33 && fluid != null) {
-            fluid.shader.setFloatUniform("resolution", size.width.coerceAtLeast(1f), size.height.coerceAtLeast(1f))
-            fluid.shader.setFloatUniform("time", t)
-            drawRect(fluid.brush)
-        } else if(palette == FluidPalette.Midnight) drawFluidFallback(t, ribbonPath, midnight = true)
-        else if(palette == FluidPalette.Aurora) drawFluidFallback(t, ribbonPath, true) else drawFluidFallback(t, ribbonPath)
-        // Preserve the light text's contrast; the fluid itself remains unblurred text-wise.
-        drawRect(contrast)
-    }
+    Spacer(modifier.drawWithCache {
+        val contrast = Brush.verticalGradient(listOf(Color(0x33000410), Color.Transparent, Color(0x55000312)))
+        val fallback = if(fluid == null) FluidFallback(palette, size) else null
+        onDrawBehind {
+            val t = seconds
+            if(Build.VERSION.SDK_INT >= 33 && fluid != null) {
+                fluid.shader.setFloatUniform("resolution", size.width.coerceAtLeast(1f), size.height.coerceAtLeast(1f))
+                fluid.shader.setFloatUniform("time", t)
+                drawRect(fluid.brush)
+            } else if(fallback != null) drawFluidFallback(t, fallback)
+            drawRect(contrast)
+        }
+    })
 }
 
 @RequiresApi(33)
@@ -133,28 +135,39 @@ internal val MIDNIGHT_FLUID_SHADER = FLUID_SHADER
     .replace("float3(0.0, 0.56, 0.72)", "float3(0.20, 0.27, 0.52)")
 
 /** API 26–32 / shader-failure fallback: soft nested ribbons, no bitmap/CPU noise loop. */
-private fun DrawScope.drawFluidFallback(t: Float, path: Path, aurora: Boolean = false, midnight: Boolean = false) {
-    drawRect(if(midnight) Color(0xFF03050E) else if(aurora) Color(0xFF180923) else Color(0xFF01020A))
-    drawRect(Brush.radialGradient(listOf(if(midnight) Color(0xFF191044) else if(aurora) Color(0xFF7427A8) else Color(0xFF1010A8), Color.Transparent),
-        center = Offset(size.width * .08f, size.height * .55f), radius = size.maxDimension * .8f))
+private class FluidFallback(palette: FluidPalette, size: Size) {
+    private val midnight = palette == FluidPalette.Midnight
+    private val aurora = palette == FluidPalette.Aurora
+    val background = if(midnight) Color(0xFF03050E) else if(aurora) Color(0xFF180923) else Color(0xFF01020A)
+    val glow = Brush.radialGradient(
+        listOf(if(midnight) Color(0xFF191044) else if(aurora) Color(0xFF7427A8) else Color(0xFF1010A8), Color.Transparent),
+        center = Offset(size.width * .08f, size.height * .55f), radius = (size.maxDimension * .8f).coerceAtLeast(1f)
+    )
     val drift = if(midnight) .55f else .14f
     val counterDrift = if(midnight) .36f else .09f
+    val path = Path()
+    val layers = (10 downTo 1).map { layer ->
+        val outer = layer / 10f
+        val color = if(midnight) { if(layer > 5) Color(0xFF2D1B66) else Color(0xFF3C4B91) }
+            else if(aurora) { if(layer > 5) Color(0xFFAB3AA8) else Color(0xFFFF897C) }
+            else if(layer > 5) Color(0xFF0719BB) else Color(0xFF0094C4)
+        color.copy(alpha = .075f + (1f - outer) * .065f) to Stroke(width = size.minDimension * (.025f + outer * .23f))
+    }
+}
+
+private fun DrawScope.drawFluidFallback(t: Float, fallback: FluidFallback) {
+    drawRect(fallback.background)
+    drawRect(fallback.glow)
+    val path = fallback.path
     repeat(2) { ribbon ->
         path.rewind()
         for(step in 0..48) {
             val y = size.height * (step / 48f * 1.4f - .2f)
             val n = step / 48f
-            val x = size.width * (.5f + .26f * sin(n * 7.5f + t * drift + ribbon * 2f) +
-                .15f * sin(n * 13f - t * counterDrift + ribbon))
+            val x = size.width * (.5f + .26f * sin(n * 7.5f + t * fallback.drift + ribbon * 2f) +
+                .15f * sin(n * 13f - t * fallback.counterDrift + ribbon))
             if(step == 0) path.moveTo(x, y) else path.lineTo(x, y)
         }
-        for(layer in 10 downTo 1) {
-            val outer = layer / 10f
-            val color = if(midnight) { if(layer > 5) Color(0xFF2D1B66) else Color(0xFF3C4B91) }
-                else if(aurora) { if(layer > 5) Color(0xFFAB3AA8) else Color(0xFFFF897C) }
-                else if(layer > 5) Color(0xFF0719BB) else Color(0xFF0094C4)
-            drawPath(path, color.copy(alpha = .075f + (1f - outer) * .065f),
-                style = Stroke(width = size.minDimension * (.025f + outer * .23f)))
-        }
+        fallback.layers.forEach { (color, stroke) -> drawPath(path, color, style = stroke) }
     }
 }

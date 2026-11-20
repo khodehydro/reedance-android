@@ -19,6 +19,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -213,7 +214,7 @@ import kotlinx.coroutines.delay
                     val selected = index in selectedCells
                     val winning = index in winningCells
                     val solvedColor = if(winning) winningColor else solvedColors[index]
-                    val color by animateColorAsState(
+                    val color = animateColorAsState(
                         targetValue = when {
                             solvedColor != null -> solvedColor
                             selected -> MaterialTheme.colorScheme.primary
@@ -221,7 +222,7 @@ import kotlinx.coroutines.delay
                         },
                         label = "honeycomb-cell-$index"
                     )
-                    val textColor by animateColorAsState(
+                    val textColor = animateColorAsState(
                         targetValue = when {
                             winning || locked -> Color.White
                             selected -> MaterialTheme.colorScheme.onPrimary
@@ -247,12 +248,12 @@ import kotlinx.coroutines.delay
                             }
                             .shadow(if(selected || winning) 5.dp else 2.dp, HexagonShape)
                             .clip(HexagonShape)
-                            .background(color)
+                            .drawBehind { drawRect(color.value) }
                             .border(1.5.dp, Color.White.copy(alpha = if(lightTheme) .95f else .78f), HexagonShape)
                             .clickable(enabled = canInteract && ready && !locked) { onTap(index) },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(letter.toString().uppercase(), color = textColor, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                        HoneycombLetter(letter, textColor)
                     }
                 }
             }
@@ -279,4 +280,9 @@ private val HexagonShape = GenericShape { size, _ ->
     lineTo(w * .41f, h * .07f)
     cubicTo(w * .44f, h * .05f, w * .465f, h * .035f, w * .5f, h * .035f)
     close()
+}
+
+// Only the changing glyph observes its foreground animation in composition.
+@Composable private fun HoneycombLetter(letter: Char, color: State<Color>) {
+    Text(letter.toString().uppercase(), color = color.value, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
 }

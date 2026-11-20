@@ -97,7 +97,7 @@ private val songLanguages = listOf(
         AnimatedContent(targetState = showLogo && !reduced, contentAlignment = Alignment.Center,
             transitionSpec = {
                 (slideInVertically(tween(450)) { it } + fadeIn(tween(450))) togetherWith
-                    (slideOutVertically(tween(450)) { -it } + fadeOut(tween(450))) using SizeTransform(clip = true)
+                    (slideOutVertically(tween(450)) { -it } + fadeOut(tween(450))) using null
             }, label = "header-brand") { logo ->
             if(logo) Image(painterResource(R.drawable.reedance_header), null, Modifier.size(40.dp))
             else Text("Reedance", maxLines = 1, overflow = TextOverflow.Ellipsis,

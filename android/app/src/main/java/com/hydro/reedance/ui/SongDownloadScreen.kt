@@ -213,6 +213,7 @@ import kotlin.math.roundToInt
 }
 
 @Composable private fun CircularWaveProgress(progress: Float?, modifier: Modifier = Modifier) {
+    if(!LocalPageActive.current) return
     val motion = rememberInfiniteTransition(label = "download-ring-wave")
     val phase by motion.animateFloat(
         initialValue = 0f,
@@ -222,6 +223,7 @@ import kotlin.math.roundToInt
     )
     val active = MaterialTheme.colorScheme.primary
     val track = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .7f)
+    val path = remember { Path() }
     Canvas(modifier) {
         val stroke = 4.dp.toPx()
         val radius = minOf(size.width, size.height) / 2f - stroke
@@ -231,7 +233,7 @@ import kotlin.math.roundToInt
         val steps = sweep.roundToInt().coerceAtLeast(2)
         val waveAmplitude = 1.25.dp.toPx()
         val wavesPerTurn = 24f // Keep the spacing fixed (~6 waves per quarter turn).
-        val path = Path()
+        path.rewind()
         repeat(steps + 1) { index ->
             val fraction = index.toFloat() / steps
             val arcAngle = sweep * fraction * PI.toFloat() / 180f

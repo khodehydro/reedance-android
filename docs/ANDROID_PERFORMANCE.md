@@ -44,3 +44,36 @@ This pass traced pointer routing, scroll mutations, and animation timing from st
 Explore/Library search chrome and the compact song header still animate height, so they can require viewport remeasurement. Their contribution to reported frame misses is unmeasured. Before replacing these effects, trace a sustained vertical drag through the exact collapse threshold with IME closed/open, then do a second drag on outgoing quiz cards. Compare input events, main measure/layout slices, frame deadlines, and actual offset movement before and after. Also verify no duplicate submissions during rapid Continue taps, IME dismissal after outside taps and drags, Library filter/tab resets, and Explore artist return scroll state.
 
 `DeckInteractionTest` exercises a drag before the outgoing transition ends with the test clock paused. Android build/instrumentation and before/after traces remain blocked by missing Java/SDK/device in this workspace. `git diff --check` and the eight pack checks passed; the asset suite reported the same failing test names as the preceding commit (35 failures, 3 errors).
+
+## Concurrent animation / input follow-up
+
+This patch stays in animation code. Static inspection established these sources of work, but cannot establish which one misses a device's deadline:
+
+| Component | Work inside the overlap | Targeted change |
+| --- | --- | --- |
+| `FloatingNavigation.kt` | `BoxWithConstraints` was *inside* the width-animated capsule, so changing constraints could subcompose the strip at every width step. Each selection-color sample was also read in composition. | Calculate compact geometry from the stable outer slot; keep actual capsule width and label animations. Read color in the tab's draw modifier. |
+| `MainHeader.kt`, `BannerMessages.kt` | Two decorative slide/fade transitions also animated the size of their content inside clipped, independently sized viewports. | Remove the redundant size tween; keep the slide/fade, easing, durations, and surrounding viewport clipping. |
+| `HoneycombPuzzle.kt` | Tile background and letter colors were read in the board's composition during a solve animation. | Sample background color in drawing; isolate foreground color to the glyph's composition. The shared entrance wave, tile transforms, and colors are unchanged. |
+| `BannerGradient.kt`, `SongDownloadScreen.kt` | The fallback banner recreated size-dependent draw objects on each redraw. The ring allocated a path and could keep its infinite clock alive while the route was retained but hidden. | Cache fallback gradient, strokes, and path per draw size; keep time reads draw-only. Reuse the ring path and run its clock only on the visible route. |
+
+**Still needs device evidence:** the Explore/Library height-changing search headers and song compact controller intentionally move and resize their neighboring content. Replacing them with overlays would change viewport/scroll behavior. Their per-frame measurement, the nav width's necessary row layout, and the cost of the large RuntimeShader on RenderThread/GPU are the next suspects to distinguish, not proven sources of stutter.
+
+### Four separate traces
+
+Use the same physical device, refresh rate, build type, and sample data for the baseline and patch. Run each scenario several times. Use a separate filename per run; start the interaction as soon as capture starts:
+
+```sh
+adb shell perfetto --txt -c - -o /data/misc/perfetto-traces/reedance-A.pftrace < scripts/performance/interaction-overlap.pbtxt
+adb pull /data/misc/perfetto-traces/reedance-A.pftrace .
+```
+
+| Capture | Reproduce | Compare |
+| --- | --- | --- |
+| A · scroll only | Drag/fling the same list once chrome is settled, away from the rotating hero. | Actual scroll frame durations and missed deadlines. |
+| B · animation only | Hold still through a full header/banner cycle; separately trigger a card or tile animation and release. | Standalone measure/layout, draw, RenderThread and GPU cost. |
+| C · scroll + animation | Repeat A through the collapse threshold; separately drag with the hero or card animation still on screen. | Additional cost versus A and B, input timestamps, long measure/layout slices, app versus compositor jank. |
+| D · tap + animation | Tap another actionable control while the card, nav width, or tiles are already animating. | Time from dispatched tap to first frame containing the response; queued main-thread work and input handling. |
+
+Inspect FrameTimeline expected/actual tracks, UI vs RenderThread and input events. Compare P95/P99 frame duration and missed-deadline count for each scenario separately; do not infer input latency from FPS alone. Run Compose recomposition diagnostics separately so they do not bias timing. Android 12+ provides FrameTimeline; use Studio System Trace/gfxinfo on earlier versions.
+
+No Android capture or build was possible in this workspace: no Java, SDK/ADB, emulator, or attached device. Diff checks and all eight pack inspection tests passed. The 76-test asset suite showed the same failing test names as the preceding commit. Per-scenario traces and visual/device verification remain open; there is no measured before/after improvement to report yet.
