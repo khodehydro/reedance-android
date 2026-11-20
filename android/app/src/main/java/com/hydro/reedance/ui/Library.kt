@@ -26,6 +26,7 @@ import com.hydro.reedance.data.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable fun ReviewScreen(model: AppModel) {
@@ -43,9 +44,8 @@ import kotlinx.coroutines.flow.collectLatest
     }
     val word = reviewLesson?.takeIf { it.s("songId") == card?.songId }?.a("vocabulary")?.find { it.s("lexemeId") == card?.lexemeId }
     var reveal by remember(card?.songId, card?.lexemeId) { mutableStateOf(false) }
-    var busy by remember { mutableStateOf(false) }
+    var busy by remember(card) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val reduced = LocalReducedMotion.current
     val fa = LearningLanguage.persian
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 24.dp + LocalOverlayBottomInset.current), verticalArrangement = Arrangement.spacedBy(22.dp)) {
         Heading(tr("جعبهٔ لایتنر", "Words that stay"), tr("یادگیری، یک مرور کوتاه در هر روز.", "A little practice. A lasting memory."))
@@ -68,9 +68,8 @@ import kotlinx.coroutines.flow.collectLatest
                             if(!busy) {
                                 busy = true
                                 scope.launch {
-                                    model.review(card, remembered)
-                                    if(!reduced) delay(220)
-                                    busy = false
+                                    try { model.review(card, remembered).join() }
+                                    finally { busy = false }
                                 }
                             }
                         }
@@ -148,7 +147,6 @@ import kotlinx.coroutines.flow.collectLatest
                 }
             }
             val preparedEntries by produceState<PreparedLibraryEntries?>(null, bookmarks, requestKey, catalogById) {
-                if(requestKey.query.isNotBlank()) delay(280)
                 val rows = prepareLibraryRows(bookmarks, types[page], requestKey, catalogById, model::libraryItem)
                 val initialWindow = libraryInitialWindow(rows, model::libraryItem)
                 value = PreparedLibraryEntries(requestKey, rows, initialWindow)
@@ -159,11 +157,14 @@ import kotlinx.coroutines.flow.collectLatest
 
             androidx.compose.runtime.key(settings.targetLanguage, page) {
                 // A tab starts at the top on revisit, but the header belongs to the whole pager.
-                val listState = remember { androidx.compose.foundation.lazy.LazyListState() }
-                LaunchedEffect(requestKey) { listState.scrollToItem(0) }
-                LaunchedEffect(listState, pagerState) {
-                    snapshotFlow { pagerState.settledPage == page }.collectLatest { active ->
-                        if(!active) listState.scrollToItem(0)
+                val listState = remember(requestKey) { androidx.compose.foundation.lazy.LazyListState() }
+                LaunchedEffect(listState, pagerState, page) {
+                    snapshotFlow {
+                        pagerState.settledPage != page && !pagerState.isScrollInProgress && !listState.isScrollInProgress
+                    }.collect { inactiveAndIdle ->
+                        if(inactiveAndIdle && (listState.firstVisibleItemIndex != 0 || listState.firstVisibleItemScrollOffset != 0)) {
+                            listState.requestScrollToItem(0)
+                        }
                     }
                 }
                 LaunchedEffect(listState, entries) {

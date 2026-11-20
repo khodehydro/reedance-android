@@ -36,7 +36,7 @@ internal fun learningCellRtl(text: String, explicit: String = ""): Boolean = whe
     androidx.compose.runtime.CompositionLocalProvider(
         androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr
     ) {
-        OutlinedTextField(value, onValueChange, Modifier.fillMaxWidth(), enabled = enabled,
+        OutlinedTextField(value, onValueChange, Modifier.fillMaxWidth(), enabled = enabled && LocalDeckInteractive.current,
             label = { Text(tr("پاسخ", "Answer")) },
             shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp), singleLine = true,
             textStyle = LocalTextStyle.current.copy(textDirection = TextDirection.Ltr, textAlign = TextAlign.Left))

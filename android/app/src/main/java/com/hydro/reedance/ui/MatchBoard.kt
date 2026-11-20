@@ -134,7 +134,7 @@ private val MatchRed = Color(0xFFA82232)
         else -> tr("وصل نشده", "Not connected")
     }
     Surface(modifier.fillMaxWidth().semantics { stateDescription = state }
-        .selectable(selected, enabled = enabled, role = Role.Button, onClick = onClick),
+        .selectable(selected, enabled = enabled && LocalDeckInteractive.current, role = Role.Button, onClick = onClick),
         shape = RoundedCornerShape(16.dp), color = background, contentColor = foreground,
         border = BorderStroke(if(selected) 2.dp else 1.dp, link ?: if(selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)) {
         Box(Modifier.heightIn(min = 72.dp).padding(12.dp), contentAlignment = Alignment.Center) {

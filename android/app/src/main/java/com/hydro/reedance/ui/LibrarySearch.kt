@@ -6,6 +6,7 @@ import com.hydro.reedance.data.LibraryItemContent
 import com.hydro.reedance.data.s
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.text.Normalizer
 import java.util.Locale
@@ -21,10 +22,8 @@ private fun searchText(text: String): String = accents.replace(Normalizer.normal
     .replace(searchBreaks, " ").trim()
 
 internal suspend fun prepareLibraryRows(bookmarks: List<Bookmark>, tab: String, request: LibraryRequest,
-    catalog: Map<String, JsonObject>, load: suspend (Bookmark) -> LibraryItemContent?): List<Bookmark> {
-    val rows = withContext(Dispatchers.Default) {
-        bookmarks.filter { matchesLibraryTab(it, tab) && (request.songId.isEmpty() || it.songId == request.songId) }
-    }
+    catalog: Map<String, JsonObject>, load: suspend (Bookmark) -> LibraryItemContent?): List<Bookmark> = withContext(Dispatchers.Default) {
+    val rows = bookmarks.filter { matchesLibraryTab(it, tab) && (request.songId.isEmpty() || it.songId == request.songId) }
     val terms = searchText(request.query).split(' ').filter { it.isNotBlank() }
     fun matches(base: String, additional: String = ""): Boolean {
         val haystack = searchText("$base $additional")
@@ -35,6 +34,7 @@ internal suspend fun prepareLibraryRows(bookmarks: List<Bookmark>, tab: String, 
         rows.groupBy { it.songId }.forEach { (songId, marks) ->
             val meta = catalog[songId]
             for(mark in marks) {
+                ensureActive()
                 val base = "$songId ${meta?.s("title").orEmpty()} ${meta?.s("artist").orEmpty()} ${mark.itemId}"
                 if(matches(base)) {
                     add(mark)
@@ -51,14 +51,12 @@ internal suspend fun prepareLibraryRows(bookmarks: List<Bookmark>, tab: String, 
             }
         }
     }
-    return withContext(Dispatchers.Default) {
-        when(request.order) {
-            LibraryOrder.NEWEST -> found.sortedByDescending { it.createdAt }
-            LibraryOrder.OLDEST -> found.sortedBy { it.createdAt }
-            LibraryOrder.SOURCE -> {
-                val names = found.map { it.songId }.distinct().associateWith { searchText(catalog[it]?.s("title").orEmpty().ifBlank { it }) }
-                found.sortedWith(compareBy<Bookmark> { names[it.songId] }.thenByDescending { it.createdAt })
-            }
+    when(request.order) {
+        LibraryOrder.NEWEST -> found.sortedByDescending { it.createdAt }
+        LibraryOrder.OLDEST -> found.sortedBy { it.createdAt }
+        LibraryOrder.SOURCE -> {
+            val names = found.map { it.songId }.distinct().associateWith { searchText(catalog[it]?.s("title").orEmpty().ifBlank { it }) }
+            found.sortedWith(compareBy<Bookmark> { names[it.songId] }.thenByDescending { it.createdAt })
         }
     }
 }

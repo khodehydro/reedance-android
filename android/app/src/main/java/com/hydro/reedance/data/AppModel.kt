@@ -345,13 +345,13 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
         if(dao.hasStep(lang, step)) { dao.deleteStep(lang, step); false }
         else { dao.saveStep(StarterProgress(lang, step)); true }
     } }
-    fun review(card: ReviewCard, remembered: Boolean) { learningMutation {
+    fun review(card: ReviewCard, remembered: Boolean): Job = learningMutation {
         val current = dao.review(card.lexemeId, card.songId) ?: return@learningMutation false
         if(current.stage != card.stage || current.dueAt != card.dueAt) return@learningMutation false
         val next = schedule(current.stage, remembered, System.currentTimeMillis())
         dao.saveReview(current.copy(stage = next.stage, dueAt = next.dueAt))
         true
-    } }
+    }
     suspend fun dueReviewCards(): List<ReviewCard> {
         val ids = catalog.value.filter { it.s("language") == settings.value.targetLanguage }.map { it.s("id") }.toSet()
         return dao.dueReviews(System.currentTimeMillis()).filter { it.songId in ids && it.songId == lesson.value?.s("songId") }

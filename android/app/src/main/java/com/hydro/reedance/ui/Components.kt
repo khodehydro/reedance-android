@@ -25,9 +25,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import kotlinx.coroutines.delay
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.*
 import com.google.gson.*
@@ -97,6 +95,8 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
     }
     }
 }
+internal val LocalDeckInteractive = staticCompositionLocalOf { true }
+
 /** Reference CSS: enter 390ms (-15,10), exit 220ms (30,0), mirrored in RTL. */
 @Composable fun Deck(cardKey: Any, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     val reduced = LocalReducedMotion.current
@@ -104,25 +104,22 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
     val sign = if(rtl) -1 else 1
     val sheets = remember { mutableMapOf<Any, @Composable () -> Unit>() }
     sheets[cardKey] = content
-    LaunchedEffect(cardKey) {
-        if(!reduced) delay(650)
-        sheets.keys.retainAll(setOf(cardKey))
-    }
     Box(modifier.fillMaxWidth().padding(top = 21.dp)) {
         Box(Modifier.matchParentSize().padding(horizontal = 15.dp).graphicsLayer { translationY = -21.dp.toPx(); rotationZ = 2.3f; scaleX = .973f }.clip(RoundedCornerShape(20.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = .22f)))
         Box(Modifier.matchParentSize().padding(horizontal = 8.dp).graphicsLayer { translationY = -13.dp.toPx(); rotationZ = -1.6f; scaleX = .99f }.clip(RoundedCornerShape(20.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = .12f)))
         AnimatedContent(cardKey, transitionSpec = {
             if(reduced) EnterTransition.None togetherWith ExitTransition.None
-            else (fadeIn(tween(390, 220)) + slideIn(tween(390, 220, easing = CubicBezierEasing(.19f,.85f,.3f,1f))) { IntOffset(-15 * sign, 10) } + scaleIn(tween(390, 220), initialScale = .975f)) togetherWith
-                (fadeOut(tween(220)) + slideOut(tween(220, easing = FastOutLinearInEasing)) { IntOffset(30 * sign, 0) } + scaleOut(tween(220), targetScale = .96f))
+            else ((fadeIn(tween(390)) + slideIn(tween(390, easing = CubicBezierEasing(.19f,.85f,.3f,1f))) { IntOffset(-15 * sign, 10) } + scaleIn(tween(390), initialScale = .975f)) togetherWith
+                (fadeOut(tween(220)) + slideOut(tween(220, easing = FastOutLinearInEasing)) { IntOffset(30 * sign, 0) } + scaleOut(tween(220), targetScale = .96f)))
+                .apply { targetContentZIndex = 1f }
         }, label = "card-deck") { key ->
-            // Preserve the outgoing visual sheet, but remove its semantics and input.
-            val inactive = if(key == cardKey) Modifier else Modifier.clearAndSetSemantics { }.pointerInput(key) {
-                awaitPointerEventScope {
-                    while(true) awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() }
-                }
+            DisposableEffect(key) { onDispose { sheets.remove(key) } }
+            // Disable outgoing actions at their controls; never consume pointer motion
+            // in a deck, so its parent scrollable can continue a drag across either sheet.
+            val active = key == cardKey
+            CompositionLocalProvider(LocalDeckInteractive provides (active && LocalDeckInteractive.current)) {
+                Box(if(active) Modifier else Modifier.clearAndSetSemantics {}) { sheets[key]?.invoke() }
             }
-            Box(inactive) { sheets[key]?.invoke() }
         }
     }
 }

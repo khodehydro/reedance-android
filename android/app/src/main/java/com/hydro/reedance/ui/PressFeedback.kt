@@ -51,24 +51,24 @@ private class PressNode(private val source: InteractionSource, private val enabl
 @Composable fun PressButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
     shape: Shape = ButtonDefaults.shape, colors: ButtonColors = ButtonDefaults.buttonColors(), content: @Composable RowScope.() -> Unit) {
     val source = remember { MutableInteractionSource() }
-    Button(onClick, modifier.pressFeedback(source), enabled = enabled, shape = shape, colors = colors, interactionSource = source, content = content)
+    Button(onClick, modifier.pressFeedback(source), enabled = enabled && LocalDeckInteractive.current, shape = shape, colors = colors, interactionSource = source, content = content)
 }
 @Composable fun PressOutlinedButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
     colors: ButtonColors = ButtonDefaults.outlinedButtonColors(), shape: Shape = ButtonDefaults.outlinedShape, content: @Composable RowScope.() -> Unit) {
     val source = remember { MutableInteractionSource() }
-    OutlinedButton(onClick, modifier.pressFeedback(source), enabled = enabled, colors = colors, shape = shape, interactionSource = source, content = content)
+    OutlinedButton(onClick, modifier.pressFeedback(source), enabled = enabled && LocalDeckInteractive.current, colors = colors, shape = shape, interactionSource = source, content = content)
 }
 @Composable fun PressTextButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, content: @Composable RowScope.() -> Unit) {
     val source = remember { MutableInteractionSource() }
-    TextButton(onClick, modifier.pressFeedback(source), enabled = enabled, interactionSource = source, content = content)
+    TextButton(onClick, modifier.pressFeedback(source), enabled = enabled && LocalDeckInteractive.current, interactionSource = source, content = content)
 }
 @Composable fun PressIconButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, content: @Composable () -> Unit) {
     val source = remember { MutableInteractionSource() }
-    IconButton(onClick, modifier.pressFeedback(source), enabled = enabled, interactionSource = source, content = content)
+    IconButton(onClick, modifier.pressFeedback(source), enabled = enabled && LocalDeckInteractive.current, interactionSource = source, content = content)
 }
 @Composable fun PressFilledIconButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, content: @Composable () -> Unit) {
     val source = remember { MutableInteractionSource() }
-    FilledIconButton(onClick, modifier.pressFeedback(source), enabled = enabled, interactionSource = source, content = content)
+    FilledIconButton(onClick, modifier.pressFeedback(source), enabled = enabled && LocalDeckInteractive.current, interactionSource = source, content = content)
 }
 @Composable fun PressRadioButton(selected: Boolean, onClick: (() -> Unit)?, modifier: Modifier = Modifier, enabled: Boolean = true) {
     val source = remember { MutableInteractionSource() }

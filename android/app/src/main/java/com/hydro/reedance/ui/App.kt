@@ -84,9 +84,6 @@ import com.hydro.reedance.data.*
             }
         }
     }
-    val started by model.started.collectAsStateWithLifecycle()
-    val playing by model.playing.collectAsStateWithLifecycle()
-    val activePlayback by model.activePlayback.collectAsStateWithLifecycle()
     val installedIds by model.installedIds.collectAsStateWithLifecycle()
     val pageStates = rememberSaveableStateHolder()
     val mainPageTypes = remember { setOf("home", "explore", "review", "gym", "game", "library", "profile", "quiz", "premium") }
@@ -101,12 +98,6 @@ import com.hydro.reedance.data.*
         }
     }
     var compactNavigation by remember(page) { mutableStateOf(false) }
-    val navigationWidth = animateDpAsState(
-        targetValue = navigationMenuWidth(compactNavigation),
-        animationSpec = tween(if(LocalReducedMotion.current) 0 else 150, easing = FastOutSlowInEasing),
-        label = "navigation-menu-width"
-    )
-    val navigationWidthInLayout = remember(navigationWidth) { { navigationWidth.value } }
     val threshold = with(LocalDensity.current) { 36.dp.toPx() }
     val scrollConnection = remember(page, threshold) {
         object : NestedScrollConnection {
@@ -195,16 +186,27 @@ import com.hydro.reedance.data.*
         }
         }
     }, bottomBar = {
-        if(!independent) Column(
-            Modifier.fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(top = 6.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            if(started) activePlayback?.let { active ->
-                MiniPlayer(active, playing, model::toggleActivePlayback, { openSong(active.songId) }, compact = compactNavigation, menuWidth = navigationWidthInLayout)
+        if(!independent) {
+            val started by model.started.collectAsStateWithLifecycle()
+            val playing by model.playing.collectAsStateWithLifecycle()
+            val activePlayback by model.activePlayback.collectAsStateWithLifecycle()
+            val navigationWidth = animateDpAsState(
+                targetValue = navigationMenuWidth(compactNavigation),
+                animationSpec = tween(if(LocalReducedMotion.current) 0 else 150, easing = FastOutSlowInEasing),
+                label = "navigation-menu-width"
+            )
+            val navigationWidthInLayout = remember(navigationWidth) { { navigationWidth.value } }
+            Column(
+                Modifier.fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(top = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                if(started) activePlayback?.let { active ->
+                    MiniPlayer(active, playing, model::toggleActivePlayback, { openSongAction(active.songId) }, compact = compactNavigation, menuWidth = navigationWidthInLayout)
+                }
+                FloatingNavigation(page, compactNavigation, navigateAction, navigationWidthInLayout)
             }
-            FloatingNavigation(page, compactNavigation, navigateAction, navigationWidthInLayout)
         }
     }) { padding ->
         // Keep visited tabs composed for return-state, but do not measure or place hidden pages.

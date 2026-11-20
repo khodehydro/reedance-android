@@ -1,6 +1,8 @@
 package com.hydro.reedance.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.changedToDownIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.boundsInRoot
@@ -35,7 +36,7 @@ import androidx.compose.ui.unit.dp
 }
 internal val LocalSearchFocus = staticCompositionLocalOf<SearchFocus?> { null }
 
-/** Observe outside downs, including toolbar/nav, without consuming scrolls or clicks. */
+/** Dismiss on completion of outside gestures, without consuming scrolls or clicks. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable internal fun SearchDismissHost(content: @Composable () -> Unit) {
     val focus = LocalFocusManager.current
@@ -52,11 +53,12 @@ internal val LocalSearchFocus = staticCompositionLocalOf<SearchFocus?> { null }
     var origin by remember { mutableStateOf(Offset.Zero) }
     BackHandler(session.focused) { session.dismiss() }
     Box(Modifier.fillMaxSize().onGloballyPositioned { origin = it.positionInRoot() }.pointerInput(session) {
-        awaitPointerEventScope {
-            while(true) {
-                val event = awaitPointerEvent(PointerEventPass.Initial)
-                val down = event.changes.firstOrNull { it.changedToDownIgnoreConsumed() }
-                if(down != null && session.focused && !session.bounds.contains(down.position + origin)) session.dismiss()
+        awaitEachGesture {
+            val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+            if(session.focused && !session.bounds.contains(down.position + origin)) {
+                // Let the child finish its tap/drag before changing focus and IME insets.
+                while(awaitPointerEvent(PointerEventPass.Final).changes.any { it.pressed }) { /* Observe only. */ }
+                if(session.focused) session.dismiss()
             }
         }
     }) {

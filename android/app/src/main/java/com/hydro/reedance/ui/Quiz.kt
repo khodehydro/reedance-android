@@ -99,7 +99,6 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
     var busy by remember { mutableStateOf(false) }
     var saveFailed by remember(index) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val reduced = LocalReducedMotion.current
     val fa = LearningLanguage.persian
     // This effect is cancelled when leaving the screen or changing the question/session.
     LaunchedEffect(index, checked) {
@@ -147,7 +146,8 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 24.dp + inset), verticalArrangement = Arrangement.spacedBy(20.dp)) {
             if(gym) GymPracticeHeading()
             if(skipped > 0) SkippedPracticeQuestions(skipped)
-            val entry = entries[index]
+            val questionIndex = index
+            val entry = entries[questionIndex]
             val q = entry.question
             val data = entry.source
             val clip = entry.listening
@@ -156,7 +156,7 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
                 if (clip == null) options else (options + clip.distractors.keys).shuffled()
             }
             val submit: (List<String>) -> Unit = { submitted ->
-                if(!busy && checked == null && complete(q, submitted)) {
+                if(index == questionIndex && !busy && checked == null && complete(q, submitted)) {
                     busy = true
                     saveFailed = false
                     answer = submitted
@@ -177,7 +177,6 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
             if(gym) Text(data.s("title"), style = MaterialTheme.typography.labelLarge)
             if(saveFailed) Text(tr("پاسخ ذخیره نشد؛ دوباره امتحان کن.", "Could not save your answer. Try again."), color = MaterialTheme.colorScheme.error)
             LinearProgressIndicator(progress = { index.toFloat()/questionCount }, modifier = Modifier.fillMaxWidth())
-            val questionIndex = index
             Deck(questionIndex) {
                 Panel {
                     PersianText(q.tr("skill", fa), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
@@ -218,11 +217,11 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
                             Foreign(formattedAnswer(q, correctAnswer(q), fa), large = true)
                         }
                         if(!checked!!.correct) Action(tr("ادامه", "Continue"), enabled = !busy) {
-                            if(!busy) { busy = true; scope.launch {
-                                if(!reduced) delay(220)
-                                grades.add(answer.toList() to checked!!)
-                                index++; busy = false
-                            } }
+                            val result = checked
+                            if(!busy && index == questionIndex && result != null) {
+                                grades.add(answer.toList() to result)
+                                index++
+                            }
                         }
                     }
                 }

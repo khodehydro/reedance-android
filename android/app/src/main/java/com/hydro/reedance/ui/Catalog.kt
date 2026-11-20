@@ -168,6 +168,13 @@ private val artistSpace = Regex("\\s+")
     var compact by rememberSaveable(targetLanguage) { mutableStateOf(false) }
     val songGrid = rememberLazyGridState()
     val artistGrid = rememberLazyGridState()
+    // Keep this effect outside the artist replacement branch: returning to the
+    // grid is not a new search and must not reset or cancel its scroll.
+    val term = query.trim()
+    LaunchedEffect(term, targetLanguage) {
+        if(songGrid.firstVisibleItemIndex != 0 || songGrid.firstVisibleItemScrollOffset != 0) songGrid.requestScrollToItem(0)
+        if(artistGrid.firstVisibleItemIndex != 0 || artistGrid.firstVisibleItemScrollOffset != 0) artistGrid.requestScrollToItem(0)
+    }
     if(artistKey != null) {
         key(artistKey) {
             ArtistSongs(selectedArtist, { onArtist(null) }, openSong)
@@ -195,15 +202,10 @@ private val artistSpace = Regex("\\s+")
                 }
             }
         }
-        val term = query.trim()
         val visibleSongs = remember(songs, term) {
             songs.filter { term.isEmpty() || it.s("title").contains(term, true) || it.s("artist").contains(term, true) }
         }
         val visibleArtists = remember(artists, term) { artists.filter { it.name.contains(term, true) } }
-        LaunchedEffect(term, targetLanguage) {
-            if(songGrid.firstVisibleItemIndex != 0 || songGrid.firstVisibleItemScrollOffset != 0) songGrid.requestScrollToItem(0)
-            if(artistGrid.firstVisibleItemIndex != 0 || artistGrid.firstVisibleItemScrollOffset != 0) artistGrid.requestScrollToItem(0)
-        }
         HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { page ->
             val threshold = with(LocalDensity.current) { 40.dp.toPx() }
             val scrollConnection = remember(page, threshold) {
