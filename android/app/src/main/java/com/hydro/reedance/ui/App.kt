@@ -1,9 +1,6 @@
 package com.hydro.reedance.ui
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.input.nestedscroll.*
@@ -97,7 +94,7 @@ import com.hydro.reedance.data.*
             if(page in setOf("quiz", "song-story") && songId.isNotBlank()) add("song-playback" to songId)
         }
     }
-    var compactNavigation by remember(page) { mutableStateOf(false) }
+    var compactNavigation by remember { mutableStateOf(false) }
     val threshold = with(LocalDensity.current) { 36.dp.toPx() }
     val scrollConnection = remember(page, threshold) {
         object : NestedScrollConnection {
@@ -190,12 +187,6 @@ import com.hydro.reedance.data.*
             val started by model.started.collectAsStateWithLifecycle()
             val playing by model.playing.collectAsStateWithLifecycle()
             val activePlayback by model.activePlayback.collectAsStateWithLifecycle()
-            val navigationWidth = animateDpAsState(
-                targetValue = navigationMenuWidth(compactNavigation),
-                animationSpec = tween(if(LocalReducedMotion.current) 0 else 150, easing = FastOutSlowInEasing),
-                label = "navigation-menu-width"
-            )
-            val navigationWidthInLayout = remember(navigationWidth) { { navigationWidth.value } }
             Column(
                 Modifier.fillMaxWidth()
                     .navigationBarsPadding()
@@ -203,9 +194,9 @@ import com.hydro.reedance.data.*
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 if(started) activePlayback?.let { active ->
-                    MiniPlayer(active, playing, model::toggleActivePlayback, { openSongAction(active.songId) }, compact = compactNavigation, menuWidth = navigationWidthInLayout)
+                    MiniPlayer(active, playing, model::toggleActivePlayback, { openSongAction(active.songId) }, compact = compactNavigation)
                 }
-                FloatingNavigation(page, compactNavigation, navigateAction, navigationWidthInLayout)
+                FloatingNavigation(page, compactNavigation, navigateAction)
             }
         }
     }) { padding ->
