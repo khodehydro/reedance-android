@@ -3,12 +3,9 @@ package com.hydro.reedance.ui
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.ui.input.nestedscroll.*
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.layout.layout
-import kotlin.math.abs
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -94,25 +91,6 @@ import com.hydro.reedance.data.*
             if(page in setOf("quiz", "song-story") && songId.isNotBlank()) add("song-playback" to songId)
         }
     }
-    var compactNavigation by remember { mutableStateOf(false) }
-    val threshold = with(LocalDensity.current) { 36.dp.toPx() }
-    val scrollConnection = remember(page, threshold) {
-        object : NestedScrollConnection {
-            private var direction = 0
-            private var distance = 0f
-            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
-                if(source != NestedScrollSource.UserInput) return Offset.Zero
-                val dy = consumed.y
-                if(dy != 0f) {
-                    val next = if(dy < 0) -1 else 1
-                    if(next != direction) { direction = next; distance = 0f }
-                    distance += abs(dy)
-                    if(distance >= threshold) { compactNavigation = next < 0; distance = 0f }
-                } else if(available.y > 0) compactNavigation = false
-                return Offset.Zero // Observe scrolling; never steal it from the page.
-            }
-        }
-    }
     LaunchedEffect(message) { if(message.isNotEmpty()) { snackbar.showSnackbar(message); model.message.value = "" } }
     fun navigate(to: String) {
         if(to == "quiz" || to == "song-story") model.pause()
@@ -194,9 +172,9 @@ import com.hydro.reedance.data.*
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 if(started) activePlayback?.let { active ->
-                    MiniPlayer(active, playing, model::toggleActivePlayback, { openSongAction(active.songId) }, compact = compactNavigation)
+                    MiniPlayer(active, playing, model::toggleActivePlayback, { openSongAction(active.songId) })
                 }
-                FloatingNavigation(page, compactNavigation, navigateAction)
+                FloatingNavigation(page, compact = false, onNavigate = navigateAction)
             }
         }
     }) { padding ->
@@ -210,7 +188,6 @@ import com.hydro.reedance.data.*
                     top = padding.calculateTopPadding(),
                     bottom = 0.dp
                 )
-                .nestedScroll(scrollConnection)
                 .clipToBounds()
         ) {
             CompositionLocalProvider(LocalOverlayBottomInset provides padding.calculateBottomPadding()) {
