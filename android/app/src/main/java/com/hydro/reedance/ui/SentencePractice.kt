@@ -14,7 +14,7 @@ import com.hydro.reedance.domain.Grade
 import com.hydro.reedance.domain.normalizeAnswer
 
 @OptIn(ExperimentalLayoutApi::class)
-@Composable internal fun SentenceOrder(question: JsonObject, order: List<String>, answer: List<String>, result: Grade?, busy: Boolean, distractors: Map<String, String> = emptyMap(), onAnswer: (List<String>) -> Unit) {
+@Composable internal fun SentenceOrder(question: JsonObject, order: List<String>, answer: List<String>, result: Grade?, busy: Boolean, distractors: Map<String, String> = emptyMap(), persianAnswer: Boolean = false, onAnswer: (List<String>) -> Unit) {
     val chunks = question.a("chunks")
     val labels = chunks.associate { it.s("id") to it.s("text") } + distractors
     val editable = result == null && !busy
@@ -24,7 +24,7 @@ import com.hydro.reedance.domain.normalizeAnswer
         null -> MaterialTheme.colorScheme.surfaceContainerLow
     }
     val foreground = if(result != null) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onSurface
-    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+    CompositionLocalProvider(LocalLayoutDirection provides if(persianAnswer) LayoutDirection.Rtl else LayoutDirection.Ltr) {
         Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), color = background, contentColor = foreground) {
             FlowRow(Modifier.fillMaxWidth().heightIn(min = 76.dp).padding(10.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 if(answer.isEmpty()) Text(tr("جمله را اینجا بساز", "Build your sentence here"), Modifier.padding(12.dp))

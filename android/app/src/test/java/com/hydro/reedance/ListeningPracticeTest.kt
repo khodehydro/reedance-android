@@ -36,6 +36,31 @@ class ListeningPracticeTest {
         assertEquals(original, source)
     }
 
+    @Test fun someClipsRequireBothOriginalRecognitionAndPersianOrdering() {
+        val source = obj("""{
+          "songId":"demo", "media":{"audio":{"path":"audio.wav","durationMs":9000}},
+          "lyrics":[
+            {"id":"first","text":"I keep hope alive.","translationFa":"امید را زنده نگه می‌دارم.","startMs":1000},
+            {"id":"second","text":"Walk quietly home.","translationFa":"آرام به خانه برو.","startMs":4000},
+            {"id":"third","text":"Keep moving.","translationFa":"به حرکت ادامه بده.","startMs":7000}
+          ]
+        }""")
+        val entries = prepareListeningQuestions(source)
+        assertEquals(listOf("listen:first", "listen-meaning:second", "listen:third"), entries.map { it.key.questionId })
+        val entry = entries[1]
+        val clip = entry.listening!!
+        val meaning = clip.meaning!!
+        assertEquals("Walk quietly home.", meaning.original)
+        assertEquals(3, meaning.originalOptions.toSet().size)
+        assertTrue(meaning.original in meaning.originalOptions)
+        assertEquals(listOf("آرام", "به", "خانه", "برو."), entry.question.a("chunks").map { it.s("text") })
+        assertTrue(clip.distractors.isNotEmpty())
+        val answer = listOf("part-0", "part-1", "part-2", "part-3")
+        assertTrue(gradeListening(entry.question, answer, meaning, meaning.original).correct)
+        assertFalse(gradeListening(entry.question, answer, meaning, "Keep moving.").correct)
+        assertFalse(gradeListening(entry.question, answer.reversed(), meaning, meaning.original).correct)
+    }
+
     @Test fun identicalVisiblePiecesCanSwapButCannotBeReused() {
         val question = obj("""{"chunks":[{"id":"1","text":"Go"},{"id":"2","text":"Go"}]}""")
         assertTrue(gradeListening(question, listOf("2", "1")).correct)
