@@ -14,12 +14,8 @@ import com.hydro.reedance.domain.Grade
 import com.hydro.reedance.domain.normalizeAnswer
 
 @OptIn(ExperimentalLayoutApi::class)
-@Composable internal fun SentenceOrder(question: JsonObject, answer: List<String>, result: Grade?, busy: Boolean, onAnswer: (List<String>) -> Unit) {
+@Composable internal fun SentenceOrder(question: JsonObject, order: List<String>, answer: List<String>, result: Grade?, busy: Boolean, onAnswer: (List<String>) -> Unit) {
     val chunks = question.a("chunks")
-    val ids = chunks.map { it.s("id") }
-    val order = question.strings("presentationOrder").filter { it in ids }.distinct().let {
-        if(it.size == ids.size) it else ids.reversed()
-    }
     val editable = result == null && !busy
     val background = when(result?.correct) {
         true -> androidx.compose.ui.graphics.Color(0xFF176B3A)

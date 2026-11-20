@@ -40,10 +40,10 @@ private val MatchGreen = Color(0xFF176B3A)
 private val MatchRed = Color(0xFFA82232)
 
 @Composable internal fun MatchBoard(question: JsonObject, answer: List<String>, checked: Boolean,
-    enabled: Boolean, onAnswer: (List<String>) -> Unit, solution: Boolean = false) {
+    enabled: Boolean, onAnswer: (List<String>) -> Unit, solution: Boolean = false, meaningIds: List<String>? = null) {
     val pairs = question.a("pairs")
     val ids = pairs.map { it.s("id") }
-    val order = question.strings("meaningOrder").filter { it in ids }.distinct().let {
+    val order = meaningIds ?: question.strings("meaningOrder").filter { it in ids }.distinct().let {
         if(it.size == ids.size) it else ids.reversed()
     }
     val values = if(solution) ids else answer

@@ -25,7 +25,7 @@ class PracticeChoicesTest {
             CompositionLocalProvider(LocalFa provides false, LocalReducedMotion provides true) {
                 ReedanceTheme(Settings(language = "en")) {
                     Column {
-                        PracticeChoices(question, selected, result, false) {
+                        PracticeChoices(question, listOf("no", "yes"), selected, result, false) {
                             submissions++
                             selected = it
                             result = Grade(it == "yes", emptySet())

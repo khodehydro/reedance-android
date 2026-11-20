@@ -21,7 +21,7 @@ class PersianTeachingTest {
                 ReedanceTheme(Settings(language = "en")) {
                     Column {
                         Text(tr("ادامه", "Continue"))
-                        PracticeChoices(question, null, null, false, {})
+                        PracticeChoices(question, listOf("a"), null, null, false, {})
                         LearningNote(note)
                     }
                 }

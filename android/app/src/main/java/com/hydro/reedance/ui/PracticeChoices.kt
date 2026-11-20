@@ -12,10 +12,11 @@ import com.hydro.reedance.data.*
 import com.hydro.reedance.domain.Grade
 
 /** Explicit disabled colors keep submitted answers readable instead of fading feedback away. */
-@Composable internal fun PracticeChoices(question: JsonObject, selected: String?, result: Grade?, busy: Boolean, onSelect: (String) -> Unit) {
+@Composable internal fun PracticeChoices(question: JsonObject, optionIds: List<String>, selected: String?, result: Grade?, busy: Boolean, onSelect: (String) -> Unit) {
     val fa = LearningLanguage.persian
-    question.a("options").forEach { option ->
-        val id = option.s("id")
+    val optionsById = question.a("options").associateBy { it.s("id") }
+    optionIds.forEach { id ->
+        val option = optionsById.getValue(id)
         val correct = result != null && id == question.s("correctId")
         val wrong = result != null && id == selected && !correct
         val background = when {

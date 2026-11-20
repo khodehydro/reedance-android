@@ -132,6 +132,7 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
             val entry = entries[index]
             val q = entry.question
             val data = entry.source
+            val optionOrder = remember(index, q) { practiceOptionOrder(q) }
             val submit: (List<String>) -> Unit = { submitted ->
                 if(!busy && checked == null && complete(q, submitted)) {
                     busy = true
@@ -167,10 +168,10 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
                         }
                     }
                     when(q.s("type")) {
-                        "choice" -> PracticeChoices(q, answer.singleOrNull(), checked, busy) { submit(listOf(it)) }
+                        "choice" -> PracticeChoices(q, optionOrder, answer.singleOrNull(), checked, busy) { submit(listOf(it)) }
                         "typing" -> PracticeTypingField(answer.firstOrNull().orEmpty(), checked == null && !busy) { answer = listOf(it) }
-                        "order" -> SentenceOrder(q, answer, checked, busy) { answer = it }
-                        "match" -> MatchBoard(q, answer, checked != null, !busy, onAnswer = { answer = it })
+                        "order" -> SentenceOrder(q, optionOrder, answer, checked, busy) { answer = it }
+                        "match" -> MatchBoard(q, answer, checked != null, !busy, onAnswer = { answer = it }, meaningIds = optionOrder)
 
                     }
                     if(checked == null) {
@@ -182,7 +183,7 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
                         PersianText(q.tr("explanation", fa))
                         if(q.s("type") == "match" && !checked!!.correct) {
                             Text(tr("پاسخ صحیح", "Correct matches"), style = MaterialTheme.typography.titleMedium)
-                            MatchBoard(q, correctAnswer(q), true, false, onAnswer = {}, solution = true)
+                            MatchBoard(q, correctAnswer(q), true, false, onAnswer = {}, solution = true, meaningIds = optionOrder)
                         }
                         if(!checked!!.correct && q.s("type") in listOf("order", "typing")) {
                             Text(tr("پاسخ صحیح", "Correct answer"), style = MaterialTheme.typography.labelLarge)

@@ -20,7 +20,7 @@ class SentenceOrderTest {
         compose.setContent {
             CompositionLocalProvider(LocalFa provides false, LocalReducedMotion provides true) {
                 ReedanceTheme(Settings(language = "en")) {
-                    Column { SentenceOrder(question, answer, null, false) { answer = it } }
+                    Column { SentenceOrder(question, listOf("three", "one", "two"), answer, null, false) { answer = it } }
                 }
             }
         }
