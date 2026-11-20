@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.Reedance.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#002AFC</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/reedance_splash_icon</item>
+        <item name="android:windowSplashScreenBrandingImage">@drawable/reedance_splash_brand</item>
+        <item name="postSplashScreenTheme">@style/Theme.Reedance</item>
+    </style>
+</resources>
