@@ -1,5 +1,7 @@
 # Release gate — deliberately closed
 
+The release decision and Windows Studio branch audit are recorded in the [release architecture handoff (Persian)](interop/RELEASE_ARCHITECTURE_FA.md).
+
 `assembleRelease`, `bundleRelease` and release packaging fail intentionally. Do not remove the guard just to produce a public APK.
 
 Before enabling release:
