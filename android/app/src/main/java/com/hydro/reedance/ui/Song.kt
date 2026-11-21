@@ -6,6 +6,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -55,7 +56,8 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     val compactController by remember(scroll, collapseThreshold) { derivedStateOf {
         scroll.firstVisibleItemIndex > 0 || scroll.firstVisibleItemScrollOffset > collapseThreshold
     } }
-    val motionDuration = if(LocalReducedMotion.current) 0 else 180
+    val reducedMotion = LocalReducedMotion.current
+    val motionDuration = if(reducedMotion) 0 else 180
     val hasStory = remember(lesson, songId) { lessonStory(lesson, songId) != null }
     val openStory = if(!access.preview && hasStory) story else null
     val available = lesson?.s("songId") == songId
@@ -71,6 +73,23 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     }
     val coverPath = coverResult?.takeIf { it.first == songId }?.second
     val lines = remember(lesson) { lesson?.a("lyrics").orEmpty() }
+    val lyricListOffset = 3 // Player, lesson tabs, and lyric help precede the first line.
+    val visibleLyricIndices = remember(lines, access) {
+        lines.take(access.limit("lyrics")).mapIndexed { index, line -> line.s("id") to index }.toMap()
+    }
+    val draggingLyrics by scroll.interactionSource.collectIsDraggedAsState()
+    val followLyrics = available && tab == 0 && !singleLyric && playing && activePlayback?.songId == songId
+    val currentListIndex = if(followLyrics) visibleLyricIndices[activeLineId.value]?.plus(lyricListOffset) else null
+    LaunchedEffect(songId, currentListIndex, draggingLyrics, reducedMotion) {
+        val index = currentListIndex ?: return@LaunchedEffect
+        if(draggingLyrics) return@LaunchedEffect
+        val layout = scroll.layoutInfo
+        val item = layout.visibleItemsInfo.firstOrNull { it.index == index }
+        if(item != null && item.offset >= layout.viewportStartOffset &&
+            (item.offset + item.size <= layout.viewportEndOffset ||
+                item.size > layout.viewportEndOffset - layout.viewportStartOffset)) return@LaunchedEffect
+        if(reducedMotion) scroll.scrollToItem(index) else scroll.animateScrollToItem(index)
+    }
     val wordsById = remember(lesson, access) { lesson?.a("vocabulary").orEmpty().take(access.limit("vocabulary")).associateBy { it.s("lexemeId") } }
     Column(Modifier.fillMaxSize()) {
         HeaderSurface {
