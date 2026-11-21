@@ -270,8 +270,11 @@ class AssetTests(unittest.TestCase):
 
     def test_no_demo_or_mock_catalog_ships_in_any_app_variant(self):
         catalog = load(ASSETS / 'main/assets/catalog_preview.json')
-        self.assertEqual(['gulum-2'], [song['id'] for song in catalog])
-        self.assertTrue(all(song.get('bundledPack') for song in catalog))
+        distribution = load(ASSETS / 'main/assets/pack_distribution_default.json')['songs']
+        self.assertEqual({'gulum-2', 'leke'}, {song['id'] for song in catalog})
+        self.assertTrue(all(not song.get('demo') and not song.get('bundledPack') for song in catalog))
+        self.assertTrue(all(distribution[song['id']]['manifestUrl'].startswith('https://') for song in catalog))
+        self.assertTrue(next(song for song in catalog if song['id'] == 'leke')['coverUrl'].startswith('https://'))
         for variant in ['main', 'debug', 'release']:
             assets = ASSETS / variant / 'assets'
             self.assertFalse((assets / 'demo_lesson.json').exists())

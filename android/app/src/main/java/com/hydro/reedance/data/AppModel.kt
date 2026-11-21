@@ -25,7 +25,7 @@ import java.io.File
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-data class ActivePlayback(val songId: String, val title: String, val artist: String, val coverPath: String?)
+data class ActivePlayback(val songId: String, val title: String, val artist: String, val coverPath: String?, val coverUrl: String = "")
 data class InstallTransferProgress(val phase: String, val bytes: Long, val totalBytes: Long) {
     val fraction: Float? get() = totalBytes.takeIf { it > 0 }?.let { (bytes.toFloat() / it).coerceIn(0f, 1f) }
 }
@@ -201,7 +201,8 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
                 .setMediaMetadata(MediaMetadata.Builder().setTitle(data.s("title")).setArtist(data.s("artist")).build()).build(), saved)
             player.prepare(); updateProgress()
         }
-        activePlayback.value = ActivePlayback(data.s("songId"), data.s("title"), data.s("artist"), coverPath)
+        activePlayback.value = ActivePlayback(data.s("songId"), data.s("title"), data.s("artist"), coverPath,
+            catalog.value.firstOrNull { it.s("id") == data.s("songId") }?.s("coverUrl").orEmpty())
         player
     }
     /** Mini controls operate on the current Media3 item, never the browsed lesson. */

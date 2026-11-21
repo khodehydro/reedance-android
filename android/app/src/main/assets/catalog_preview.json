@@ -9,5 +9,17 @@
     "access": "free",
     "demo": false,
     "distributionRef": "gulum-2"
+  },
+  {
+    "id": "leke",
+    "title": "Leke",
+    "artist": "Afra",
+    "language": "tr",
+    "duration": "",
+    "level": "",
+    "access": "free",
+    "demo": false,
+    "distributionRef": "leke",
+    "coverUrl": "https://raw.githubusercontent.com/khodehydro/Drop/main/leke/https___images.genius.com_11ba36fde6b0717ae327a0b64df67310.1000x1000x1.png"
   }
 ]

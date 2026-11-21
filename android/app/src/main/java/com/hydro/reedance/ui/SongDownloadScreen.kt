@@ -114,7 +114,8 @@ import kotlin.math.roundToInt
                 if(song.s("distributionRef") == "gulum-ii") "pending-gulum-ii" else songId,
                 song.s("title"),
                 Modifier.size(184.dp),
-                shapeProgress = coverMorph
+                shapeProgress = coverMorph,
+                coverUrl = song.s("coverUrl")
             )
         }
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {

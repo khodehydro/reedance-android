@@ -57,7 +57,7 @@ fun cover(id: String): Int? = when(id) {
 private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
     override fun sizeOf(key: Int, value: Bitmap) = value.allocationByteCount
 }
-@Composable fun CoverImage(id: String, description: String, modifier: Modifier = Modifier, shapeProgress: Float = 0f) {
+@Composable fun CoverImage(id: String, description: String, modifier: Modifier = Modifier, shapeProgress: Float = 0f, coverUrl: String = "") {
     val resource = cover(id)
     val resources = LocalContext.current.resources
     val bitmap by produceState<Bitmap?>(resource?.let { coverCache.get(it) }, resource) {
@@ -65,6 +65,9 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
             coverCache.get(resource) ?: BitmapFactory.decodeResource(resources, resource,
                 BitmapFactory.Options().apply { inSampleSize = 2; inScaled = false })?.also { coverCache.put(resource, it) }
         }
+    }
+    val online by produceState<Pair<String, Bitmap>?>(null, coverUrl) {
+        value = remoteCover(coverUrl)?.let { coverUrl to it }
     }
     // Draw-time clipping is independent of lazy animateItem/retained graphics layers.
     // Apply it to both placeholder and decoded image on every draw.
@@ -75,7 +78,7 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
         val outline = Path().apply { addRoundRect(RoundRect(Rect(Offset.Zero, size), CornerRadius(radius))) }
         onDrawWithContent { clipPath(outline) { this@onDrawWithContent.drawContent() } }
     }.background(MaterialTheme.colorScheme.secondaryContainer)) {
-        bitmap?.let { Image(it.asImageBitmap(), description, Modifier.matchParentSize(), contentScale = ContentScale.Crop) }
+        (online?.takeIf { it.first == coverUrl }?.second ?: bitmap)?.let { Image(it.asImageBitmap(), description, Modifier.matchParentSize(), contentScale = ContentScale.Crop) }
     }
 }
 @Composable fun CatalogScreen(model: AppModel, home: Boolean, openSong: (String) -> Unit, starter: () -> Unit, openLibrary: () -> Unit,
@@ -249,8 +252,8 @@ private val artistSpace = Regex("\\s+")
 }
 
 @Composable private fun ArtistCover(artist: ExploreArtist, modifier: Modifier) {
-    val coverId = artist.songs.asSequence().map { songCoverId(it) }.firstOrNull { cover(it) != null }
-    if(coverId != null) CoverImage(coverId, "", modifier, shapeProgress = 1f)
+    val song = artist.songs.firstOrNull { it.s("coverUrl").isNotBlank() || cover(songCoverId(it)) != null }
+    if(song != null) CoverImage(songCoverId(song), "", modifier, shapeProgress = 1f, coverUrl = song.s("coverUrl"))
     else Box(modifier.clip(CircleShape).background(MaterialTheme.colorScheme.secondaryContainer), contentAlignment = Alignment.Center) {
         Text(artist.name.split(artistSpace).take(2).joinToString("") { it.take(1).uppercase(Locale.ROOT) },
             color = MaterialTheme.colorScheme.onSecondaryContainer, style = MaterialTheme.typography.headlineMedium)
@@ -290,7 +293,7 @@ private fun songCoverId(song: JsonObject): String =
 @Composable private fun SongTile(song: JsonObject, modifier: Modifier, onClick: () -> Unit) {
     Column(modifier.clickable(onClick = onClick), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Box {
-            CoverImage(songCoverId(song), song.s("title"), Modifier.fillMaxWidth().aspectRatio(1f))
+            CoverImage(songCoverId(song), song.s("title"), Modifier.fillMaxWidth().aspectRatio(1f), coverUrl = song.s("coverUrl"))
         }
         SongTitle(song.s("title"), premium = song.s("access") == "paid")
         Text(song.s("artist"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

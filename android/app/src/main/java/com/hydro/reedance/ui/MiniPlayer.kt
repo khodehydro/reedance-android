@@ -64,9 +64,9 @@ import com.hydro.reedance.data.ActivePlayback
 }
 
 @Composable private fun MiniCover(song: ActivePlayback) {
-    val image = installedArtwork(song.coverPath)
+    val image = installedArtwork(song.coverPath.takeIf { song.coverUrl.isBlank() })
     Box(Modifier.size(28.dp).clip(CircleShape)) {
         if(image != null) Image(image, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        else CoverImage(song.songId, song.title, Modifier.fillMaxSize())
+        else CoverImage(song.songId, song.title, Modifier.fillMaxSize(), coverUrl = song.coverUrl)
     }
 }

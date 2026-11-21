@@ -78,7 +78,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                 Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                     PressIconButton(back) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
                     Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                        SongArtwork(songId, song.s("title"), coverPath, Modifier.size(40.dp).clip(CircleShape))
+                        SongArtwork(songId, song.s("title"), coverPath, Modifier.size(40.dp).clip(CircleShape), coverUrl = song.s("coverUrl"))
                     }
                     BookmarkButton(bookmarks.any { it.songId == songId && it.itemType == "song" && it.itemId == songId }) {
                         model.toggleBookmark("song", songId, songId)
