@@ -25,7 +25,7 @@ class LocalContentRepository(context: Context, private val dao: LearningDao,
     suspend fun catalog(): List<JsonObject> = withContext(cpu) {
         val text = assetText("catalog_preview.json")
         val songs = JsonParser.parseString(text).asJsonArray.map { it.asJsonObject }
-        val distribution = try { parseObject(assetText("pack_distribution.json")) } catch(_: java.io.FileNotFoundException) { JsonObject() }
+        val distribution = try { parseObject(assetText("pack_distribution.json")) } catch(_: java.io.FileNotFoundException) { parseObject(assetText("pack_distribution_default.json")) }
         val bundled = try { parseObject(assetText("bundled_packs.json")) } catch(_: java.io.FileNotFoundException) { JsonObject() }
         val directTest = if(BuildConfig.DEBUG && BuildConfig.PACK_ENC_TEST_KEY) {
             try { parseObject(assetText("pack_direct_test.json")) } catch(_: java.io.FileNotFoundException) { JsonObject() }

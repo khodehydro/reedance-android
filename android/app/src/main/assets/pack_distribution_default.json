@@ -1,0 +1,10 @@
+{
+  "allowedHosts": ["raw.githubusercontent.com"],
+  "publicKeys": {},
+  "songs": {
+    "gulum-2": {
+      "manifestUrl": "https://raw.githubusercontent.com/khodehydro/Drop/main/gulum-2/latest.json",
+      "language": "tr"
+    }
+  }
+}

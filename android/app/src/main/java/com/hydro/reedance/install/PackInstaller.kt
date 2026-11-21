@@ -36,7 +36,9 @@ class PackInstaller(private val context: Context) {
         .connectTimeout(20, TimeUnit.SECONDS).readTimeout(20, TimeUnit.SECONDS).callTimeout(8, TimeUnit.MINUTES).build()
     private fun config(): JsonObject = try {
         context.assets.open("pack_distribution.json").use { PackVerifier.strictJson(it.readBytes(), 65536) }
-    } catch(_: java.io.FileNotFoundException) { error("تنظیمات آدرس انتشار و کلید عمومی ناشر موجود نیست / Publisher manifest/host/public-key configuration is missing") }
+    } catch(_: java.io.FileNotFoundException) {
+        context.assets.open("pack_distribution_default.json").use { PackVerifier.strictJson(it.readBytes(), 65536) }
+    }
     private fun directTestEntry(song: String): JsonObject? {
         if(!BuildConfig.DEBUG || !BuildConfig.PACK_ENC_TEST_KEY) return null
         val index = try {
