@@ -39,6 +39,11 @@ class PackInstaller(private val context: Context) {
     } catch(_: java.io.FileNotFoundException) {
         context.assets.open("pack_distribution_default.json").use { PackVerifier.strictJson(it.readBytes(), 65536) }
     }
+    // Studio publishes the matching signing seed. Trust this profile for QA only.
+    private fun studioDebugConfig(): JsonObject? {
+        if(!BuildConfig.DEBUG) return null
+        return context.assets.open("studio_embedded_pack.json").use { PackVerifier.strictJson(it.readBytes(), 4096) }
+    }
     private fun directTestEntry(song: String): JsonObject? {
         if(!BuildConfig.DEBUG || !BuildConfig.PACK_ENC_TEST_KEY) return null
         val index = try {
@@ -94,7 +99,7 @@ class PackInstaller(private val context: Context) {
         }
         return hash.digest().joinToString("") { "%02x".format(it.toInt() and 255) }
     }
-    private suspend fun decrypt(pack: File, zip: File, payload: JsonObject) {
+    private suspend fun decrypt(pack: File, zip: File, payload: JsonObject, studioDebugKey: ByteArray? = null) {
         RandomAccessFile(pack, "r").use { input ->
             require(ByteArray(8).also { input.readFully(it) }.contentEquals("RDPACK1\u0000".toByteArray()))
             val length = input.readUnsignedByte(); require(length in 1..32)
@@ -102,7 +107,7 @@ class PackInstaller(private val context: Context) {
             val keyId = header.copyOfRange(9, 9 + length).toString(Charsets.US_ASCII)
             require(keyId == "enc-main") { "این بسته از معماری قدیمی است؛ با استودیوی جدید دوباره خروجی بگیرید / Re-export legacy pack with the new Studio" }
             require(keyId == payload.obj("package").s("encryptionKeyId"))
-            val key = PackDistributionKey.load(keyId)
+            val key = studioDebugKey ?: PackDistributionKey.load(keyId)
             try {
                 val plain = ByteBuffer.wrap(header, 21 + length, 8).long
                 require(plain in 1..268435456L && pack.length() == header.size + plain + 16)
@@ -147,13 +152,23 @@ class PackInstaller(private val context: Context) {
     suspend fun install(song: String, progress: suspend (String, Long, Long) -> Unit): JsonObject = lock.withLock { withContext(Dispatchers.IO) {
         require(song.matches(Regex("[a-z0-9]+(?:-[a-z0-9]+)*")))
         recoverLocked()
-        directTestEntry(song)?.let { return@withContext installDirectTestPack(song, it, progress) }
         val config = config()
         val source = config.obj("songs").obj(song)
+        if(!source.has("manifestUrl")) {
+            directTestEntry(song)?.let { return@withContext installDirectTestPack(song, it, progress) }
+        }
         require(source.has("manifestUrl")) { "آدرس latest.json این آهنگ تنظیم نشده / Signed manifest URL missing" }
         val language = source.s("language"); require(language in listOf("en", "es", "ko", "tr"))
         val hosts = config.strings("allowedHosts").toSet()
-        val publicKeys = config.obj("publicKeys").entrySet().associate { it.key to PackVerifier.base64(it.value.asString) }
+        val studio = studioDebugConfig()
+        val embeddedSigner = "sig-studio-embedded"
+        val publicKeys = config.obj("publicKeys").entrySet()
+            .filterNot { it.key == embeddedSigner }
+            .associate { it.key to PackVerifier.base64(it.value.asString) }.toMutableMap()
+        if(studio != null) {
+            check(studio.s("signatureKeyId") == embeddedSigner)
+            publicKeys[embeddedSigner] = PackVerifier.base64(studio.s("publicKey"))
+        }
         val stagingRoot = File(root, ".staging").apply { mkdirs() }
         // Protected by the process-wide install lock. Previous crashes never change active pointers.
         stagingRoot.listFiles()?.forEach { it.deleteRecursively() }
@@ -163,7 +178,8 @@ class PackInstaller(private val context: Context) {
             progress("manifest", 0, 0)
             download(source.s("manifestUrl"), manifest, 32768, hosts) { _, _ -> }
             val seen = dao.seen(song)
-            val payload = PackVerifier.manifest(manifest.readBytes(), publicKeys, song, language, seen?.highestVersionCode?.toLong() ?: 0, seen?.packageSha256 ?: "")
+            val envelope = manifest.readBytes()
+            val payload = PackVerifier.manifest(envelope, publicKeys, song, language, seen?.highestVersionCode?.toLong() ?: 0, seen?.packageSha256 ?: "")
             val spec = payload.obj("package")
             // Persist highest authenticated observation even if the subsequent transfer fails.
             dao.saveSeen(SeenManifest(song, payload.n("contentVersionCode").toInt(), spec.s("sha256")))
@@ -175,7 +191,12 @@ class PackInstaller(private val context: Context) {
             download(url.toString(), pack, spec.n("sizeBytes"), hosts) { bytes, total -> progress("download", bytes, total) }
             require(pack.length() == spec.n("sizeBytes") && hash(pack) == spec.s("sha256")) { "Package hash/length mismatch" }
             progress("decrypt", pack.length(), pack.length())
-            val zip = File(stage, "authenticated.zip"); decrypt(pack, zip, payload)
+            val signer = PackVerifier.strictJson(envelope, 32768).s("signatureKeyId")
+            val zip = File(stage, "authenticated.zip")
+            val studioKey = if(signer == embeddedSigner) {
+                PackVerifier.base64(checkNotNull(studio).s("packKey")).also { check(it.size == 32) }
+            } else null
+            decrypt(pack, zip, payload, studioKey)
             validateAndActivate(stage, zip, payload, song, language, manifest, progress)
         } finally { withContext(NonCancellable) { stage.deleteRecursively() } }
     } }
