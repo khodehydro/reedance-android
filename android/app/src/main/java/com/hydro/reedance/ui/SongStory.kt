@@ -4,9 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.media.MediaPlayer
 import android.media.PlaybackParams
-import android.os.Bundle
-import android.speech.tts.TextToSpeech
-import android.speech.tts.UtteranceProgressListener
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -42,6 +39,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.gson.JsonObject
 import com.hydro.reedance.data.AppModel
 import com.hydro.reedance.data.LearningLanguage
+import com.hydro.reedance.data.obj
 import com.hydro.reedance.data.s
 import com.hydro.reedance.data.a
 import com.hydro.reedance.data.tr
@@ -63,67 +61,6 @@ internal data class StoryLine(val text: String, val meaningFa: String = "", val 
     fun meaning(fa: Boolean) = if(fa) meaningFa.ifBlank { meaningEn } else meaningEn.ifBlank { meaningFa }
 }
 internal data class LessonStory(val title: String, val locale: String, val pages: List<List<StoryLine>>)
-
-private fun sampleLine(text: String, fa: String, en: String, glosses: String): StoryLine =
-    StoryLine(text, fa, en, glosses.split('|').map { entry ->
-        val (word, persian, english) = entry.split('/')
-        StoryGloss(word, persian, english)
-    })
-
-private val sampleStory = LessonStory("Bir fincan çay", "tr-TR", listOf(
-    listOf(
-        sampleLine("Deniz akşam eve döndü.", "دنیز عصر به خانه برگشت.", "Deniz came home in the evening.",
-            "Deniz/دنیز/Deniz|akşam/عصر/in the evening|eve/به خانه/home|döndü./برگشت/returned"),
-        sampleLine("Yağmur yağıyordu ve sokak sessizdi.", "باران می‌بارید و خیابان ساکت بود.", "It was raining and the street was quiet.",
-            "Yağmur/باران/rain|yağıyordu/می‌بارید/was falling|ve/و/and|sokak/خیابان/street|sessizdi./ساکت بود/was quiet"),
-        sampleLine("Islak montunu kapının yanına astı.", "پالتوی خیسش را کنار در آویخت.", "Deniz hung the wet coat by the door.",
-            "Islak/خیس/wet|montunu/پالتویش/their coat|kapının yanına/کنار در/by the door|astı./آویخت/hung"),
-        sampleLine("Mutfakta su ısıttı ve kendine bir fincan çay yaptı.", "در آشپزخانه آب گرم کرد و برای خودش یک فنجان چای درست کرد.", "In the kitchen, Deniz heated water and made a cup of tea.",
-            "Mutfakta/در آشپزخانه/in the kitchen|su/آب/water|ısıttı/گرم کرد/heated|ve/و/and|kendine/برای خودش/for themself|bir fincan/یک فنجان/a cup of|çay/چای/tea|yaptı./درست کرد/made"),
-        sampleLine("Çay hazır olunca pencerenin önündeki lambayı yaktı.", "وقتی چای آماده شد، چراغ جلوی پنجره را روشن کرد.", "When the tea was ready, Deniz turned on the lamp by the window.",
-            "Çay/چای/tea|hazır olunca/وقتی آماده شد/when it was ready|pencerenin önündeki/جلوی پنجره/by the window|lambayı/چراغ را/the lamp|yaktı./روشن کرد/turned on")
-    ), listOf(
-        sampleLine("Pencerenin yanında oturdu ve eski bir şarkı açtı.", "کنار پنجره نشست و یک آهنگ قدیمی پخش کرد.", "Deniz sat by the window and put on an old song.",
-            "Pencerenin yanında/کنار پنجره/by the window|oturdu/نشست/sat|ve/و/and|eski/قدیمی/old|bir/یک/a|şarkı/آهنگ/song|açtı./پخش کرد/put on"),
-        sampleLine("Şarkıyı dinlerken bir arkadaşını hatırladı.", "هنگام گوش دادن به آهنگ، یاد یکی از دوستانش افتاد.", "While listening to the song, Deniz remembered a friend.",
-            "Şarkıyı/آهنگ را/the song|dinlerken/هنگام گوش دادن/while listening|bir/یک/a|arkadaşını/دوستش/friend|hatırladı./به یاد آورد/remembered"),
-        sampleLine("Eskiden bu şarkıyı birlikte dinlerlerdi.", "قبلاً این آهنگ را با هم گوش می‌دادند.", "They used to listen to this song together.",
-            "Eskiden/قبلاً/back then|bu şarkıyı/این آهنگ را/this song|birlikte/با هم/together|dinlerlerdi./گوش می‌دادند/used to listen"),
-        sampleLine("Bazen son otobüsü kaçırır, eve kadar yürürlerdi.", "گاهی به آخرین اتوبوس نمی‌رسیدند و تا خانه پیاده می‌رفتند.", "Sometimes they missed the last bus and walked all the way home.",
-            "Bazen/گاهی/sometimes|son otobüsü/آخرین اتوبوس/the last bus|kaçırır,/از دست می‌دادند/missed|eve kadar/تا خانه/all the way home|yürürlerdi./پیاده می‌رفتند/would walk"),
-        sampleLine("Deniz gülümsedi ve telefonunu masadan aldı.", "دنیز لبخند زد و گوشی‌اش را از روی میز برداشت.", "Deniz smiled and picked up the phone from the table.",
-            "Deniz/دنیز/Deniz|gülümsedi/لبخند زد/smiled|ve/و/and|telefonunu/گوشی‌اش/their phone|masadan/از روی میز/from the table|aldı./برداشت/picked up")
-    ), listOf(
-        sampleLine("Arkadaşına bir mesaj yazdı: ‘Yarın bir çay içelim mi?’", "به دوستش پیام داد: «فردا با هم چای بخوریم؟»", "Deniz texted a friend: ‘Shall we have tea tomorrow?’",
-            "Arkadaşına/به دوستش/to a friend|bir/یک/a|mesaj/پیام/message|yazdı:/نوشت/wrote|‘Yarın/فردا/tomorrow|bir/یک/a|çay/چای/tea|içelim mi?’/بخوریم؟/shall we drink?"),
-        sampleLine("Cevap hemen geldi: ‘Olur, seni özledim.’", "جواب فوری آمد: «حتماً، دلم برایت تنگ شده.»", "The reply came at once: ‘Sure, I miss you.’",
-            "Cevap/جواب/reply|hemen/فوری/right away|geldi:/آمد/came|‘Olur,/حتماً/sure|seni/تو را/you|özledim.’/دلم تنگ شده/I miss"),
-        sampleLine("Ertesi gün küçük bir çay bahçesinde buluştular.", "روز بعد در یک چای‌خانهٔ باغی کوچک همدیگر را دیدند.", "The next day they met in a small tea garden.",
-            "Ertesi gün/روز بعد/the next day|küçük/کوچک/small|bir/یک/a|çay bahçesinde/در باغ چای/in a tea garden|buluştular./همدیگر را دیدند/met"),
-        sampleLine("İki çay söylediler ve uzun uzun konuştular.", "دو چای سفارش دادند و مدت زیادی گپ زدند.", "They ordered two teas and talked for a long time.",
-            "İki/دو/two|çay/چای/teas|söylediler/سفارش دادند/ordered|ve/و/and|uzun uzun/مدت زیادی/for a long time|konuştular./گپ زدند/talked"),
-        sampleLine("Deniz eve dönerken aynı şarkıyı yeniden açtı.", "دنیز در راه خانه دوباره همان آهنگ را پخش کرد.", "On the way home, Deniz put on the same song again.",
-            "Deniz/دنیز/Deniz|eve dönerken/در راه خانه/on the way home|aynı şarkıyı/همان آهنگ را/the same song|yeniden/دوباره/again|açtı./پخش کرد/put on"),
-        sampleLine("Bu kez şarkıyı yarıda kapatmadı.", "این بار آهنگ را نیمه‌کاره قطع نکرد.", "This time Deniz did not stop the song halfway through.",
-            "Bu kez/این بار/this time|şarkıyı/آهنگ را/the song|yarıda/نیمه‌کاره/halfway through|kapatmadı./قطع نکرد/did not stop"),
-        sampleLine("Durağa vardığında güneş batmak üzereydi.", "وقتی به ایستگاه رسید، خورشید نزدیک غروب بود.", "When Deniz reached the stop, the sun was about to set.",
-            "Durağa/به ایستگاه/to the stop|vardığında/وقتی رسید/when they arrived|güneş/خورشید/the sun|batmak üzereydi./نزدیک غروب بود/was about to set"),
-        sampleLine("Telefonuna yeni bir mesaj geldi.", "یک پیام تازه روی گوشی‌اش آمد.", "A new message arrived on Deniz’s phone.",
-            "Telefonuna/روی گوشی‌اش/on their phone|yeni/تازه/new|bir/یک/a|mesaj/پیام/message|geldi./آمد/arrived"),
-        sampleLine("Arkadaşı eski bir fotoğraf göndermişti.", "دوستش یک عکس قدیمی فرستاده بود.", "The friend had sent an old photo.",
-            "Arkadaşı/دوستش/the friend|eski/قدیمی/old|bir/یک/an|fotoğraf/عکس/photo|göndermişti./فرستاده بود/had sent"),
-        sampleLine("Fotoğrafta ikisi de yağmur altında gülüyordu.", "در عکس هر دو زیر باران می‌خندیدند.", "In the photo, both of them were laughing in the rain.",
-            "Fotoğrafta/در عکس/in the photo|ikisi de/هر دو/both of them|yağmur altında/زیر باران/in the rain|gülüyordu./می‌خندیدند/were laughing"),
-        sampleLine("Deniz fotoğrafı sakladı ve kısa bir cevap yazdı.", "دنیز عکس را ذخیره کرد و جواب کوتاهی نوشت.", "Deniz saved the photo and wrote a short reply.",
-            "Deniz/دنیز/Deniz|fotoğrafı/عکس را/the photo|sakladı/ذخیره کرد/saved|ve/و/and|kısa/کوتاه/short|bir/یک/a|cevap/جواب/reply|yazdı./نوشت/wrote"),
-        sampleLine("‘Haftaya çaylar benden,’ dedi.", "گفت: «هفتهٔ بعد چای‌ها مهمان من.»", "‘Tea is on me next week,’ Deniz said.",
-            "‘Haftaya/هفتهٔ بعد/next week|çaylar/چای‌ها/tea|benden,’/مهمان من/on me|dedi./گفت/said"),
-        sampleLine("Otobüs geldiğinde şarkının son notası duyuldu.", "وقتی اتوبوس رسید، آخرین نت آهنگ شنیده شد.", "When the bus arrived, the last note of the song played.",
-            "Otobüs/اتوبوس/the bus|geldiğinde/وقتی رسید/when it arrived|şarkının/آهنگ/of the song|son notası/آخرین نت/the last note|duyuldu./شنیده شد/was heard"),
-        sampleLine("Deniz kulaklığını çıkardı ve açık kapıya doğru yürüdü.", "دنیز هدفونش را درآورد و به سمت در باز رفت.", "Deniz took off the headphones and walked toward the open door.",
-            "Deniz/دنیز/Deniz|kulaklığını/هدفونش/the headphones|çıkardı/درآورد/took off|ve/و/and|açık kapıya doğru/به سمت در باز/toward the open door|yürüdü./رفت/walked")
-    )
-))
 
 private fun storyProse(text: String, locale: String): List<StoryLine> {
     val sentences = BreakIterator.getSentenceInstance(Locale.forLanguageTag(locale))
@@ -167,7 +104,7 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
             }.filter { it.text.isNotBlank() }.takeIf { it.isNotEmpty() }
         }.orEmpty().ifEmpty { listOf(storyProse(story?.s("text").orEmpty(), locale)).filter { it.isNotEmpty() } }
     return if(title.isNotBlank() && pages.isNotEmpty() && locale.isNotBlank()) LessonStory(title, locale, pages)
-    else sampleStory.takeIf { songId == "gulum-2" }
+    else null
 }
 
 @Composable internal fun SongStoryScreen(model: AppModel, songId: String, back: () -> Unit) {
@@ -186,10 +123,15 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
         }
         return
     }
-    key(songId, story) { StoryReader(story, back) }
+    val source = lesson ?: return
+    val hasAudio = source.obj("media").obj("storyAudio").s("path").isNotBlank()
+    key(songId, story, source) {
+        StoryReader(story, hasAudio, { model.storyAudio(source) }, model::pause, back)
+    }
 }
 
-@Composable private fun StoryReader(story: LessonStory, back: () -> Unit) {
+@Composable private fun StoryReader(story: LessonStory, hasAudio: Boolean, audioFile: suspend () -> File?,
+    pauseSong: () -> Unit, back: () -> Unit) {
     var paperIndex by rememberSaveable { mutableIntStateOf(0) }
     var meaningMode by rememberSaveable { mutableIntStateOf(0) }
     val fa = LearningLanguage.persian
@@ -231,17 +173,13 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
         }
     }
     val page = pager.settledPage.coerceIn(0, pageStarts.lastIndex)
-    val start = pageStarts[page]
-    val end = pageStarts.getOrElse(page + 1) { lines.size }
-    val narration = remember(lines, start, end) { lines.subList(start, end).joinToString(" ") { it.text } }
-    var request by remember(start, end) { mutableStateOf(false) }
-    var player by remember(start, end) { mutableStateOf<MediaPlayer?>(null) }
-    var playing by remember(start, end) { mutableStateOf(false) }
-    var failed by remember(start, end) { mutableStateOf(false) }
-    var position by remember(start, end) { mutableIntStateOf(0) }
-    var duration by remember(start, end) { mutableIntStateOf(0) }
-    var dragging by remember(start, end) { mutableStateOf<Float?>(null) }
-    val scrolling by rememberUpdatedState(pager.isScrollInProgress)
+    var request by remember { mutableStateOf(false) }
+    var player by remember { mutableStateOf<MediaPlayer?>(null) }
+    var playing by remember { mutableStateOf(false) }
+    var failed by remember { mutableStateOf(false) }
+    var position by remember { mutableIntStateOf(0) }
+    var duration by remember { mutableIntStateOf(0) }
+    var dragging by remember { mutableStateOf<Float?>(null) }
     fun pause() {
         val current = player
         if(current == null) request = false else if(playing) {
@@ -252,6 +190,7 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
     }
     fun play(current: MediaPlayer) {
         try {
+            pauseSong()
             current.playbackParams = PlaybackParams().allowDefaults().setSpeed(speed)
             current.start()
             playing = true
@@ -262,7 +201,6 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
         }
     }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { pause() }
-    LaunchedEffect(pager.isScrollInProgress) { if(pager.isScrollInProgress) pause() }
     LaunchedEffect(player, playing) {
         val current = player ?: return@LaunchedEffect
         while(playing && player === current) {
@@ -271,13 +209,11 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
         }
     }
     LaunchedEffect(speedIndex) { if(playing) player?.let(::play) }
-    LaunchedEffect(story, start, end, request) {
+    LaunchedEffect(request) {
         if(!request) return@LaunchedEffect
-        var output: File? = null
         var audio: MediaPlayer? = null
         try {
-            val file = File.createTempFile("story-", ".wav", context.cacheDir).also { output = it }
-            check(synthesizeStoryPage(context, story.locale, narration, file))
+            val file = checkNotNull(audioFile())
             val prepared = MediaPlayer().also { audio = it }
             prepared.setDataSource(file.absolutePath)
             val ready = CompletableDeferred<Boolean>()
@@ -296,7 +232,7 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
                 playing = false
             }
             player = prepared
-            if(!scrolling) play(prepared)
+            play(prepared)
             awaitCancellation()
         } catch(cancelled: CancellationException) {
             throw cancelled
@@ -310,7 +246,6 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
             duration = 0
             dragging = null
             audio?.release()
-            output?.delete()
         }
     }
 
@@ -368,7 +303,7 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
                         Text(tr("بعدی", "Next"), color = ink.copy(alpha = if(page < pageStarts.lastIndex) 1f else .4f))
                     }
                 }
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                if(hasAudio) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     PressIconButton({
                         when {
                             playing || (request && player == null) -> pause()
@@ -402,7 +337,7 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
                 if(failed) AlertDialog(
                     onDismissRequest = { failed = false },
                     title = { Text(tr("صدا در دسترس نیست", "Narration unavailable")) },
-                    text = { Text(tr("صدای این زبان را در تنظیمات گفتار اندروید نصب کن.", "Install an offline voice for this language in Android text-to-speech settings.")) },
+                    text = { Text(tr("فایل صوتی داستان قابل پخش نیست.", "The packaged story audio could not be played.")) },
                     confirmButton = { PressTextButton({ failed = false }) { Text(tr("باشه", "OK")) } }
                 )
                 val smaller = tr("کوچک کردن نوشته", "Decrease text size")
@@ -508,29 +443,5 @@ internal fun storyPageStarts(heights: List<Int>, availableHeight: Int, spacing: 
                     modifier = Modifier.clearAndSetSemantics {})
             }
         }
-    }
-}
-
-private suspend fun synthesizeStoryPage(context: Context, locale: String, text: String, file: File): Boolean {
-    val initialized = CompletableDeferred<Boolean>()
-    val engine = TextToSpeech(context.applicationContext) { initialized.complete(it == TextToSpeech.SUCCESS) }
-    try {
-        if(withTimeoutOrNull(5_000) { initialized.await() } != true) return false
-        val language = Locale.forLanguageTag(locale)
-        val voices = engine.voices?.filter { it.locale.language == language.language && !it.isNetworkConnectionRequired }.orEmpty()
-        val voice = voices.firstOrNull { it.locale.country == language.country } ?: voices.firstOrNull() ?: return false
-        if(engine.setVoice(voice) != TextToSpeech.SUCCESS) return false
-        val result = CompletableDeferred<Boolean>()
-        engine.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-            override fun onStart(utteranceId: String?) = Unit
-            override fun onDone(utteranceId: String?) { result.complete(true) }
-            @Deprecated("Deprecated by Android")
-            override fun onError(utteranceId: String?) { result.complete(false) }
-        })
-        if(engine.synthesizeToFile(text, Bundle(), file, "story-page") != TextToSpeech.SUCCESS) return false
-        return withTimeoutOrNull(20_000) { result.await() } == true
-    } finally {
-        engine.stop()
-        engine.shutdown()
     }
 }

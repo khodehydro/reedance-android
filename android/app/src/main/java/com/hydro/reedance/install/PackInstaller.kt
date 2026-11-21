@@ -301,10 +301,11 @@ class PackInstaller(private val context: Context) {
             }
             val media = lesson.obj("media")
             val expected = mutableSetOf("lesson.json")
-            for(kind in listOf("audio", "cover")) if(media.has(kind)) {
+            for(kind in listOf("audio", "cover", "storyAudio")) if(media.has(kind)) {
                 val item = media.obj(kind); val file = File(output, item.s("path")); expected += file.name
+                val mimeName = if(kind == "storyAudio") "audio.${file.extension}" else file.name
                 val mime = mapOf("audio.mp3" to "audio/mpeg", "audio.m4a" to "audio/mp4", "audio.wav" to "audio/wav", "cover.jpg" to "image/jpeg", "cover.png" to "image/png", "cover.webp" to "image/webp")
-                require(mime[file.name] == item.s("mimeType"))
+                require(mime[mimeName] == item.s("mimeType"))
                 val prefix = ByteArray(12)
                 file.inputStream().use { require(it.read(prefix) == 12) }
                 val magic = prefix.toString(Charsets.ISO_8859_1)

@@ -439,6 +439,7 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
         return withContext(Dispatchers.Default) { selectGymRound(candidates, history) }
     }
 
+    internal suspend fun storyAudio(lesson: JsonObject): File? = content.storyAudioFile(lesson.s("songId"), lesson)
     internal suspend fun listeningAudio(source: JsonObject): File = content.audioFile(source.s("songId"), source)
 
     internal suspend fun recordGym(entry: GymQuestion, answer: List<String>, grade: Grade) {

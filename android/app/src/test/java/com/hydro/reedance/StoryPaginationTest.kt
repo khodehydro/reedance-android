@@ -1,10 +1,21 @@
 package com.hydro.reedance
 
+import com.google.gson.JsonParser
+import com.hydro.reedance.ui.lessonStory
 import com.hydro.reedance.ui.storyPageStarts
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class StoryPaginationTest {
+    @Test fun onlyTheRequestedLessonCanSupplyItsStory() {
+        val lesson = JsonParser.parseString("""{"songId":"gulum-2","locale":"tr-TR"}""").asJsonObject
+        assertNull(lessonStory(lesson, "gulum-2"))
+        lesson.add("story", JsonParser.parseString("""{"title":"A story","text":"A short story."}"""))
+        assertNull(lessonStory(lesson, "other-song"))
+        assertEquals("A story", lessonStory(lesson, "gulum-2")?.title)
+    }
+
     @Test fun largerTextOrTranslationsMoveLinesForwardAndSmallerTextMovesThemBack() {
         val normal = listOf(30, 30, 30, 30, 30, 30)
         val expanded = listOf(45, 45, 45, 45, 45, 45)

@@ -79,6 +79,12 @@ class LocalContentRepository(context: Context, private val dao: LearningDao,
         val row = dao.installed(id) ?: error("Package not installed")
         File(row.activePath, lesson.obj("media").obj("audio").s("path")).also { require(it.isFile) }
     }
+    suspend fun storyAudioFile(id: String, lesson: JsonObject): File? = withContext(io) {
+        val row = dao.installed(id) ?: return@withContext null
+        val name = lesson.obj("media").obj("storyAudio").s("path")
+        if(name !in listOf("story.mp3", "story.m4a", "story.wav")) return@withContext null
+        File(row.activePath, name).takeIf { it.isFile }
+    }
     suspend fun coverPath(id: String, lesson: JsonObject): String? = withContext(io) {
         val row = dao.installed(id) ?: return@withContext null
         val name = lesson.obj("media").obj("cover").s("path")

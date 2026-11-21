@@ -4,9 +4,6 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
-    <queries>
-        <intent><action android:name="android.intent.action.TTS_SERVICE" /></intent>
-    </queries>
     <application android:theme="@style/Theme.Reedance.Starting" android:label="Reedance" android:icon="@drawable/reedance_logo" android:supportsRtl="true" android:allowBackup="false" android:usesCleartextTraffic="false" android:networkSecurityConfig="@xml/network_security_config">
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>

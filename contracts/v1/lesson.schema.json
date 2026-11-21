@@ -98,7 +98,8 @@
             "mimeType": { "enum": ["image/jpeg", "image/png", "image/webp"] },
             "sha256": { "$ref": "#/$defs/sha256" }
           }
-        }
+        },
+        "storyAudio": { "type": "object", "additionalProperties": false, "required": [ "path", "mimeType", "durationMs", "sha256" ], "properties": { "path": { "enum": [ "story.mp3", "story.m4a", "story.wav" ] }, "mimeType": { "enum": [ "audio/mpeg", "audio/mp4", "audio/wav" ] }, "durationMs": { "type": "integer", "minimum": 1, "maximum": 86400000 }, "sha256": { "$ref": "#/$defs/sha256" } } }
       }
     },
     "line": {

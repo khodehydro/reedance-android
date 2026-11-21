@@ -18,7 +18,7 @@ object StrictPackZip {
             input.seek(input.length() - 22)
             require(input.u32() == 0x06054b50L) { "ZIP comments/trailing bytes unsupported" }
             require(input.u16() == 0 && input.u16() == 0)
-            val count = input.u16(); require(count in 2..3 && input.u16() == count)
+            val count = input.u16(); require(count in 2..4 && input.u16() == count)
             val centralSize = input.u32(); val centralOffset = input.u32()
             require(input.u16() == 0 && centralOffset + centralSize == input.length() - 22)
             input.seek(centralOffset)
@@ -38,7 +38,7 @@ object StrictPackZip {
                 val name = nameBytes.toString(Charsets.US_ASCII)
                 val limit = when(name) {
                     "lesson.json" -> 4L * 1024 * 1024
-                    "audio.mp3", "audio.m4a", "audio.wav" -> 240L * 1024 * 1024
+                    "audio.mp3", "audio.m4a", "audio.wav", "story.mp3", "story.m4a", "story.wav" -> 240L * 1024 * 1024
                     "cover.jpg", "cover.png", "cover.webp" -> 8L * 1024 * 1024
                     else -> error("Unexpected ZIP path")
                 }
@@ -48,7 +48,8 @@ object StrictPackZip {
             }
             require(input.filePointer == centralOffset + centralSize)
             require(entries.map { it.name }.toSet().size == count)
-            require(entries.count { it.name == "lesson.json" } == 1 && entries.count { it.name.startsWith("audio.") } == 1 && entries.count { it.name.startsWith("cover.") } <= 1)
+            require(entries.count { it.name == "lesson.json" } == 1 && entries.count { it.name.startsWith("audio.") } == 1 && entries.count { it.name.startsWith("cover.") } <= 1 &&
+                entries.count { it.name.startsWith("story.") } <= 1)
             require(entries.sumOf { it.size } <= 252L * 1024 * 1024)
             var expectedOffset = 0L
             require(destination.mkdirs())

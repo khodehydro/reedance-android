@@ -26,6 +26,45 @@ class PackInstallValidationTest {
             reject { runBlocking { StrictPackZip.extract(input, File(root, "bad")) } }
         } finally { root.deleteRecursively() }
     }
+    @Test fun zipAcceptsOneOptionalStoryTrackAndRejectsMultipleTracks() = runBlocking {
+        val root = java.nio.file.Files.createTempDirectory("story-pack-test").toFile()
+        try {
+            fun zip(vararg paths: String): File = File(root, "story.zip").apply {
+                java.util.zip.ZipOutputStream(outputStream()).use { output ->
+                    paths.forEach { name ->
+                        val data = byteArrayOf(1, 2, 3)
+                        val entry = java.util.zip.ZipEntry(name).apply {
+                            method = java.util.zip.ZipEntry.STORED
+                            size = data.size.toLong()
+                            crc = java.util.zip.CRC32().apply { update(data) }.value
+                        }
+                        output.putNextEntry(entry)
+                        output.write(data)
+                        output.closeEntry()
+                    }
+                }
+            }
+            val out = File(root, "ok")
+            StrictPackZip.extract(zip("lesson.json", "audio.wav", "cover.jpg", "story.m4a"), out)
+            assertArrayEquals(byteArrayOf(1, 2, 3), File(out, "story.m4a").readBytes())
+            reject { runBlocking {
+                StrictPackZip.extract(zip("lesson.json", "audio.wav", "story.m4a", "story.wav"), File(root, "bad"))
+            } }
+        } finally { root.deleteRecursively() }
+    }
+
+    @Test fun lessonSchemaAcceptsStudioStoryMetadataAndRejectsUnknownStoryPaths() {
+        val schema = JsonParser.parseString(File("src/main/assets/lesson.schema.json").readText()).asJsonObject
+        val validator = LessonValidation(schema)
+        val lesson = V.strictJson(bytes("lesson.json"), 4194304)
+        val narration = lesson.obj("media").obj("audio").deepCopy().apply { addProperty("path", "story.wav") }
+        lesson.obj("media").add("storyAudio", narration)
+        lesson.add("story", JsonParser.parseString("""{"title":"An optional story","text":"A quiet step."}"""))
+        validator.validate(lesson)
+        narration.addProperty("path", "audio.wav")
+        reject { validator.validate(lesson) }
+    }
+
     @Test fun schemaAndSemanticChecksRejectBadReferencesAndTimeline() {
         val schema = JsonParser.parseString(File("src/main/assets/lesson.schema.json").readText()).asJsonObject
         val validator = LessonValidation(schema)
