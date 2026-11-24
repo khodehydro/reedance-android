@@ -7,7 +7,11 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.input.nestedscroll.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.ui.geometry.Offset
@@ -220,32 +224,56 @@ import kotlinx.coroutines.flow.collectLatest
     val allSongs = tr("همهٔ آهنگ‌ها", "All songs")
     val sourceTitle = sources.firstOrNull { it.first == source }?.second ?: source
     val sortLabels = listOf(tr("جدیدترین", "Newest first"), tr("قدیمی‌ترین", "Oldest first"), tr("نام آهنگ", "Song title"))
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    val filterLabel = tr("فیلتر آهنگ", "Filter by song")
+    val sortLabel = tr("مرتب‌سازی", "Sort")
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         CatalogSearchField(query, onQuery, tr("جست‌وجو در این تب", "Search this tab"), visible = visible)
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f)) {
-                FilterChip(shape = CircleShape, selected = source.isNotEmpty(), onClick = { filtersOpen = true }, label = {
-                    Text(if(source.isEmpty()) tr("فیلتر آهنگ", "Filter by song") else sourceTitle,
-                        maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                }, leadingIcon = { AppIcon(UiIcons.All, null, Modifier.size(16.dp)) })
-                DropdownMenu(expanded = filtersOpen, onDismissRequest = { filtersOpen = false }, modifier = Modifier.heightIn(max = 320.dp)) {
-                    (listOf("" to allSongs) + sources + (if(source.isNotEmpty() && sources.none { it.first == source }) listOf(source to sourceTitle) else emptyList())).forEach { (id, title) ->
-                        DropdownMenuItem(text = { Text(title) }, onClick = { onSource(id); filtersOpen = false },
-                            trailingIcon = if(id == source) ({ AppIcon(UiIcons.Check, null) }) else null)
+        Surface(Modifier.fillMaxWidth(), shape = GroupedCardShape, color = MaterialTheme.colorScheme.surfaceContainer) {
+            Row(Modifier.fillMaxWidth().padding(4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.weight(1f)) {
+                    LibraryFilterButton(filterLabel, if(source.isEmpty()) allSongs else sourceTitle,
+                        active = source.isNotEmpty(), icon = UiIcons.All) { filtersOpen = true }
+                    DropdownMenu(expanded = filtersOpen, onDismissRequest = { filtersOpen = false },
+                        modifier = Modifier.heightIn(max = 320.dp), shape = GroupedCardShape,
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh) {
+                        (listOf("" to allSongs) + sources + (if(source.isNotEmpty() && sources.none { it.first == source }) listOf(source to sourceTitle) else emptyList())).forEach { (id, title) ->
+                            DropdownMenuItem(text = { Text(title) }, onClick = { onSource(id); filtersOpen = false },
+                                trailingIcon = if(id == source) ({ AppIcon(UiIcons.Check, null, tint = MaterialTheme.colorScheme.primary) }) else null)
+                        }
                     }
                 }
-            }
-            Box {
-                FilterChip(shape = CircleShape, selected = order != LibraryOrder.NEWEST, onClick = { sortingOpen = true }, label = {
-                    Text(sortLabels[order.ordinal], maxLines = 1)
-                }, trailingIcon = { Text("▾") })
-                DropdownMenu(expanded = sortingOpen, onDismissRequest = { sortingOpen = false }) {
-                    LibraryOrder.entries.forEach { option ->
-                        DropdownMenuItem(text = { Text(sortLabels[option.ordinal]) }, onClick = { onOrder(option); sortingOpen = false },
-                            trailingIcon = if(option == order) ({ AppIcon(UiIcons.Check, null) }) else null)
+                Box(Modifier.weight(1f)) {
+                    LibraryFilterButton(sortLabel, sortLabels[order.ordinal], active = order != LibraryOrder.NEWEST) { sortingOpen = true }
+                    DropdownMenu(expanded = sortingOpen, onDismissRequest = { sortingOpen = false },
+                        shape = GroupedCardShape, containerColor = MaterialTheme.colorScheme.surfaceContainerHigh) {
+                        LibraryOrder.entries.forEach { option ->
+                            DropdownMenuItem(text = { Text(sortLabels[option.ordinal]) }, onClick = { onOrder(option); sortingOpen = false },
+                                trailingIcon = if(option == order) ({ AppIcon(UiIcons.Check, null, tint = MaterialTheme.colorScheme.primary) }) else null)
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable private fun LibraryFilterButton(label: String, value: String, active: Boolean, icon: Int? = null,
+    onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Row(Modifier.fillMaxWidth().clip(InsetControlShape)
+        .then(if(active) Modifier.background(colors.surfaceBright) else Modifier)
+        .clickable(role = Role.Button, onClick = onClick)
+        .semantics { contentDescription = label }
+        .heightIn(min = 48.dp).padding(horizontal = 10.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
+        if(icon != null) AppIcon(icon, null, Modifier.size(16.dp), tint = colors.onSurfaceVariant)
+        Column(Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(value, style = MaterialTheme.typography.labelLarge, color = if(active) colors.primary else colors.onSurface,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        Text("▾", style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
     }
 }
