@@ -57,11 +57,12 @@ private val studyTiles = listOf(
     Surface(modifier.aspectRatio(1f).clip(GroupedCardShape).clickable(role = Role.Button, onClick = open),
         shape = GroupedCardShape, color = tile.color, contentColor = Color.White) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
-            AppIcon(tile.backdrop, null, Modifier.align(Alignment.CenterEnd).size(maxWidth * .67f)
+            val tileWidth = maxWidth
+            AppIcon(tile.backdrop, null, Modifier.align(Alignment.CenterEnd).size(tileWidth * .67f)
                 .graphicsLayer { rotationZ = -13f }, tint = Color.White.copy(alpha = .16f))
             Column(Modifier.fillMaxSize().padding(14.dp), verticalArrangement = Arrangement.SpaceBetween) {
                 Surface(shape = NestedTileShape, color = Color.White.copy(alpha = .14f), contentColor = Color.White) {
-                    Box(Modifier.size(minOf(42.dp, maxWidth * .3f)), contentAlignment = Alignment.Center) {
+                    Box(Modifier.size(minOf(42.dp, tileWidth * .3f)), contentAlignment = Alignment.Center) {
                         AppIcon(tile.icon, null, Modifier.size(22.dp))
                     }
                 }
