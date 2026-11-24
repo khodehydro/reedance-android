@@ -18,7 +18,8 @@ import androidx.compose.ui.unit.dp
 
 /** Shared tile styling for playback tabs and their sibling actions. */
 @Composable internal fun LessonTabs(tab: Int, onTab: (Int) -> Unit, mode: Int, onMode: (Int) -> Unit,
-    single: Boolean, onLayout: () -> Unit, onQuiz: () -> Unit, onStory: (() -> Unit)?, compact: Boolean = false) {
+    single: Boolean, onLayout: () -> Unit, onQuiz: () -> Unit, onStory: (() -> Unit)?, compact: Boolean = false,
+    autoScroll: Boolean = true, onAutoScroll: ((Boolean) -> Unit)? = null) {
     val tabs = listOf(
         PillOption(tr("لیریک", "Lyrics"), UiIcons.Lyrics, filledIcon = UiIcons.LyricsFilled),
         PillOption(tr("نکته‌ها", "Notes"), UiIcons.Notes, filledIcon = UiIcons.NotesFilled),
@@ -44,14 +45,22 @@ import androidx.compose.ui.unit.dp
                     action = true, compact = compact, onClick = onStory)
             }
         }
-        if(tab == 0 && !compact) {
+        if(tab == 0 && (!compact || onAutoScroll != null)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 val current = modes[mode]
-                LessonTab(current.copy(label = tr("نمایش متن: ", "Lyrics: ") + current.label),
+                if(compact) Spacer(Modifier.weight(1f))
+                else LessonTab(current.copy(label = tr("نمایش متن: ", "Lyrics: ") + current.label),
                     false, Modifier.weight(1f), action = true) {
                     onMode((mode + 1) % modes.size)
                 }
                 Box(Modifier.width(48.dp), contentAlignment = Alignment.Center) { LyricLayoutToggle(single, onLayout) }
+                if(!single && onAutoScroll != null) {
+                    val tint = if(autoScroll) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    IconToggleButton(checked = autoScroll, onCheckedChange = onAutoScroll) {
+                        AppIcon(com.hydro.reedance.R.drawable.uicon_lyric_autoscroll,
+                            tr("اسکرول خودکار لیریک", "Auto-scroll lyrics"), tint = tint)
+                    }
+                }
             }
         }
     }

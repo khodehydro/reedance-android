@@ -36,4 +36,23 @@ class LessonTabsTest {
         compose.onNodeWithText("Lyrics").performClick()
         compose.onNodeWithText("Lyrics: Line by line").assertExists()
     }
+    @Test fun autoScrollIsAvailableInCompactLyricsListAndHiddenInSingleView() {
+        var single by mutableStateOf(false)
+        var autoScroll by mutableStateOf(true)
+        compose.setContent {
+            CompositionLocalProvider(LocalFa provides false, LocalReducedMotion provides true) {
+                ReedanceTheme(Settings(language = "en")) {
+                    LessonTabs(0, {}, 0, {}, single, { single = !single }, {}, null,
+                        compact = true, autoScroll = autoScroll, onAutoScroll = { autoScroll = it })
+                }
+            }
+        }
+        val toggle = compose.onNodeWithContentDescription("Auto-scroll lyrics")
+        toggle.assertIsOn().performClick()
+        toggle.assertIsOff()
+        compose.onNodeWithContentDescription("Show single lyric").performClick()
+        toggle.assertDoesNotExist()
+        compose.onNodeWithContentDescription("Show lyrics list").performClick()
+        toggle.assertIsOff()
+    }
 }

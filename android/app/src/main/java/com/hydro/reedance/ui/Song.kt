@@ -49,6 +49,8 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     val openQuiz = { if(access.preview) subscriptionInfo = true else quiz() }
     var mode by rememberSaveable(songId) { mutableIntStateOf(0) }
     var singleLyric by rememberSaveable(songId) { mutableStateOf(false) }
+    var autoScroll by rememberSaveable(songId) { mutableStateOf(true) }
+    val setAutoScroll: (Boolean) -> Unit = { autoScroll = it }
     var selectedWord by remember { mutableStateOf<JsonObject?>(null) }
     val scroll = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -78,7 +80,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
         lines.take(access.limit("lyrics")).mapIndexed { index, line -> line.s("id") to index }.toMap()
     }
     val draggingLyrics by scroll.interactionSource.collectIsDraggedAsState()
-    val followLyrics = available && tab == 0 && !singleLyric && playing && activePlayback?.songId == songId
+    val followLyrics = available && tab == 0 && !singleLyric && autoScroll && playing && activePlayback?.songId == songId
     val currentListIndex = if(followLyrics) visibleLyricIndices[activeLineId.value]?.plus(lyricListOffset) else null
     LaunchedEffect(songId, currentListIndex, draggingLyrics, reducedMotion) {
         val index = currentListIndex ?: return@LaunchedEffect
@@ -114,7 +116,8 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                                     setTab(next)
                                     scroll.requestScrollToItem(2) // The first lesson item, after player and tab slots.
                                 }
-                            }, mode, { mode = it }, singleLyric, { singleLyric = !singleLyric }, openQuiz, openStory, compact = true)
+                            }, mode, { mode = it }, singleLyric, { singleLyric = !singleLyric }, openQuiz, openStory, compact = true,
+                                autoScroll = autoScroll, onAutoScroll = setAutoScroll)
                         }
                     }
                 }
@@ -137,7 +140,8 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                 val data = lesson!!
                 item(key = "player", contentType = "player") { PlayerPanel(model, data) }
                 item(key = "tabs") {
-                    if(!compactController) LessonTabs(tab, setTab, mode, { mode = it }, singleLyric, { singleLyric = !singleLyric }, openQuiz, openStory)
+                    if(!compactController) LessonTabs(tab, setTab, mode, { mode = it }, singleLyric, { singleLyric = !singleLyric }, openQuiz, openStory,
+                        autoScroll = autoScroll, onAutoScroll = setAutoScroll)
                 }
                 when(tab) {
                     0 -> {
