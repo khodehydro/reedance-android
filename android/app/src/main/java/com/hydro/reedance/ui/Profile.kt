@@ -8,6 +8,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.hydro.reedance.BuildConfig
@@ -19,57 +20,80 @@ import com.hydro.reedance.data.*
     val settings by model.settings.collectAsStateWithLifecycle()
     val lesson by model.lesson.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 24.dp + LocalOverlayBottomInset.current), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        Heading(tr("فضای من", "My space"), tr("ریتم یادگیری خودت را پیدا کن.", "Make this little space your own."))
-        ProfileMembershipCard(premium)
-        ProfileStarterCard { context.startActivity(Intent(context, com.hydro.reedance.StarterActivity::class.java)) }
-        Panel {
-            Text(tr("تنظیمات برنامه", "App settings"), style = MaterialTheme.typography.titleLarge)
-            Text(tr("زبان رابط", "App language"))
-            ChoiceRow(listOf("English", "فارسی"), if(settings.language == "en") 0 else 1, List(2) { UiIcons.Globe to UiIcons.GlobeFilled }) { model.language(if(it == 0) "en" else "fa") }
-            Text(tr("ظاهر", "Appearance"))
-            ChoiceRow(listOf(tr("روشن", "Light"), tr("تاریک", "Dark")), if(settings.theme == "dark") 1 else 0, listOf(UiIcons.Light to UiIcons.LightFilled, UiIcons.Dark to UiIcons.DarkFilled)) { model.theme(if(it == 1) "dark" else "light") }
-            Text(tr("اندازهٔ نوشته", "Text size"))
-            ChoiceRow(listOf(tr("کوچک", "Small"), tr("معمولی", "Default"), tr("بزرگ", "Large")), settings.textSize, List(3) { UiIcons.WordMode to UiIcons.WordModeFilled }, model::textSize)
-            HorizontalDivider()
-            ReminderControls(model)
-            HorizontalDivider()
-            LyricsOverlayControls(model, premium)
+    var picker by rememberSaveable { mutableStateOf("") }
+    val languages = listOf("English", "فارسی")
+    val sizes = listOf(tr("کوچک", "Small"), tr("معمولی", "Default"), tr("بزرگ", "Large"))
+    val languageIndex = if(settings.language == "en") 0 else 1
+    val sizeIndex = settings.textSize.coerceIn(sizes.indices)
+    val unavailable = tr("لینک تلگرام باز نشد.", "Could not open the Telegram link.")
+    val scheme = MaterialTheme.colorScheme
+    val background = profileSettingsBackground()
+    Column(Modifier.fillMaxSize().background(background).verticalScroll(rememberScrollState())
+        .padding(start = 20.dp, end = 20.dp, top = 28.dp, bottom = 28.dp + LocalOverlayBottomInset.current),
+        verticalArrangement = Arrangement.spacedBy(28.dp)) {
+        Text(tr("تنظیمات", "Settings"), style = MaterialTheme.typography.headlineLarge,
+            color = scheme.onBackground)
+        SettingsSection(tr("ظاهر", "Appearance")) {
+            AppearancePicker(settings.theme, model::theme)
         }
-        Panel {
-            Text(tr("فضای آفلاین", "Offline storage"), style = MaterialTheme.typography.titleLarge)
-            Text(if(lesson == null) tr("بسته‌ای نصب نیست.", "No package installed.") else lesson!!.s("title"))
-            Text(tr("با حذف آهنگ، نشان‌ها و پیشرفت پاک نمی‌شوند.", "Removing a song keeps your bookmarks and progress."), style = MaterialTheme.typography.bodySmall)
+        SettingsSection(tr("تنظیمات برنامه", "App settings")) {
+            SettingsAction(UiIcons.Globe, tr("زبان رابط", "App language"), languages[languageIndex]) { picker = "language" }
+            SettingsDivider()
+            SettingsAction(UiIcons.WordMode, tr("اندازهٔ نوشته", "Text size"), sizes[sizeIndex]) { picker = "size" }
         }
-        Panel {
-            Text(tr("به تجربه‌ات امتیاز بده", "How does it feel?"), style = MaterialTheme.typography.titleLarge)
-            Row { (1..5).forEach { rating -> PressIconButton({ model.rating(rating) }) {
-                AppIcon(UiIcons.Star, "$rating", tint = if(settings.rating >= rating) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)
-            } } }
-            Text(tr("این امتیاز فقط محلی است و به فروشگاه ارسال نمی‌شود.", "This rating is local only. It is not sent to a store."), style = MaterialTheme.typography.bodySmall)
-            PressOutlinedButton({
-                context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, "Reedance — learn languages through music. https://github.com/khodehydro/reedance-android"), "Reedance"))
-            }) { Text(tr("اشتراک‌گذاری برنامه", "Share Reedance")) }
+        SettingsSection(tr("پخش و یادآوری", "Playback & reminders")) {
+            Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) { ReminderControls(model) }
+            SettingsDivider()
+            Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) { LyricsOverlayControls(model, premium) }
         }
-        Panel {
-            Text(tr("پشتیبانی در تلگرام", "Telegram support"), style = MaterialTheme.typography.titleLarge)
-            Text(tr("برای سؤال‌ها و گزارش مشکل با ما در ارتباط باش.", "Contact us with questions or to report a problem."))
-            val unavailable = tr("لینک تلگرام باز نشد.", "Could not open the Telegram link.")
-            PressOutlinedButton(onClick = {
-                try {
-                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/reedance")))
-                } catch(_: ActivityNotFoundException) {
-                    Toast.makeText(context, unavailable, Toast.LENGTH_SHORT).show()
-                }
-            }, modifier = Modifier.fillMaxWidth()) {
-                Text(tr("باز کردن تلگرام", "Open Telegram"))
+        SettingsSection(tr("فضای من", "My space")) {
+            SettingsAction(UiIcons.Library, tr("کتابخانه", "Library"), onClick = library)
+            SettingsDivider()
+            SettingsAction(UiIcons.CrownFilled, tr("عضویت پریمیوم", "Premium membership"), onClick = premium)
+            SettingsDivider()
+            SettingsAction(UiIcons.Explore, tr("ورود به استارتر", "Open Starter")) {
+                context.startActivity(Intent(context, com.hydro.reedance.StarterActivity::class.java))
+            }
+            SettingsDivider()
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(tr("فضای آفلاین", "Offline storage"), style = MaterialTheme.typography.titleMedium)
+                Text(lesson?.s("title") ?: tr("بسته‌ای نصب نیست.", "No package installed."))
+                Text(tr("با حذف آهنگ، نشان‌ها و پیشرفت پاک نمی‌شوند.", "Removing a song keeps your bookmarks and progress."),
+                    style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
             }
         }
-        Panel {
-            Text(tr("دربارهٔ ری‌دنس", "About Reedance"), style = MaterialTheme.typography.titleLarge)
-            Text(tr("نسخه: ${BuildConfig.VERSION_NAME}", "Version: ${BuildConfig.VERSION_NAME}"))
-            Text(tr("تاریخ ساخت: ${BuildConfig.BUILD_DATE}", "Build date: ${BuildConfig.BUILD_DATE}"))
-            DeveloperCredit()
+        SettingsSection(tr("پشتیبانی و دربارهٔ برنامه", "Support & about")) {
+            SettingsAction(UiIcons.ShareFilled, tr("اشتراک‌گذاری برنامه", "Share Reedance")) {
+                context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain")
+                    .putExtra(Intent.EXTRA_TEXT, "Reedance — learn languages through music. https://github.com/khodehydro/reedance-android"), "Reedance"))
+            }
+            SettingsDivider()
+            SettingsAction(UiIcons.Headphones, tr("پشتیبانی در تلگرام", "Telegram support")) {
+                try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/reedance"))) }
+                catch(_: ActivityNotFoundException) { Toast.makeText(context, unavailable, Toast.LENGTH_SHORT).show() }
+            }
+            SettingsDivider()
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(tr("به تجربه‌ات امتیاز بده", "How does it feel?"), style = MaterialTheme.typography.titleMedium)
+                Row { (1..5).forEach { rating -> PressIconButton({ model.rating(rating) }, Modifier.weight(1f)) {
+                    AppIcon(UiIcons.Star, "$rating", tint = if(settings.rating >= rating) scheme.primary else scheme.outlineVariant)
+                } } }
+                Text(tr("این امتیاز فقط محلی است و به فروشگاه ارسال نمی‌شود.", "This rating is local only. It is not sent to a store."), style = MaterialTheme.typography.bodySmall)
+            }
+            SettingsDivider()
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(tr("نسخه: ${BuildConfig.VERSION_NAME}", "Version: ${BuildConfig.VERSION_NAME}"))
+                Text(tr("تاریخ ساخت: ${BuildConfig.BUILD_DATE}", "Build date: ${BuildConfig.BUILD_DATE}"))
+                DeveloperCredit()
+            }
+        }
+    }
+    if(picker.isNotEmpty()) {
+        val language = picker == "language"
+        SettingsChoiceDialog(if(language) tr("زبان رابط", "App language") else tr("اندازهٔ نوشته", "Text size"),
+            if(language) languages else sizes, if(language) languageIndex else sizeIndex, { picker = "" }) {
+            if(language) model.language(if(it == 0) "en" else "fa") else model.textSize(it)
+            picker = ""
         }
     }
 }

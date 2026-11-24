@@ -19,7 +19,7 @@ class SettingsRepository(private val context: Context) {
     private val size = intPreferencesKey("text_size")
     private val motion = booleanPreferencesKey("reduce_motion")
     private val rating = intPreferencesKey("rating")
-    val flow = context.settingsStore.data.map { Settings(it[language]?.takeIf { code -> code == "fa" } ?: "en", if(it[theme] == "light") "light" else "dark", it[size] ?: 1, false, it[rating] ?: 0, it[targetLanguage]?.takeIf { code -> code in listOf("en", "es", "ko", "tr") } ?: "en", it[reminders] ?: false, it[setup] ?: false, it[visit] ?: 0L, it[sent] ?: 0L, it[lyricsOverlay] ?: false, (it[lyricsOverlayMode] ?: 0).coerceIn(0, 2)) }
+    val flow = context.settingsStore.data.map { Settings(it[language]?.takeIf { code -> code == "fa" } ?: "en", it[theme]?.takeIf { mode -> mode in listOf("system", "light", "dark") } ?: "dark", it[size] ?: 1, false, it[rating] ?: 0, it[targetLanguage]?.takeIf { code -> code in listOf("en", "es", "ko", "tr") } ?: "en", it[reminders] ?: false, it[setup] ?: false, it[visit] ?: 0L, it[sent] ?: 0L, it[lyricsOverlay] ?: false, (it[lyricsOverlayMode] ?: 0).coerceIn(0, 2)) }
     suspend fun lyricsOverlay(value: Boolean) { context.settingsStore.edit { it[lyricsOverlay] = value } }
     suspend fun lyricsOverlayMode(value: Int) { context.settingsStore.edit { it[lyricsOverlayMode] = value.coerceIn(0, 2) } }
     suspend fun reminders(value: Boolean) { context.settingsStore.edit { it[reminders] = value } }
@@ -28,7 +28,7 @@ class SettingsRepository(private val context: Context) {
     suspend fun reminded(now: Long) { context.settingsStore.edit { it[sent] = now } }
     suspend fun language(value: String) { require(value in listOf("en", "fa")); context.settingsStore.edit { it[language] = value } }
     suspend fun targetLanguage(value: String) { require(value in listOf("en", "es", "ko", "tr")); context.settingsStore.edit { it[targetLanguage] = value } }
-    suspend fun theme(value: String) { require(value in listOf("light", "dark")); context.settingsStore.edit { it[theme] = value } }
+    suspend fun theme(value: String) { require(value in listOf("system", "light", "dark")); context.settingsStore.edit { it[theme] = value } }
     suspend fun size(value: Int) { context.settingsStore.edit { it[size] = value.coerceIn(0, 2) } }
     suspend fun motion(value: Boolean) { context.settingsStore.edit { it[motion] = value } }
     suspend fun rating(value: Int) { context.settingsStore.edit { it[rating] = value.coerceIn(0, 5) } }
