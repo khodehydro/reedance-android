@@ -194,7 +194,7 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
                                 contentColor = MaterialTheme.colorScheme.primary) {
                                 Box(Modifier.padding(horizontal = 10.dp, vertical = 5.dp)) {
                                     PersianText(skill, style = MaterialTheme.typography.labelLarge,
-                                        color = MaterialTheme.colorScheme.primary)
+                                        color = MaterialTheme.colorScheme.primary, fillWidth = false)
                                 }
                             }
                         }
