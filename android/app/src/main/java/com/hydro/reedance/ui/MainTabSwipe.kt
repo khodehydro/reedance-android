@@ -15,6 +15,15 @@ internal fun mainTabAfterSwipe(page: String, dragLeft: Boolean, direction: Layou
     return mainTabRoutes.getOrNull(index + if(next) 1 else -1)
 }
 
+/** An Explore swipe either stops on its other segment or exits at the appropriate edge. */
+internal fun explorePageForMainSwipe(from: String, to: String, currentExplorePage: Int): Int? = when {
+    from == "explore" && to == StudyHubRoute && currentExplorePage == 0 -> 1
+    from == "explore" && to == "home" && currentExplorePage == 1 -> 0
+    from == "home" && to == "explore" -> 0
+    from == StudyHubRoute && to == "explore" -> 1
+    else -> null
+}
+
 internal fun Modifier.mainTabSwipe(page: String, enabled: Boolean, direction: LayoutDirection,
     navigate: (String) -> Unit): Modifier {
     if(!enabled) return this

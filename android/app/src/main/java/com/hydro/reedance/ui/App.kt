@@ -3,6 +3,9 @@ package com.hydro.reedance.ui
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.pager.rememberPagerState
+import kotlinx.coroutines.launch
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.layout.layout
@@ -80,6 +83,8 @@ import com.hydro.reedance.data.*
         }
     }
     val installedIds by model.installedIds.collectAsStateWithLifecycle()
+    val explorePager = rememberPagerState { 2 }
+    val shellScope = rememberCoroutineScope()
     val pageStates = rememberSaveableStateHolder()
     val mainPageTypes = remember { setOf("home", "explore", StudyHubRoute, "profile", "quiz", "premium") + studySectionRoutes }
     val songPageTypes = remember { setOf("song-download", "song-playback", "song-story") }
@@ -117,6 +122,16 @@ import com.hydro.reedance.data.*
     }
     val navigateLatest = rememberUpdatedState<(String) -> Unit>({ destination -> navigate(destination) })
     val navigateAction = remember { { destination: String -> navigateLatest.value(destination) } }
+    val swipeNavigateLatest = rememberUpdatedState<(String) -> Unit>({ destination ->
+        val exploreTarget = explorePageForMainSwipe(page, destination, explorePager.settledPage)
+        if(page == "explore" && exploreTarget != null) {
+            shellScope.launch { explorePager.animateScrollToPage(exploreTarget) }
+        } else {
+            if(exploreTarget != null) explorePager.requestScrollToPage(exploreTarget)
+            navigate(destination)
+        }
+    })
+    val swipeNavigate = remember { { destination: String -> swipeNavigateLatest.value(destination) } }
     val openSongLatest = rememberUpdatedState<(String) -> Unit>({ id -> openSong(id) })
     val openSongAction = remember { { id: String -> openSongLatest.value(id) } }
     val setSongTabLatest = rememberUpdatedState<(Int) -> Unit>({ songTab = it })
@@ -143,7 +158,7 @@ import com.hydro.reedance.data.*
     BackHandler(page != "home") { goBack() }
     SearchDismissHost {
      Box(Modifier.fillMaxSize().mainTabSwipe(page, page in mainTabRoutes && !independent,
-         LocalLayoutDirection.current, navigateAction)) {
+         LocalLayoutDirection.current, swipeNavigate)) {
       val scaffoldInsets = if(artistDetail || page == "song-story" || page == "premium") WindowInsets(0, 0, 0, 0) else ScaffoldDefaults.contentWindowInsets
       Scaffold(Modifier.fillMaxSize(), contentWindowInsets = scaffoldInsets, containerColor = Color.Transparent, snackbarHost = { SnackbarHost(snackbar) }, topBar = {
         if(!artistDetail && !songPage && page != "premium") Surface(color = MaterialTheme.colorScheme.background, contentColor = MaterialTheme.colorScheme.onSurface) { Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -210,6 +225,7 @@ import com.hydro.reedance.data.*
                                             starter = starterAction,
                                             setPremiumReturnPage = setPremiumReturnAction,
                                             songReturnPage = songReturnPage,
+                                            explorePager = explorePager,
                                             exploreArtistKey = exploreArtistKey,
                                             setExploreArtist = { exploreArtistKey = it }
                                         )
@@ -239,6 +255,7 @@ import com.hydro.reedance.data.*
                                             starter = starterAction,
                                             setPremiumReturnPage = setPremiumReturnAction,
                                             songReturnPage = songReturnPage,
+                                            explorePager = explorePager,
                                             exploreArtistKey = exploreArtistKey,
                                             setExploreArtist = { exploreArtistKey = it }
                                         )
@@ -273,11 +290,12 @@ internal fun Modifier.visiblePageLayout(active: Boolean): Modifier = if(active) 
     starter: () -> Unit,
     setPremiumReturnPage: (String) -> Unit,
     songReturnPage: String,
+    explorePager: PagerState,
     exploreArtistKey: String?,
     setExploreArtist: (String?) -> Unit
 ) {
     when(page) {
-        "home", "explore" -> CatalogScreen(model, page == "home", openSong, starter, { navigate("library") }, exploreArtistKey, setExploreArtist) { navigate("explore") }
+        "home", "explore" -> CatalogScreen(model, page == "home", openSong, starter, { navigate("library") }, exploreArtistKey, setExploreArtist, explorePager) { navigate("explore") }
         "song-download" -> SongDownloadScreen(model, songId, { navigate(songReturnPage) }) { navigate("song-playback") }
         "song-playback" -> SongPlaybackScreen(
             model, songId, songTab, setSongTab, { navigate(songReturnPage) }, { navigate("song-download") },

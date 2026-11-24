@@ -11,7 +11,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.CircleShape
@@ -81,9 +81,9 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
     }
 }
 @Composable fun CatalogScreen(model: AppModel, home: Boolean, openSong: (String) -> Unit, starter: () -> Unit, openLibrary: () -> Unit,
-    artistKey: String?, onArtist: (String?) -> Unit, explore: () -> Unit) {
+    artistKey: String?, onArtist: (String?) -> Unit, explorePager: PagerState, explore: () -> Unit) {
     if(home) CatalogFeed(model, true, openSong, starter, openLibrary, explore)
-    else ExploreCatalogScreen(model, openSong, artistKey, onArtist)
+    else ExploreCatalogScreen(model, openSong, artistKey, onArtist, explorePager)
 }
 
 @Composable private fun CatalogFeed(model: AppModel, home: Boolean, openSong: (String) -> Unit, starter: () -> Unit, openLibrary: () -> Unit, explore: () -> Unit) {
@@ -153,7 +153,7 @@ internal fun exploreArtists(songs: List<JsonObject>): List<ExploreArtist> = song
 private val artistSpace = Regex("\\s+")
 
 @OptIn(ExperimentalFoundationApi::class)
-@Composable private fun ExploreCatalogScreen(model: AppModel, openSong: (String) -> Unit, artistKey: String?, onArtist: (String?) -> Unit) {
+@Composable private fun ExploreCatalogScreen(model: AppModel, openSong: (String) -> Unit, artistKey: String?, onArtist: (String?) -> Unit, pagerState: PagerState) {
     val catalog by model.catalog.collectAsStateWithLifecycle()
     val settings by model.settings.collectAsStateWithLifecycle()
     val targetLanguage = settings.targetLanguage
@@ -165,7 +165,6 @@ private val artistSpace = Regex("\\s+")
         PillOption(tr("آهنگ‌ها", "Songs"), UiIcons.Lyrics, filledIcon = UiIcons.LyricsFilled),
         PillOption(tr("آرتیست‌ها", "Artists"), UiIcons.User)
     )
-    val pagerState = rememberPagerState { tabOptions.size }
     val scope = rememberCoroutineScope()
     var compact by rememberSaveable(targetLanguage) { mutableStateOf(false) }
     val songGrid = rememberLazyGridState()
@@ -208,7 +207,7 @@ private val artistSpace = Regex("\\s+")
             songs.filter { term.isEmpty() || it.s("title").contains(term, true) || it.s("artist").contains(term, true) }
         }
         val visibleArtists = remember(artists, term) { artists.filter { it.name.contains(term, true) } }
-        // Songs and Artists remain tappable segments; horizontal drags on this list switch main tabs.
+        // The shell sequences both Explore segments before moving to the next main tab.
         HorizontalPager(state = pagerState, modifier = Modifier.weight(1f), userScrollEnabled = false) { page ->
             val threshold = with(LocalDensity.current) { 40.dp.toPx() }
             val scrollConnection = remember(page, threshold) {
