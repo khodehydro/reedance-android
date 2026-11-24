@@ -30,7 +30,7 @@ import com.hydro.reedance.data.ActivePlayback
     Box(Modifier.fillMaxWidth().padding(horizontal = navigationMenuHorizontalInset), contentAlignment = Alignment.Center) {
         Surface(
             modifier = Modifier.navigationBarWidth(menuWidth),
-            shape = GroupedCardShape,
+            shape = CircleShape,
             color = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,
             shadowElevation = 2.dp,

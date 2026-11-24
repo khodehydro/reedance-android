@@ -79,7 +79,7 @@ internal fun Modifier.navigationBarWidth(width: () -> Dp): Modifier = layout { m
         val compactSize = minOf(44.dp, ((minOf(maxWidth, navigationMenuWidth(true)) - 10.dp) / destinations.size).coerceAtLeast(0.dp))
         Surface(
             modifier = Modifier.navigationBarWidth(menuWidth),
-            shape = RoundedCornerShape(28.dp),
+            shape = CircleShape,
             color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = .96f),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .55f)),
             contentColor = MaterialTheme.colorScheme.onSurface,
