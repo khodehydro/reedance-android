@@ -16,7 +16,6 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
@@ -25,15 +24,10 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-@Composable internal fun profileSettingsBackground(): Color {
-    val background = MaterialTheme.colorScheme.background
-    return if(background.luminance() < .5f) Color(0xFF0B0B0B) else background
-}
-
 @Composable internal fun SettingsSection(title: String, content: @Composable ColumnScope.() -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
-        Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), tonalElevation = 0.dp) {
+        Surface(Modifier.fillMaxWidth(), shape = GroupedCardShape, tonalElevation = 0.dp) {
             Column(Modifier.fillMaxWidth(), content = content)
         }
     }

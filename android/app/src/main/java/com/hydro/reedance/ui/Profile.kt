@@ -27,7 +27,7 @@ import com.hydro.reedance.data.*
     val sizeIndex = settings.textSize.coerceIn(sizes.indices)
     val unavailable = tr("لینک تلگرام باز نشد.", "Could not open the Telegram link.")
     val scheme = MaterialTheme.colorScheme
-    val background = profileSettingsBackground()
+    val background = scheme.background
     Column(Modifier.fillMaxSize().background(background).verticalScroll(rememberScrollState())
         .padding(start = 20.dp, end = 20.dp, top = 28.dp, bottom = 28.dp + LocalOverlayBottomInset.current),
         verticalArrangement = Arrangement.spacedBy(28.dp)) {

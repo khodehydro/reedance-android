@@ -1,6 +1,7 @@
 package com.hydro.reedance.ui
 
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -82,7 +83,8 @@ internal fun Modifier.navigationBarWidth(width: () -> Dp): Modifier = layout { m
         Surface(
             modifier = Modifier.navigationBarWidth(menuWidth),
             shape = RoundedCornerShape(28.dp),
-            color = MaterialTheme.colorScheme.surface,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = .96f),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .55f)),
             contentColor = MaterialTheme.colorScheme.onSurface,
             shadowElevation = 3.dp,
             tonalElevation = 0.dp

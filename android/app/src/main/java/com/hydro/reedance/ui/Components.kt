@@ -32,12 +32,12 @@ import com.google.gson.*
 import com.hydro.reedance.data.*
 
 @Composable fun Panel(modifier: Modifier = Modifier, tone: Color = MaterialTheme.colorScheme.surface, content: @Composable ColumnScope.() -> Unit) {
-    Surface(modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp), color = tone, border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .35f))) {
+    Surface(modifier.fillMaxWidth(), shape = GroupedCardShape, color = tone, tonalElevation = 0.dp) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp), content = content)
     }
 }
 @Composable fun Heading(title: String, subtitle: String = "") { Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-    Text(title, style = MaterialTheme.typography.headlineMedium)
+    Text(title, style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.onBackground)
     if(subtitle.isNotEmpty()) Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
 } }
 @Composable fun Foreign(text: String, modifier: Modifier = Modifier, large: Boolean = false) {
@@ -46,7 +46,7 @@ import com.hydro.reedance.data.*
     }
 }
 @Composable fun Action(text: String, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -> Unit) {
-    PressButton(onClick, modifier.heightIn(min = 48.dp), enabled = enabled, shape = RoundedCornerShape(14.dp)) { Text(text) }
+    PressButton(onClick, modifier.heightIn(min = 48.dp), enabled = enabled, shape = InsetControlShape) { Text(text) }
 }
 data class PillOption(val label: String, val icon: Int? = null, val description: String = label, val flag: Int? = null, val filledIcon: Int? = null)
 @Composable fun ChoiceRow(items: List<String>, selected: Int, onSelect: (Int) -> Unit) =
@@ -67,15 +67,22 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
     val reduced = LocalReducedMotion.current
     val duration = if(reduced) 0 else 150
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
-    Row(Modifier.then(if(expanded) Modifier.fillMaxWidth() else Modifier.horizontalScroll(rememberScrollState())).selectableGroup().padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(Modifier.then(if(expanded) Modifier.fillMaxWidth().clip(GroupedCardShape)
+        .background(MaterialTheme.colorScheme.surfaceContainer).padding(4.dp)
+        else Modifier.horizontalScroll(rememberScrollState()).padding(vertical = 4.dp)).selectableGroup(),
+        horizontalArrangement = Arrangement.spacedBy(if(expanded) 4.dp else 8.dp)) {
         items.forEachIndexed { index, option ->
             val active = selected == index
-            val background by animateColorAsState(if(active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface, tween(duration), label = "pill-color")
-            val foreground by animateColorAsState(if(active) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant, tween(duration), label = "pill-ink")
+            val background by animateColorAsState(if(expanded) {
+                if(active) MaterialTheme.colorScheme.surfaceBright else Color.Transparent
+            } else if(active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface, tween(duration), label = "pill-color")
+            val foreground by animateColorAsState(if(active) {
+                if(expanded) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onPrimary
+            } else MaterialTheme.colorScheme.onSurfaceVariant, tween(duration), label = "pill-ink")
             val scale by animateFloatAsState(if(active) 1f else .97f, tween(duration), label = "pill-scale")
-            Surface(shape = if(option.flag != null) CircleShape else RoundedCornerShape(50), color = background, contentColor = foreground,
-                shadowElevation = if(active) 3.dp else 0.dp,
-                border = BorderStroke(1.dp, if(active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f)),
+            Surface(shape = if(option.flag != null) CircleShape else if(expanded) InsetControlShape else RoundedCornerShape(50), color = background, contentColor = foreground,
+                shadowElevation = if(active && !expanded) 3.dp else 0.dp,
+                border = if(expanded) null else BorderStroke(1.dp, if(active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f)),
                 modifier = (if(expanded) Modifier.weight(1f) else Modifier).graphicsLayer { scaleX = if(expanded) 1f else scale; scaleY = scale }
                     .selectable(active, role = Role.Tab, onClick = { if(!active) onSelect(index) })
                     .semantics { contentDescription = option.description }) {

@@ -1,10 +1,12 @@
 package com.hydro.reedance.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,7 +35,8 @@ import androidx.compose.ui.unit.dp
         PillOption(tr("کلمه‌به‌کلمه", "Word by word"), UiIcons.WordMode, filledIcon = UiIcons.WordModeFilled)
     )
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(Modifier.fillMaxWidth().clip(GroupedCardShape).background(MaterialTheme.colorScheme.surfaceContainer)
+            .padding(4.dp).selectableGroup(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             tabs.forEachIndexed { index, option ->
                 val quiz = index == tabs.lastIndex
                 LessonTab(option, !quiz && tab == index, Modifier.weight(1f), action = quiz, compact = compact) {
@@ -69,9 +72,9 @@ import androidx.compose.ui.unit.dp
 @Composable private fun LessonTab(option: PillOption, selected: Boolean, modifier: Modifier, action: Boolean = false, compact: Boolean = false, onClick: () -> Unit) {
     val interaction = if(action) Modifier.clickable(role = Role.Button, onClick = onClick)
         else Modifier.selectable(selected, role = Role.Tab, onClick = onClick)
-    Surface(modifier.then(interaction).then(if(compact) Modifier.semantics { contentDescription = option.label } else Modifier), shape = RoundedCornerShape(18.dp),
-        color = if(selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
-        contentColor = if(selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant) {
+    Surface(modifier.then(interaction).then(if(compact) Modifier.semantics { contentDescription = option.label } else Modifier), shape = InsetControlShape,
+        color = if(selected) MaterialTheme.colorScheme.surfaceBright else Color.Transparent,
+        contentColor = if(selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant) {
         Column(Modifier.fillMaxWidth().heightIn(min = if(compact) 48.dp else 72.dp).padding(horizontal = 3.dp, vertical = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterVertically)) {
             (if(selected) option.filledIcon ?: option.icon else option.icon)?.let { AppIcon(it, null, Modifier.size(18.dp)) }

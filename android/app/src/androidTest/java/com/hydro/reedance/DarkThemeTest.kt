@@ -30,10 +30,24 @@ class DarkThemeTest {
             }
         }
         compose.runOnIdle {
-            assertEquals(Color(0xFF121212), background)
+            assertEquals(Color(0xFF0B0B0B), background)
             assertEquals(Color(0xFF1C1C1C), card)
             assertEquals(Color(0xFF282828), raised)
             assertEquals(Color.Transparent, tint)
+        }
+    }
+    @Test fun lightModeUsesGroupedNeutralSurfaces() {
+        var background: Color? = null
+        var surface: Color? = null
+        compose.setContent {
+            ReedanceTheme(Settings(theme = "light")) {
+                val colors = MaterialTheme.colorScheme
+                SideEffect { background = colors.background; surface = colors.surface }
+            }
+        }
+        compose.runOnIdle {
+            assertEquals(Color(0xFFF2F2F7), background)
+            assertEquals(Color.White, surface)
         }
     }
 }

@@ -2,6 +2,7 @@ package com.hydro.reedance.ui
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -12,7 +13,9 @@ import com.hydro.reedance.data.Settings
 val Blue = Color(0xFF2E70DF)
 val BrandFont = FontFamily(Font(R.font.vazirmatn_black, FontWeight.Black))
 val Deep = Color(0xFF102D5C)
-val Paper = Color(0xFFF6F9FE)
+val Paper = Color(0xFFF2F2F7)
+internal val GroupedCardShape = RoundedCornerShape(20.dp)
+internal val InsetControlShape = RoundedCornerShape(14.dp)
 val LocalOverlayBottomInset = staticCompositionLocalOf { 0.dp }
 val LocalFa = staticCompositionLocalOf { true }
 val LocalReducedMotion = staticCompositionLocalOf { false }
@@ -29,7 +32,7 @@ internal val CharcoalDarkColors = darkColorScheme(
     secondaryContainer = Color(0xFF2A2A2A), onSecondaryContainer = Color(0xFFF5F5F5),
     tertiary = Color(0xFFD6D6D6), onTertiary = Color(0xFF121212),
     tertiaryContainer = Color(0xFF303030), onTertiaryContainer = Color(0xFFF5F5F5),
-    background = Color(0xFF121212), onBackground = Color(0xFFF5F5F5),
+    background = Color(0xFF0B0B0B), onBackground = Color(0xFFF5F5F5),
     surface = Color(0xFF1C1C1C), onSurface = Color(0xFFF2F2F2),
     surfaceVariant = Color(0xFF282828), onSurfaceVariant = Color(0xFFB3B3B3),
     surfaceDim = Color(0xFF101010), surfaceBright = Color(0xFF363636),
@@ -45,17 +48,28 @@ internal val CharcoalDarkColors = darkColorScheme(
     errorContainer = Color(0xFF93000A), onErrorContainer = Color(0xFFFFDAD6)
 )
 
+internal val GroupedLightColors = lightColorScheme(
+    primary = Color(0xFF215AB0), onPrimary = Color.White,
+    background = Paper, onBackground = Color(0xFF171719),
+    surface = Color.White, onSurface = Color(0xFF171719),
+    surfaceVariant = Color(0xFFE7E7ED), onSurfaceVariant = Color(0xFF55555F),
+    surfaceContainerLow = Color(0xFFF7F7FA), surfaceContainer = Color(0xFFEDEDF2),
+    surfaceContainerHigh = Color(0xFFE4E4EA), surfaceBright = Color.White, surfaceTint = Color.Transparent,
+    secondaryContainer = Color(0xFFEDF4FF), outlineVariant = Color(0xFFCDCDD4)
+)
+
 @Composable fun tr(fa: String, en: String) = if(LocalFa.current) fa else en
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable fun ReedanceTheme(settings: Settings, content: @Composable () -> Unit) {
     val systemDark = isSystemInDarkTheme()
     val dark = settings.theme == "dark" || (settings.theme == "system" && systemDark)
     val colors = if(dark) CharcoalDarkColors
-        else lightColorScheme(primary = Blue, background = Paper, surface = Color.White, onSurface = Color(0xFF172945), secondaryContainer = Color(0xFFEDF4FF))
+        else GroupedLightColors
     val backgroundMotion = remember { BackgroundMotion() }
     val font = FontFamily(Font(R.font.vazirmatn, FontWeight.Normal), Font(R.font.vazirmatn_bold, FontWeight.Bold))
     val base = Typography()
-    MaterialTheme(colorScheme = colors, typography = Typography(
+    MaterialTheme(colorScheme = colors, shapes = Shapes(small = InsetControlShape, medium = GroupedCardShape,
+        large = RoundedCornerShape(24.dp), extraLarge = RoundedCornerShape(28.dp)), typography = Typography(
         displayLarge = base.displayLarge.copy(fontFamily = font), displayMedium = base.displayMedium.copy(fontFamily = font), displaySmall = base.displaySmall.copy(fontFamily = font),
         headlineSmall = base.headlineSmall.copy(fontFamily = font, fontWeight = FontWeight.Bold),
         bodyLarge = base.bodyLarge.copy(fontFamily = font), bodyMedium = base.bodyMedium.copy(fontFamily = font), bodySmall = base.bodySmall.copy(fontFamily = font),

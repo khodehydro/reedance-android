@@ -140,10 +140,7 @@ internal object GameSounds {
     val scroll = rememberScrollState()
 
     Column(Modifier.fillMaxSize().verticalScroll(scroll).padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 12.dp + LocalOverlayBottomInset.current), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Column(Modifier.fillMaxWidth()) {
-            Text(tr("گیم واژه‌سازی", "Word game"), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            Text(tr("واژه‌های آهنگ‌های دانلودشده‌ات", "Words from your downloaded songs"), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+        Heading(tr("گیم واژه‌سازی", "Word game"), tr("واژه‌های آهنگ‌های دانلودشده‌ات", "Words from your downloaded songs"))
         when {
             noDownloads -> Panel {
                 AppIcon(UiIcons.Library, null, Modifier.size(32.dp), MaterialTheme.colorScheme.primary)

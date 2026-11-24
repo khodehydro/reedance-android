@@ -54,7 +54,11 @@ private val songLanguages = listOf(
         }
         CyclingBrand(Modifier.weight(1f))
         PressIconButton(profile, Modifier.size(48.dp)) {
-            AppIcon(UiIcons.User, tr("فضای من و تنظیمات", "My space and settings"))
+            Surface(Modifier.size(36.dp), shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+                Box(contentAlignment = Alignment.Center) {
+                    AppIcon(UiIcons.User, tr("فضای من و تنظیمات", "My space and settings"), Modifier.size(20.dp))
+                }
+            }
         }
     }
     if(choosingLanguage) ReedanceBottomSheet(onDismissRequest = { choosingLanguage = false }) {

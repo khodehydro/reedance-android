@@ -7,9 +7,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.WindowInsets
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -29,6 +31,8 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 
 @Stable internal class SearchFocus(val dismiss: () -> Unit) {
     var focused by mutableStateOf(false)
@@ -79,7 +83,7 @@ internal val LocalSearchFocus = staticCompositionLocalOf<SearchFocus?> { null }
     }
     OutlinedTextField(
         value = query, onValueChange = onQuery,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().semantics { contentDescription = label }
             .onFocusChanged {
                 val wasFocused = fieldFocused
                 fieldFocused = it.isFocused
@@ -92,11 +96,18 @@ internal val LocalSearchFocus = staticCompositionLocalOf<SearchFocus?> { null }
                 bounds = it.boundsInRoot()
                 if(fieldFocused) session?.bounds = bounds
             },
-        shape = RoundedCornerShape(20.dp),
+        shape = InsetControlShape,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = .6f),
+            unfocusedBorderColor = Color.Transparent
+        ),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         keyboardActions = KeyboardActions(onSearch = { session?.dismiss?.invoke() }),
         leadingIcon = { AppIcon(UiIcons.Search, null, Modifier.size(20.dp)) },
-        singleLine = true, label = { Text(label) },
+        singleLine = true,
+        placeholder = { Text(label) },
         trailingIcon = { if(query.isNotEmpty()) PressTextButton({ onQuery("") }) { Text(tr("پاک کردن", "Clear")) } }
     )
 }

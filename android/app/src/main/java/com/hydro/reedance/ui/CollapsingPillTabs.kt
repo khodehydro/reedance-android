@@ -2,7 +2,7 @@ package com.hydro.reedance.ui
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
@@ -16,6 +16,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.zIndex
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -55,17 +57,17 @@ import androidx.compose.ui.unit.dp
         }
     }
     Row(modifier.zIndex(if(interactive) 1f else 0f).then(semantics)
-        .then(if(stretch) Modifier.fillMaxWidth() else Modifier.horizontalScroll(scrollState, enabled = interactive)).selectableGroup(),
+        .then(if(stretch) Modifier.fillMaxWidth() else Modifier.horizontalScroll(scrollState, enabled = interactive))
+        .clip(GroupedCardShape).background(MaterialTheme.colorScheme.surfaceContainer).padding(4.dp).selectableGroup(),
         horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
         items.forEachIndexed { index, item ->
             val active = selected == index
             val sizing = if(stretch) Modifier.weight(1f) else Modifier
             Surface(sizing.then(if(active && interactive && !stretch) Modifier.bringIntoViewRequester(selectedRequester) else Modifier)
                 .selectable(active, enabled = interactive, role = Role.Tab, onClick = { onSelect(index) })
-                .semantics { contentDescription = item.description }, shape = CircleShape,
-                color = if(active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
-                contentColor = if(active) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
+                .semantics { contentDescription = item.description }, shape = if(iconsOnly) CircleShape else InsetControlShape,
+                color = if(active) MaterialTheme.colorScheme.surfaceBright else Color.Transparent,
+                contentColor = if(active) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant) {
                 Row(Modifier.heightIn(min = 48.dp).then(if(iconsOnly) Modifier.width(48.dp) else Modifier.padding(horizontal = 14.dp)),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp, Alignment.CenterHorizontally)) {
                     (if(active) item.filledIcon ?: item.icon else item.icon)?.let { AppIcon(it, null, Modifier.size(18.dp)) }
