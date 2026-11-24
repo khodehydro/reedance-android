@@ -32,7 +32,7 @@ import kotlinx.coroutines.launch
 private data class Destination(val id: String, val label: String, val outline: Int, val filled: Int)
 
 internal val navigationMenuHorizontalInset = 12.dp
-internal fun navigationMenuWidth(compact: Boolean) = if(compact) 282.dp else 368.dp
+internal fun navigationMenuWidth(compact: Boolean) = if(compact) 150.dp else 264.dp
 
 // Apply the same fixed width to the mini-player and tab bar for each mode.
 internal fun Modifier.navigationBarWidth(width: () -> Dp): Modifier = layout { measurable, constraints ->
@@ -51,10 +51,7 @@ internal fun Modifier.navigationBarWidth(width: () -> Dp): Modifier = layout { m
     val destinations = listOf(
         Destination("home", tr("خانه", "Home"), UiIcons.Home, UiIcons.HomeFilled),
         Destination("explore", tr("کشف", "Explore"), UiIcons.Explore, UiIcons.ExploreFilled),
-        Destination("review", tr("لایتنر", "Review"), UiIcons.Review, UiIcons.ReviewFilled),
-        Destination("gym", tr("تمرین", "Gym"), UiIcons.Dumbbell, UiIcons.DumbbellFilled),
-        Destination("game", tr("گیم", "Game"), UiIcons.Game, UiIcons.GameFilled),
-        Destination("library", tr("کتابخانه", "Library"), UiIcons.Library, UiIcons.LibraryFilled)
+        Destination(StudyHubRoute, studySectionTitle(StudyHubRoute), UiIcons.Library, UiIcons.LibraryFilled)
     )
 
     // Geometry is reset (not animated) when changing between compact and expanded tabs.

@@ -63,6 +63,7 @@ import com.hydro.reedance.data.*
     var songTab by rememberSaveable { mutableIntStateOf(0) }
     var premiumReturnPage by rememberSaveable { mutableStateOf("profile") }
     var profileReturnPage by rememberSaveable { mutableStateOf("home") }
+    var studyReturnPage by rememberSaveable { mutableStateOf(StudyHubRoute) }
     val currentPage by rememberUpdatedState(page)
     val snackbar = remember { SnackbarHostState() }
     val message by model.message.collectAsStateWithLifecycle()
@@ -80,7 +81,7 @@ import com.hydro.reedance.data.*
     }
     val installedIds by model.installedIds.collectAsStateWithLifecycle()
     val pageStates = rememberSaveableStateHolder()
-    val mainPageTypes = remember { setOf("home", "explore", "review", "gym", "game", "library", "profile", "quiz", "premium") }
+    val mainPageTypes = remember { setOf("home", "explore", StudyHubRoute, "profile", "quiz", "premium") + studySectionRoutes }
     val songPageTypes = remember { setOf("song-download", "song-playback", "song-story") }
     val mountedPages = remember {
         mutableStateListOf<String>().apply { if(page in mainPageTypes) add(page) }
@@ -93,6 +94,7 @@ import com.hydro.reedance.data.*
     }
     LaunchedEffect(message) { if(message.isNotEmpty()) { snackbar.showSnackbar(message); model.message.value = "" } }
     fun navigate(to: String) {
+        if(to in studySectionRoutes && page in setOf(StudyHubRoute, "home", "profile", "quiz")) studyReturnPage = page
         if(to == "quiz" || to == "song-story") model.pause()
         if(to in mainPageTypes && to !in mountedPages) mountedPages += to
         if(to in songPageTypes) {
@@ -124,8 +126,9 @@ import com.hydro.reedance.data.*
     val starterAction = remember(context) { { context.startActivity(android.content.Intent(context, com.hydro.reedance.StarterActivity::class.java)) } }
     val songPage = page in songPageTypes
     val artistDetail = page == "explore" && exploreArtistKey != null
-    val independent = artistDetail || songPage || page in listOf("quiz", "premium", "profile")
-    BackHandler(page != "home") {
+    val studySection = page in studySectionRoutes
+    val independent = artistDetail || songPage || studySection || page in listOf("quiz", "premium", "profile")
+    fun goBack() {
         if(artistDetail) exploreArtistKey = null
         else navigate(when(page) {
             "song-story" -> "song-playback"
@@ -133,22 +136,20 @@ import com.hydro.reedance.data.*
             "quiz" -> "song-playback"
             "premium" -> premiumReturnPage
             "profile" -> profileReturnPage
+            in studySectionRoutes -> studyReturnPage
             else -> "home"
         })
     }
+    BackHandler(page != "home") { goBack() }
     SearchDismissHost {
      Box(Modifier.fillMaxSize()) {
       val scaffoldInsets = if(artistDetail || page == "song-story" || page == "premium") WindowInsets(0, 0, 0, 0) else ScaffoldDefaults.contentWindowInsets
       Scaffold(Modifier.fillMaxSize(), contentWindowInsets = scaffoldInsets, containerColor = Color.Transparent, snackbarHost = { SnackbarHost(snackbar) }, topBar = {
         if(!artistDetail && !songPage && page != "premium") Surface(color = MaterialTheme.colorScheme.background, contentColor = MaterialTheme.colorScheme.onSurface) { Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            if(page == "quiz" || page == "profile") {
-                PressIconButton({
-                    navigate(when(page) {
-                        "quiz" -> "song-playback"
-                        else -> profileReturnPage
-                    })
-                }) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
+            if(page == "quiz" || page == "profile" || studySection) {
+                PressIconButton(::goBack) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
                 if(page == "quiz") Text(tr("آزمون", "Practice"), style = MaterialTheme.typography.titleLarge)
+                if(studySection) Text(studySectionTitle(page), style = MaterialTheme.typography.titleLarge)
             } else {
                 MainHeader(settings.targetLanguage, model::targetLanguage, {
                     profileReturnPage = page
@@ -281,6 +282,7 @@ internal fun Modifier.visiblePageLayout(active: Boolean): Modifier = if(active) 
             model, songId, songTab, setSongTab, { navigate(songReturnPage) }, { navigate("song-download") },
             { navigate("quiz") }, { navigate("song-story") }
         ) { setPremiumReturnPage("song-playback"); navigate("premium") }
+        StudyHubRoute -> StudyHubScreen(navigate)
         "game" -> GameScreen(model) { setPremiumReturnPage("game"); navigate("premium") }
         "quiz" -> QuizScreen(model, { navigate("song-playback") }, { navigate("review") })
         "review" -> ReviewScreen(model)
