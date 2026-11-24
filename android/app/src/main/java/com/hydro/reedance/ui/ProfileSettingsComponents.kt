@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -67,7 +66,7 @@ import androidx.compose.ui.unit.sp
 @Composable internal fun AppearancePicker(theme: String, onTheme: (String) -> Unit) {
     val choices = listOf("system" to tr("سیستم", "System"), "light" to tr("روشن", "Light"), "dark" to tr("تاریک", "Dark"))
     val accent = MaterialTheme.colorScheme.primary
-    val frame = RoundedCornerShape(17.dp)
+    val frame = InsetControlShape
     Row(Modifier.fillMaxWidth().padding(14.dp).selectableGroup(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         choices.forEach { (id, label) ->
             val selected = theme == id

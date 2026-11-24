@@ -7,7 +7,6 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -73,7 +72,7 @@ internal fun currentPersianMonth(now: Long = System.currentTimeMillis()): Persia
 }
 
 @Composable private fun WelcomeBanner(explore: () -> Unit, animate: Boolean) {
-    WelcomeBackdrop(animate, Modifier.fillMaxSize().clip(RoundedCornerShape(28.dp))) {
+    WelcomeBackdrop(animate, Modifier.fillMaxSize().clip(HeroShape)) {
         BannerMessages(explore, animate, Modifier.fillMaxSize().padding(26.dp))
     }
 }
@@ -94,7 +93,7 @@ internal fun currentPersianMonth(now: Long = System.currentTimeMillis()): Persia
     }
     val names = listOf("فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند")
     val english = listOf("Farvardin", "Ordibehesht", "Khordad", "Tir", "Mordad", "Shahrivar", "Mehr", "Aban", "Azar", "Dey", "Bahman", "Esfand")
-    Surface(Modifier.fillMaxSize(), shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
+    Surface(Modifier.fillMaxSize(), shape = HeroShape, color = MaterialTheme.colorScheme.secondaryContainer) {
         Column(Modifier.verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Heading(tr("فعالیت این ماه", "This month's activity"), "${if(LocalFa.current) names[month.month] else english[month.month]} ${month.year}")
             Row(Modifier.fillMaxWidth()) {
@@ -114,7 +113,7 @@ internal fun currentPersianMonth(now: Long = System.currentTimeMillis()): Persia
                             val future = day > month.today
                             val status = when { future -> tr("آینده", "Upcoming"); active -> tr("فعال", "Active"); day < month.today -> tr("بدون فعالیت کافی", "Not enough activity"); else -> tr("در انتظار فعالیت", "Activity pending") }
                             val color = when { future -> MaterialTheme.colorScheme.surfaceVariant; active -> Color(0xFF16834B); day < month.today -> Color(0xFFB83B45); else -> MaterialTheme.colorScheme.surface }
-                            Box(Modifier.weight(1f).aspectRatio(1f).background(color, RoundedCornerShape(4.dp))
+                            Box(Modifier.weight(1f).aspectRatio(1f).background(color, DetailShape)
                                 .semantics(mergeDescendants = true) { contentDescription = "$day ${names[month.month]} ${month.year}: $status" }, contentAlignment = Alignment.Center) {
                                 Text("$day", style = MaterialTheme.typography.labelSmall, color = if(!future && (active || day < month.today)) Color.White else MaterialTheme.colorScheme.onSurface)
                             }

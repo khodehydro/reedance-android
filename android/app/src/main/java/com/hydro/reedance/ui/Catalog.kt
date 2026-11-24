@@ -14,7 +14,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -72,7 +71,7 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
     // Draw-time clipping is independent of lazy animateItem/retained graphics layers.
     // Apply it to both placeholder and decoded image on every draw.
     Box(modifier.drawWithCache {
-        val baseRadius = 20.dp.toPx()
+        val baseRadius = minOf(GroupedCardRadius.toPx(), size.minDimension / 2f)
         val circleRadius = minOf(size.width, size.height) / 2f
         val radius = baseRadius + (circleRadius - baseRadius) * shapeProgress.coerceIn(0f, 1f)
         val outline = Path().apply { addRoundRect(RoundRect(Rect(Offset.Zero, size), CornerRadius(radius))) }
@@ -241,7 +240,7 @@ private val artistSpace = Regex("\\s+")
 }
 
 @Composable private fun ArtistTile(artist: ExploreArtist, onClick: () -> Unit) {
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).clickable(onClick = onClick).padding(8.dp),
+    Column(Modifier.fillMaxWidth().clip(GroupedCardShape).clickable(onClick = onClick).padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         ArtistCover(artist, Modifier.fillMaxWidth(.86f).aspectRatio(1f))
         Text(artist.name, textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis,

@@ -2,7 +2,6 @@ package com.hydro.reedance.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -13,14 +12,14 @@ import androidx.compose.ui.unit.dp
 /** Local builds have no verified entitlement provider; never imply that a purchase succeeded. */
 @Composable internal fun ProfileMembershipCard(onUpgrade: () -> Unit, clickableCard: Boolean = false) {
     Surface(Modifier.fillMaxWidth().then(if(clickableCard) Modifier.clickable(onClick = onUpgrade) else Modifier),
-        shape = RoundedCornerShape(22.dp), color = Blue, contentColor = Color.White) {
+        shape = GroupedCardShape, color = Blue, contentColor = Color.White) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 AppIcon(UiIcons.CrownFilled, null, Modifier.size(32.dp), tint = Color.White)
                 Text(tr("عضویت پریمیوم", "Premium membership"), style = MaterialTheme.typography.titleLarge)
             }
             Text(tr("با پریمیوم، فراتر یاد بگیر.", "Take your learning further with Premium."))
-            PressButton(onUpgrade, Modifier.fillMaxWidth().heightIn(min = 48.dp), shape = RoundedCornerShape(14.dp),
+            PressButton(onUpgrade, Modifier.fillMaxWidth().heightIn(min = 48.dp), shape = InsetControlShape,
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Deep)) {
                 Text(tr("تهیهٔ پریمیوم", "Get Premium"))
             }
@@ -36,7 +35,7 @@ import androidx.compose.ui.unit.dp
             StarterArtwork(Modifier.size(88.dp))
         }
         Text(tr("از حروف و صداها تا اولین سطر؛ انگلیسی، اسپانیایی و کره‌ای.", "Letters, sounds and your very first line. English, Spanish and Korean."))
-        PressButton(starter, Modifier.fillMaxWidth().heightIn(min = 52.dp), shape = RoundedCornerShape(18.dp)) {
+        PressButton(starter, Modifier.fillMaxWidth().heightIn(min = 52.dp), shape = InsetControlShape) {
             Text(tr("ورود به استارتر", "Open Starter"))
         }
     }

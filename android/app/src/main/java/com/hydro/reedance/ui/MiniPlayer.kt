@@ -5,7 +5,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,14 +30,14 @@ import com.hydro.reedance.data.ActivePlayback
     Box(Modifier.fillMaxWidth().padding(horizontal = navigationMenuHorizontalInset), contentAlignment = Alignment.Center) {
         Surface(
             modifier = Modifier.navigationBarWidth(menuWidth),
-            shape = RoundedCornerShape(22.dp),
+            shape = GroupedCardShape,
             color = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,
             shadowElevation = 2.dp,
             tonalElevation = 0.dp
         ) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-                Row(Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).clickable(onClick = openSong)
+                Row(Modifier.weight(1f).clip(InsetControlShape).clickable(onClick = openSong)
                     .heightIn(min = 48.dp).padding(horizontal = 7.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     MiniCover(song)

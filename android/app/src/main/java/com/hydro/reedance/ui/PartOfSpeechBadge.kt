@@ -1,7 +1,6 @@
 package com.hydro.reedance.ui
 
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -43,7 +42,7 @@ internal fun wordClass(label: String): WordClass = when(label.trim().lowercase(L
         WordClass.Interjection -> if(dark) 0xFF542F31 to 0xFFFFDADC else 0xFFFFE6E7 to 0xFF7B353B
         WordClass.Other -> if(dark) 0xFF383C43 to 0xFFE0E3E8 else 0xFFEBEDF1 to 0xFF454A54
     }
-    Surface(shape = RoundedCornerShape(10.dp), color = Color(background), contentColor = Color(foreground)) {
+    Surface(shape = DetailShape, color = Color(background), contentColor = Color(foreground)) {
         PersianText(label, Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
             style = MaterialTheme.typography.labelMedium, fillWidth = false)
     }

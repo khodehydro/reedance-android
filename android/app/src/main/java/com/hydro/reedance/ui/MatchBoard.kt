@@ -4,7 +4,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -135,7 +134,7 @@ private val MatchRed = Color(0xFFA82232)
     }
     Surface(modifier.fillMaxWidth().semantics { stateDescription = state }
         .selectable(selected, enabled = enabled && LocalDeckInteractive.current, role = Role.Button, onClick = onClick),
-        shape = RoundedCornerShape(16.dp), color = background, contentColor = foreground,
+        shape = InsetControlShape, color = background, contentColor = foreground,
         border = BorderStroke(if(selected) 2.dp else 1.dp, link ?: if(selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)) {
         Box(Modifier.heightIn(min = 72.dp).padding(12.dp), contentAlignment = Alignment.Center) {
             Text((if(checked && link == MatchGreen) "✓ " else if(checked && link == MatchRed) "✕ " else "") + text,

@@ -10,7 +10,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
@@ -137,7 +136,7 @@ import kotlin.math.roundToInt
 
         Surface(
             Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(18.dp),
+            shape = GroupedCardShape,
             color = MaterialTheme.colorScheme.surface.copy(alpha = .78f),
             border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f))
         ) {
@@ -161,7 +160,7 @@ import kotlin.math.roundToInt
                     val count = if(song.has(key)) song.n(key).toString() else "—"
                     Surface(
                         Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = NestedTileShape,
                         color = MaterialTheme.colorScheme.surface.copy(alpha = .72f),
                         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .45f))
                     ) {
@@ -205,7 +204,7 @@ import kotlin.math.roundToInt
 }
 
 @Composable private fun DownloadMetaChip(label: String, value: String, modifier: Modifier = Modifier) {
-    Surface(modifier, shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.surface.copy(alpha = .68f)) {
+    Surface(modifier, shape = NestedTileShape, color = MaterialTheme.colorScheme.surface.copy(alpha = .68f)) {
         Column(Modifier.padding(horizontal = 10.dp, vertical = 9.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(value, style = MaterialTheme.typography.labelLarge)

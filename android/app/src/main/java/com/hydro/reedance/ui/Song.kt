@@ -9,7 +9,6 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.blur
@@ -249,7 +248,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     val repeat by model.repeat.collectAsStateWithLifecycle()
     val muted by model.muted.collectAsStateWithLifecycle()
     var dragging by remember(data.s("songId")) { mutableStateOf<Float?>(null) }
-    Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp), color = Color(0xFF01020A), contentColor = Color.White) {
+    Surface(Modifier.fillMaxWidth(), shape = GroupedCardShape, color = Color(0xFF01020A), contentColor = Color.White) {
         Box {
             BannerGradient(animate = playing, modifier = Modifier.matchParentSize())
             Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -291,7 +290,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
 @Composable private fun CompactSongController(model: AppModel, data: JsonObject, expand: () -> Unit) {
     val playing by model.playing.collectAsStateWithLifecycle()
     val position by model.position.collectAsStateWithLifecycle()
-    Surface(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), shape = RoundedCornerShape(18.dp),
+    Surface(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), shape = InsetControlShape,
         color = MaterialTheme.colorScheme.surfaceContainerLowest, contentColor = MaterialTheme.colorScheme.onSurface) {
         Box {
             Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {

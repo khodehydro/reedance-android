@@ -8,7 +8,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -44,7 +43,7 @@ private val PaywallColors = darkColorScheme(
     Panel {
         Column(Modifier.fillMaxWidth().then(if(android.os.Build.VERSION.SDK_INT >= 31) Modifier.blur(7.dp) else Modifier), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             listOf(.8f, 1f, .65f).forEach { width ->
-                Box(Modifier.fillMaxWidth(width).height(16.dp).clip(RoundedCornerShape(8.dp)).background(MaterialTheme.colorScheme.onSurface.copy(alpha = .15f)))
+                Box(Modifier.fillMaxWidth(width).height(16.dp).clip(DetailShape).background(MaterialTheme.colorScheme.onSurface.copy(alpha = .15f)))
             }
         }
         Text(tr("ادامهٔ آموزش با اشتراک", "More learning with a subscription"), style = MaterialTheme.typography.labelMedium)
@@ -144,7 +143,7 @@ private val PaywallColors = darkColorScheme(
 
 @Composable private fun PaywallPlan(title: String, price: String, unit: String, detail: String,
     selected: Boolean, modifier: Modifier, savings: String? = null, onSelect: () -> Unit) {
-    val shape = RoundedCornerShape(18.dp)
+    val shape = GroupedCardShape
     val ink = if(selected) PaywallAccent else Color.White
     Surface(modifier.fillMaxHeight().heightIn(min = 128.dp).clip(shape)
         .selectable(selected, role = Role.RadioButton, onClick = onSelect), shape = shape,
@@ -172,12 +171,12 @@ private val PaywallColors = darkColorScheme(
 
 /** Informational only: this card does not initiate checkout or imply an active payment integration. */
 @Composable private fun SnappPayBanner() {
-    Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp),
+    Surface(Modifier.fillMaxWidth(), shape = GroupedCardShape,
         color = Color(0xFF007DFA), contentColor = Color.White) {
         Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                Surface(shape = RoundedCornerShape(14.dp), color = Color.White) {
+                Surface(shape = NestedTileShape, color = Color.White) {
                     Image(painterResource(R.drawable.snapppay_wordmark), contentDescription = null,
                         modifier = Modifier.size(66.dp).padding(10.dp))
                 }

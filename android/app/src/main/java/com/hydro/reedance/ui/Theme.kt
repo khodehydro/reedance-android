@@ -14,8 +14,14 @@ val Blue = Color(0xFF2E70DF)
 val BrandFont = FontFamily(Font(R.font.vazirmatn_black, FontWeight.Black))
 val Deep = Color(0xFF102D5C)
 val Paper = Color(0xFFF2F2F7)
-internal val GroupedCardShape = RoundedCornerShape(20.dp)
+// Keep nested elements visibly tighter than the surfaces that contain them.
+internal val DetailShape = RoundedCornerShape(8.dp)
+internal val NestedTileShape = RoundedCornerShape(12.dp)
 internal val InsetControlShape = RoundedCornerShape(14.dp)
+internal val GroupedCardRadius = 20.dp
+internal val GroupedCardShape = RoundedCornerShape(GroupedCardRadius)
+internal val LargePanelShape = RoundedCornerShape(24.dp)
+internal val HeroShape = RoundedCornerShape(28.dp)
 val LocalOverlayBottomInset = staticCompositionLocalOf { 0.dp }
 val LocalFa = staticCompositionLocalOf { true }
 val LocalReducedMotion = staticCompositionLocalOf { false }
@@ -68,8 +74,8 @@ internal val GroupedLightColors = lightColorScheme(
     val backgroundMotion = remember { BackgroundMotion() }
     val font = FontFamily(Font(R.font.vazirmatn, FontWeight.Normal), Font(R.font.vazirmatn_bold, FontWeight.Bold))
     val base = Typography()
-    MaterialTheme(colorScheme = colors, shapes = Shapes(small = InsetControlShape, medium = GroupedCardShape,
-        large = RoundedCornerShape(24.dp), extraLarge = RoundedCornerShape(28.dp)), typography = Typography(
+    MaterialTheme(colorScheme = colors, shapes = Shapes(extraSmall = DetailShape, small = InsetControlShape, medium = GroupedCardShape,
+        large = LargePanelShape, extraLarge = HeroShape), typography = Typography(
         displayLarge = base.displayLarge.copy(fontFamily = font), displayMedium = base.displayMedium.copy(fontFamily = font), displaySmall = base.displaySmall.copy(fontFamily = font),
         headlineSmall = base.headlineSmall.copy(fontFamily = font, fontWeight = FontWeight.Bold),
         bodyLarge = base.bodyLarge.copy(fontFamily = font), bodyMedium = base.bodyMedium.copy(fontFamily = font), bodySmall = base.bodySmall.copy(fontFamily = font),

@@ -39,7 +39,7 @@ import com.hydro.reedance.data.*
                         PersianText(group.tr("name", fa), style = MaterialTheme.typography.titleLarge)
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             group.a("letters").forEach { letter ->
-                                Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)) { Column(Modifier.padding(12.dp)) {
+                                Surface(shape = NestedTileShape) { Column(Modifier.padding(12.dp)) {
                                     Text(letter.s("glyph"), style = MaterialTheme.typography.titleLarge)
                                     Text(letter.s("name"), style = MaterialTheme.typography.bodySmall)
                                     if(fa) PersianText(letter.s("faHint"), style = MaterialTheme.typography.bodySmall, fillWidth = false)

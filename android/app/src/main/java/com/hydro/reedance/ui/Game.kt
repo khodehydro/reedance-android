@@ -9,7 +9,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -186,7 +185,7 @@ internal object GameSounds {
                             val wordColor = if (word.solved) wordColors.getValue(gameWordKey(word.songId, word.lexemeId)).ink()
                                 else MaterialTheme.colorScheme.onSurfaceVariant
                             Row(
-                                Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
+                                Modifier.fillMaxWidth().clip(InsetControlShape)
                                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .32f))
                                     .padding(horizontal = 12.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically

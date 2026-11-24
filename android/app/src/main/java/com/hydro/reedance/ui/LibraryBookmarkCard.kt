@@ -48,7 +48,7 @@ internal fun libraryBookmarks(rows: List<Bookmark>, type: String): List<Bookmark
             mark.itemType == "song" -> {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Box(Modifier.weight(1f)) { Foreign(source, large = true) }
-                    PressOutlinedButton({ openSong(mark.songId) }, shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)) {
+                    PressOutlinedButton({ openSong(mark.songId) }, shape = InsetControlShape) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             AppIcon(UiIcons.PlayFilled, tr("باز کردن آهنگ", "Open song"), Modifier.size(18.dp))
                             Text(tr("باز کردن", "Open"))
@@ -59,8 +59,8 @@ internal fun libraryBookmarks(rows: List<Bookmark>, type: String): List<Bookmark
             }
             loading -> {
                 Column(Modifier.fillMaxWidth().heightIn(min = 160.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Surface(Modifier.fillMaxWidth(.6f).height(24.dp), color = MaterialTheme.colorScheme.surfaceContainerHighest, shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)) {}
-                    Surface(Modifier.fillMaxWidth().height(72.dp), color = MaterialTheme.colorScheme.surfaceContainerLow, shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)) {}
+                    Surface(Modifier.fillMaxWidth(.6f).height(24.dp), color = MaterialTheme.colorScheme.surfaceContainerHighest, shape = DetailShape) {}
+                    Surface(Modifier.fillMaxWidth().height(72.dp), color = MaterialTheme.colorScheme.surfaceContainerLow, shape = InsetControlShape) {}
                 }
             }
             item == null -> {

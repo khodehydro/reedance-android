@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -27,7 +26,7 @@ import androidx.compose.ui.window.Dialog
     }
     Dialog(onDismissRequest = onDismiss) {
         Box(Modifier.widthIn(max = 360.dp).fillMaxWidth().aspectRatio(1f)
-            .clip(RoundedCornerShape(24.dp)).background(Color(0xFF180923))) {
+            .clip(LargePanelShape).background(Color(0xFF180923))) {
             // Only this foreground artwork animates while the underlying page is paused.
             CompositionLocalProvider(LocalBackgroundMotion provides remember { BackgroundMotion() }) {
                 BannerGradient(true, Modifier.matchParentSize(), FluidPalette.Aurora)
@@ -42,7 +41,7 @@ import androidx.compose.ui.window.Dialog
                     style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                 Text(tr("ری‌دنس را به دوستت معرفی کن؛ یک آهنگ، شروع یک زبان تازه.", "Send Reedance to a friend. One song could be the start of a new language."),
                     color = Color(0xFFF4DAEF), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
-                PressButton(onShare, Modifier.fillMaxWidth().heightIn(min = 48.dp), shape = RoundedCornerShape(16.dp),
+                PressButton(onShare, Modifier.fillMaxWidth().heightIn(min = 48.dp), shape = InsetControlShape,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD4C6), contentColor = Color(0xFF351039))) {
                     AppIcon(UiIcons.ShareFilled, null, Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))

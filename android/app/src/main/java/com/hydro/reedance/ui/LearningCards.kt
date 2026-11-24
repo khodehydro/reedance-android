@@ -2,7 +2,6 @@ package com.hydro.reedance.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -15,7 +14,7 @@ import com.hydro.reedance.data.*
 /** A low-noise hierarchy using theme roles rather than fixed light-only pastel backgrounds. */
 @Composable internal fun LearningSection(label: String, accent: Boolean = false, content: @Composable ColumnScope.() -> Unit) {
     val colors = MaterialTheme.colorScheme
-    Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
+    Surface(Modifier.fillMaxWidth(), shape = GroupedCardShape,
         color = if(accent) colors.secondaryContainer else colors.surfaceContainerLow,
         contentColor = if(accent) colors.onSecondaryContainer else colors.onSurface,
         border = BorderStroke(1.dp, colors.outlineVariant.copy(alpha = .4f))) {

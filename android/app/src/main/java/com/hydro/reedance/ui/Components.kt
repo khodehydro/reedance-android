@@ -112,8 +112,8 @@ internal val LocalDeckInteractive = staticCompositionLocalOf { true }
     val sheets = remember { mutableMapOf<Any, @Composable () -> Unit>() }
     sheets[cardKey] = content
     Box(modifier.fillMaxWidth().padding(top = 21.dp)) {
-        Box(Modifier.matchParentSize().padding(horizontal = 15.dp).graphicsLayer { translationY = -21.dp.toPx(); rotationZ = 2.3f; scaleX = .973f }.clip(RoundedCornerShape(20.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = .22f)))
-        Box(Modifier.matchParentSize().padding(horizontal = 8.dp).graphicsLayer { translationY = -13.dp.toPx(); rotationZ = -1.6f; scaleX = .99f }.clip(RoundedCornerShape(20.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = .12f)))
+        Box(Modifier.matchParentSize().padding(horizontal = 15.dp).graphicsLayer { translationY = -21.dp.toPx(); rotationZ = 2.3f; scaleX = .973f }.clip(GroupedCardShape).background(MaterialTheme.colorScheme.primary.copy(alpha = .22f)))
+        Box(Modifier.matchParentSize().padding(horizontal = 8.dp).graphicsLayer { translationY = -13.dp.toPx(); rotationZ = -1.6f; scaleX = .99f }.clip(GroupedCardShape).background(MaterialTheme.colorScheme.primary.copy(alpha = .12f)))
         AnimatedContent(cardKey, transitionSpec = {
             if(reduced) EnterTransition.None togetherWith ExitTransition.None
             else ((fadeIn(tween(390)) + slideIn(tween(390, easing = CubicBezierEasing(.19f,.85f,.3f,1f))) { IntOffset(-15 * sign, 10) } + scaleIn(tween(390), initialScale = .975f)) togetherWith
@@ -154,7 +154,7 @@ internal val LocalDeckInteractive = staticCompositionLocalOf { true }
 
 @Composable private fun LearningTableGrid(columns: List<JsonElement>, rows: List<List<JsonElement>>,
     fa: Boolean, fitToWidth: Boolean) {
-    val shape = RoundedCornerShape(12.dp)
+    val shape = NestedTileShape
     val scroll = if(fitToWidth) Modifier else Modifier.horizontalScroll(rememberScrollState())
     Column(Modifier.fillMaxWidth().clip(shape).border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape).then(scroll)) {
         Row(Modifier.background(MaterialTheme.colorScheme.secondaryContainer)) {

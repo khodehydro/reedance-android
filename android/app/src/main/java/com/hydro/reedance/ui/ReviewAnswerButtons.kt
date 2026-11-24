@@ -1,7 +1,6 @@
 package com.hydro.reedance.ui
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -11,7 +10,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 @Composable internal fun ReviewAnswerButtons(enabled: Boolean, onAnswer: (Boolean) -> Unit) {
-    val shape = RoundedCornerShape(14.dp)
+    val shape = InsetControlShape
     val dark = MaterialTheme.colorScheme.surface.luminance() < .5f
     val green = if(dark) Color(0xFF1C3D2C) else Color(0xFFE1F3E8)
     val greenInk = if(dark) Color(0xFFB1E5C4) else Color(0xFF205C38)

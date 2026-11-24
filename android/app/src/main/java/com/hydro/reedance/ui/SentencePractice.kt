@@ -1,7 +1,6 @@
 package com.hydro.reedance.ui
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -25,13 +24,13 @@ import com.hydro.reedance.domain.normalizeAnswer
     }
     val foreground = if(result != null) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onSurface
     CompositionLocalProvider(LocalLayoutDirection provides if(persianAnswer) LayoutDirection.Rtl else LayoutDirection.Ltr) {
-        Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), color = background, contentColor = foreground) {
+        Surface(Modifier.fillMaxWidth(), shape = GroupedCardShape, color = background, contentColor = foreground) {
             FlowRow(Modifier.fillMaxWidth().heightIn(min = 76.dp).padding(10.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 if(answer.isEmpty()) Text(tr("جمله را اینجا بساز", "Build your sentence here"), Modifier.padding(12.dp))
                 answer.forEachIndexed { index, id ->
                     PressOutlinedButton({ onAnswer(answer.filterIndexed { i, _ -> i != index }) }, enabled = editable,
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = foreground, disabledContentColor = foreground),
-                        shape = RoundedCornerShape(12.dp)) {
+                        shape = NestedTileShape) {
                         Text(labels.getValue(id))
                     }
                 }
@@ -39,7 +38,7 @@ import com.hydro.reedance.domain.normalizeAnswer
         }
         FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             order.filter { it !in answer }.forEach { id ->
-                PressOutlinedButton({ onAnswer(answer + id) }, enabled = editable && answer.size < chunks.size, shape = RoundedCornerShape(12.dp)) {
+                PressOutlinedButton({ onAnswer(answer + id) }, enabled = editable && answer.size < chunks.size, shape = NestedTileShape) {
                     Text(labels.getValue(id))
                 }
             }
