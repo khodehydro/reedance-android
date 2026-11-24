@@ -208,7 +208,8 @@ private val artistSpace = Regex("\\s+")
             songs.filter { term.isEmpty() || it.s("title").contains(term, true) || it.s("artist").contains(term, true) }
         }
         val visibleArtists = remember(artists, term) { artists.filter { it.name.contains(term, true) } }
-        HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { page ->
+        // Songs and Artists remain tappable segments; horizontal drags on this list switch main tabs.
+        HorizontalPager(state = pagerState, modifier = Modifier.weight(1f), userScrollEnabled = false) { page ->
             val threshold = with(LocalDensity.current) { 40.dp.toPx() }
             val scrollConnection = remember(page, threshold) {
                 LibraryScrollConnection(threshold) { collapsed ->

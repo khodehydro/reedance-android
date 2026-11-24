@@ -142,7 +142,8 @@ import com.hydro.reedance.data.*
     }
     BackHandler(page != "home") { goBack() }
     SearchDismissHost {
-     Box(Modifier.fillMaxSize()) {
+     Box(Modifier.fillMaxSize().mainTabSwipe(page, page in mainTabRoutes && !independent,
+         LocalLayoutDirection.current, navigateAction)) {
       val scaffoldInsets = if(artistDetail || page == "song-story" || page == "premium") WindowInsets(0, 0, 0, 0) else ScaffoldDefaults.contentWindowInsets
       Scaffold(Modifier.fillMaxSize(), contentWindowInsets = scaffoldInsets, containerColor = Color.Transparent, snackbarHost = { SnackbarHost(snackbar) }, topBar = {
         if(!artistDetail && !songPage && page != "premium") Surface(color = MaterialTheme.colorScheme.background, contentColor = MaterialTheme.colorScheme.onSurface) { Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
