@@ -11,26 +11,18 @@ data class HoneycombLetterBoard(
 ) {
     val rows: Int get() = letters.size / columns
 
-    private val reservedByCell = wordPaths.flatMap { (word, path) -> path.map { it to word } }.toMap()
-
-    /** Alternate routes may use spare cells, but must leave every other answer intact. */
-    fun canUsePath(word: String, path: List<Int>): Boolean =
-        word in wordPaths && path.all { reservedByCell[it]?.let { owner -> owner == word } ?: true }
-
     private fun spellsPlannedWord(planned: List<Int>, path: List<Int>): Boolean =
         path.size == planned.size && path.distinct().size == path.size &&
             path.withIndex().all { (i, cell) -> letters.getOrNull(cell)?.equals(letters[planned[i]], ignoreCase = true) == true } &&
             path.zipWithNext().all { (a, b) -> areHoneycombNeighbors(a, b, columns) }
 
-    /** Accept a correct spelling even on a route that borrows another word's cells.
-     * In that case only lock the planned route, so every remaining word stays playable. */
+    /** Persist the route the player actually selected, including shared cells. */
     fun acceptedSolvedPath(word: String, drawn: List<Int>): List<Int>? {
         val planned = wordPaths[word] ?: return null
-        if(!spellsPlannedWord(planned, drawn)) return null
-        return if(canUsePath(word, drawn)) drawn else planned
+        return drawn.takeIf { spellsPlannedWord(planned, it) }
     }
 
-    /** Legacy saves may reference fillers that have changed or another answer's cells. */
+    /** Legacy saves may reference fillers that have changed. */
     fun restoredSolvedPath(word: String, saved: List<Int>): List<Int> =
         acceptedSolvedPath(word, saved) ?: wordPaths[word].orEmpty()
 }

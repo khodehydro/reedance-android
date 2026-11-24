@@ -7,7 +7,6 @@ import com.hydro.reedance.domain.buildHoneycombBoard
 import com.hydro.reedance.domain.gameWordKey
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -34,18 +33,16 @@ class HoneycombBoardTest {
     @Test fun boardLayoutIsStableAcrossCalls() {
         assertEquals(buildHoneycombBoard(words), buildHoneycombBoard(words))
     }
-    @Test fun alternateRouteCannotConsumeAnotherWordsReservedCells() {
+    @Test fun restoresTheDrawnPathEvenWhenItSharesAnotherWordsCells() {
         val board = HoneycombLetterBoard("ABABAB".toList(), 2, mapOf("first" to listOf(0, 1), "second" to listOf(2, 3)))
-        assertFalse(board.canUsePath("first", listOf(2, 3)))
-        assertTrue(board.canUsePath("first", listOf(4, 5)))
-        assertEquals(listOf(0, 1), board.restoredSolvedPath("first", listOf(2, 3)))
+        assertEquals(listOf(2, 3), board.restoredSolvedPath("first", listOf(2, 3)))
         assertEquals(listOf(4, 5), board.restoredSolvedPath("first", listOf(4, 5)))
         assertEquals(listOf(0, 1), board.restoredSolvedPath("first", listOf(0, 5)))
     }
-    @Test fun correctAlternateSpellingIsAcceptedWithoutLockingAnotherWordsCells() {
+    @Test fun correctAlternateSpellingReturnsTheExactDrawnRoute() {
         val board = HoneycombLetterBoard("ABABAB".toList(), 2,
             mapOf("first" to listOf(0, 1), "second" to listOf(2, 3)))
-        assertEquals(listOf(0, 1), board.acceptedSolvedPath("first", listOf(2, 3)))
+        assertEquals(listOf(2, 3), board.acceptedSolvedPath("first", listOf(2, 3)))
         assertEquals(listOf(4, 5), board.acceptedSolvedPath("first", listOf(4, 5)))
         assertEquals(listOf(2, 3), board.acceptedSolvedPath("second", listOf(2, 3)))
         assertNull(board.acceptedSolvedPath("first", listOf(0, 5))) // not adjacent

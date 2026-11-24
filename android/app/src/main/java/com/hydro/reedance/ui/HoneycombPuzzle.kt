@@ -20,6 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
@@ -67,14 +69,11 @@ import kotlinx.coroutines.delay
     }
 
     val solvedColors = remember(solvedCellIndices, wordColors) {
-        buildMap {
-            solvedCellIndices.forEach { (word, cells) ->
-                wordColors[word]?.tile?.let { color -> cells.forEach { put(it, color) } }
-            }
-        }
+        solvedCellIndices.flatMap { (word, cells) ->
+            wordColors[word]?.tile?.let { color -> cells.map { it to color } }.orEmpty()
+        }.groupBy({ it.first }, { it.second })
     }
     val winningCells = remember(pendingWinCells) { pendingWinCells.toSet() }
-    val lockedCells = remember(solvedColors, winningCells) { solvedColors.keys + winningCells }
     val winningColor = wordColors[pendingWinKey]
     val canInteract = pendingWinKey.isEmpty() && !rejecting
 
@@ -102,7 +101,6 @@ import kotlinx.coroutines.delay
         HoneycombBoard(
             board = board,
             selectedCells = selected.toSet(),
-            lockedCells = lockedCells,
             winningCells = winningCells,
             solvedColors = solvedColors,
             winningColor = winningColor?.tile,
@@ -110,7 +108,7 @@ import kotlinx.coroutines.delay
             targetLanguage = targetLanguage,
             canInteract = canInteract
         ) { index ->
-            if(index in lockedCells || !canInteract) return@HoneycombBoard
+            if(!canInteract) return@HoneycombBoard
             if(selected.lastOrNull() == index) {
                 selected = selected.dropLast(1)
                 feedback = ""
@@ -144,10 +142,10 @@ import kotlinx.coroutines.delay
                     ?.let { target to it }
             }
             if(match != null) {
-                val (word, safePath) = match
+                val (word, drawnPath) = match
                 val matchKey = gameWordKey(word.songId, word.lexemeId)
                 pendingWinKey = matchKey
-                pendingWinCells = safePath
+                pendingWinCells = drawnPath
                 feedback = correctFeedback
                 GameSounds.win()
                 model.solveGameWord(
@@ -155,7 +153,7 @@ import kotlinx.coroutines.delay
                     word.songId,
                     word.lexemeId,
                     revealDelayMs = 620,
-                    usedCellIndices = safePath
+                    usedCellIndices = drawnPath
                 )
             } else {
                 if(candidates.isEmpty()) {
@@ -176,9 +174,8 @@ import kotlinx.coroutines.delay
 @Composable private fun HoneycombBoard(
     board: HoneycombLetterBoard,
     selectedCells: Set<Int>,
-    lockedCells: Set<Int>,
     winningCells: Set<Int>,
-    solvedColors: Map<Int, Color>,
+    solvedColors: Map<Int, List<Color>>,
     winningColor: Color?,
     roundIndex: Int,
     targetLanguage: String,
@@ -214,22 +211,24 @@ import kotlinx.coroutines.delay
                     val row = index / columns
                     val column = index % columns
                     val waveDelay = .60f * (row + column).toFloat() / (board.rows + columns - 2).coerceAtLeast(1)
-                    val locked = index in lockedCells
                     val selected = index in selectedCells
                     val winning = index in winningCells
-                    val solvedColor = if(winning) winningColor else solvedColors[index]
+                    val previousColors = solvedColors[index].orEmpty()
+                    val solvedColor = previousColors.firstOrNull()
                     val color = animateColorAsState(
                         targetValue = when {
-                            solvedColor != null -> solvedColor
+                            winning && winningColor != null -> winningColor
                             selected -> MaterialTheme.colorScheme.primary
+                            solvedColor != null -> solvedColor
                             else -> blueRange[index % blueRange.size]
                         },
                         label = "honeycomb-cell-$index"
                     )
                     val textColor = animateColorAsState(
                         targetValue = when {
-                            winning || locked -> Color.White
+                            winning -> Color.White
                             selected -> MaterialTheme.colorScheme.onPrimary
+                            solvedColor != null -> Color.White
                             else -> idleLetterColor
                         },
                         label = "honeycomb-letter-$index"
@@ -252,9 +251,16 @@ import kotlinx.coroutines.delay
                             }
                             .shadow(if(selected || winning) 5.dp else 2.dp, HexagonShape)
                             .clip(HexagonShape)
-                            .drawBehind { drawRect(color.value) }
+                            .drawBehind {
+                                if(!winning && !selected && previousColors.size > 1) {
+                                    val stripe = size.width / previousColors.size
+                                    previousColors.forEachIndexed { i, ink ->
+                                        drawRect(ink, Offset(i * stripe, 0f), Size(stripe, size.height))
+                                    }
+                                } else drawRect(color.value)
+                            }
                             .border(1.5.dp, Color.White.copy(alpha = if(lightTheme) .95f else .78f), HexagonShape)
-                            .clickable(enabled = canInteract && ready && !locked) { onTap(index) },
+                            .clickable(enabled = canInteract && ready) { onTap(index) },
                         contentAlignment = Alignment.Center
                     ) {
                         HoneycombLetter(letter, textColor)
