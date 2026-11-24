@@ -17,16 +17,22 @@ data class HoneycombLetterBoard(
     fun canUsePath(word: String, path: List<Int>): Boolean =
         word in wordPaths && path.all { reservedByCell[it]?.let { owner -> owner == word } ?: true }
 
-    /** Old saves may contain a route that crossed another answer. Restore its planned route instead. */
-    fun restoredSolvedPath(word: String, saved: List<Int>): List<Int> {
-        val planned = wordPaths[word] ?: return emptyList()
-        return saved.takeIf { path ->
-            path.size == planned.size && path.distinct().size == path.size &&
-                path.withIndex().all { (i, cell) -> letters.getOrNull(cell) == letters[planned[i]] } &&
-                path.zipWithNext().all { (a, b) -> areHoneycombNeighbors(a, b, columns) } &&
-                canUsePath(word, path)
-        } ?: planned
+    private fun spellsPlannedWord(planned: List<Int>, path: List<Int>): Boolean =
+        path.size == planned.size && path.distinct().size == path.size &&
+            path.withIndex().all { (i, cell) -> letters.getOrNull(cell)?.equals(letters[planned[i]], ignoreCase = true) == true } &&
+            path.zipWithNext().all { (a, b) -> areHoneycombNeighbors(a, b, columns) }
+
+    /** Accept a correct spelling even on a route that borrows another word's cells.
+     * In that case only lock the planned route, so every remaining word stays playable. */
+    fun acceptedSolvedPath(word: String, drawn: List<Int>): List<Int>? {
+        val planned = wordPaths[word] ?: return null
+        if(!spellsPlannedWord(planned, drawn)) return null
+        return if(canUsePath(word, drawn)) drawn else planned
     }
+
+    /** Legacy saves may reference fillers that have changed or another answer's cells. */
+    fun restoredSolvedPath(word: String, saved: List<Int>): List<Int> =
+        acceptedSolvedPath(word, saved) ?: wordPaths[word].orEmpty()
 }
 
 fun gameWordKey(songId: String, lexemeId: String): String = "$songId::$lexemeId"
@@ -66,13 +72,30 @@ fun buildHoneycombBoard(words: List<GameWordDefinition>, columns: Int = 7): Hone
             route.subList(cursor, cursor + length).also { cursor += length + 1 }
         }
     }
-    val alphabet = usableWords.flatMap { it.letterAnswer.toList() }
-    val letters = MutableList(cellCount) { alphabet[random.nextInt(alphabet.size)] }
+    val used = usableWords.flatMap { it.letterAnswer.toList() }.mapTo(mutableSetOf()) { it.uppercaseChar().lowercaseChar() }
+    val nativeAlphabet = when(usableWords.first().targetLanguage) {
+        "tr" -> "abcçdefgğhıijklmnoöprsştuüvyzqwx"
+        "es" -> "abcdefghijklmnñopqrstuvwxyzáéíóúü"
+        "ko" -> "가각간갈감강개거건게겨고공과구그기나남너노누다달더도두드라리마만머모무미바버보부비사서소수시아어오우이자저조주차카타파하해호후"
+        else -> "abcdefghijklmnopqrstuvwxyz"
+    }
+    val spare = nativeAlphabet.toList().distinctBy { it.uppercaseChar().lowercaseChar() }.filter { it.uppercaseChar().lowercaseChar() !in used }
+        .ifEmpty { ('À'..'ɏ').filter { it.isLetter() && it.uppercaseChar().lowercaseChar() !in used }.distinctBy { it.uppercaseChar().lowercaseChar() } }
+        .ifEmpty { listOf('·', '•', '◇') }
+    // Deal shuffled passes rather than sampling with replacement, so no spare
+    // letter repeats until the available alphabet has been used once.
+    var shuffled = emptyList<Char>()
+    val letters = MutableList(cellCount) { ' ' }
     val paths = usableWords.mapIndexed { index, word ->
         val path = slots[index]
         path.forEachIndexed { letterIndex, cell -> letters[cell] = word.letterAnswer[letterIndex] }
         gameWordKey(word.songId, word.lexemeId) to path
     }.toMap()
+    var fillerIndex = 0
+    letters.indices.filter { letters[it] == ' ' }.forEach { cell ->
+        if(fillerIndex % spare.size == 0) shuffled = spare.shuffled(random)
+        letters[cell] = shuffled[fillerIndex++ % spare.size]
+    }
     return HoneycombLetterBoard(letters, columns, paths)
 }
 

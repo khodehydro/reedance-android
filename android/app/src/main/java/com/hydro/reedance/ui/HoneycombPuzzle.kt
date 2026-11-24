@@ -135,22 +135,27 @@ import kotlinx.coroutines.delay
             val solvedKeys = solvedTargetKeys + pendingWinKey
             val candidates = targets.filter { target ->
                 val wordKey = gameWordKey(target.songId, target.lexemeId)
-                wordKey !in solvedKeys && board.canUsePath(wordKey, nextSelection) &&
+                wordKey !in solvedKeys &&
                     target.letterAnswer.startsWith(guess, ignoreCase = true)
             }
-            val match = candidates.firstOrNull { it.letterAnswer.length == guess.length }
+            val match = candidates.firstNotNullOfOrNull { target ->
+                if(target.letterAnswer.length != guess.length) null
+                else board.acceptedSolvedPath(gameWordKey(target.songId, target.lexemeId), nextSelection)
+                    ?.let { target to it }
+            }
             if(match != null) {
-                val matchKey = gameWordKey(match.songId, match.lexemeId)
+                val (word, safePath) = match
+                val matchKey = gameWordKey(word.songId, word.lexemeId)
                 pendingWinKey = matchKey
-                pendingWinCells = nextSelection
+                pendingWinCells = safePath
                 feedback = correctFeedback
                 GameSounds.win()
                 model.solveGameWord(
                     targetLanguage,
-                    match.songId,
-                    match.lexemeId,
+                    word.songId,
+                    word.lexemeId,
                     revealDelayMs = 620,
-                    usedCellIndices = nextSelection
+                    usedCellIndices = safePath
                 )
             } else {
                 if(candidates.isEmpty()) {
