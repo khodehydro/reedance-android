@@ -3,9 +3,12 @@ package com.hydro.reedance.ui
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.gson.*
@@ -181,14 +184,22 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
                     }
                 }
             }
-            Text(tr("سؤال ${index+1} از ${questionCount}", "Question ${index+1} of ${questionCount}"), color = MaterialTheme.colorScheme.primary)
-            if(gym) Text(data.s("title"), style = MaterialTheme.typography.labelLarge)
+            QuestionProgress(questionIndex, questionCount, data.s("title").takeIf { gym })
             if(saveFailed) Text(tr("پاسخ ذخیره نشد؛ دوباره امتحان کن.", "Could not save your answer. Try again."), color = MaterialTheme.colorScheme.error)
-            LinearProgressIndicator(progress = { index.toFloat()/questionCount }, modifier = Modifier.fillMaxWidth())
             Deck(questionIndex) {
                 Panel {
-                    PersianText(q.tr("skill", fa), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                    PersianText(q.tr("prompt", fa), style = MaterialTheme.typography.titleLarge)
+                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        q.tr("skill", fa).takeIf { it.isNotBlank() }?.let { skill ->
+                            Surface(shape = InsetControlShape, color = MaterialTheme.colorScheme.surfaceContainer,
+                                contentColor = MaterialTheme.colorScheme.primary) {
+                                Box(Modifier.padding(horizontal = 10.dp, vertical = 5.dp)) {
+                                    PersianText(skill, style = MaterialTheme.typography.labelLarge,
+                                        color = MaterialTheme.colorScheme.primary)
+                                }
+                            }
+                        }
+                        PersianText(q.tr("prompt", fa), style = MaterialTheme.typography.headlineSmall)
+                    }
                     if (clip != null && index == questionIndex && checked == null && !busy) {
                         key(entry.key) { ListeningAudio(model, entry) }
                     }
@@ -202,6 +213,7 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
                             PersianText(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
+                    SettingsDivider()
                     when(q.s("type")) {
                         "choice" -> PracticeChoices(q, optionOrder, answer.singleOrNull(), checked, busy) { submit(listOf(it)) }
                         "typing" -> PracticeTypingField(answer.firstOrNull().orEmpty(), checked == null && !busy) { answer = listOf(it) }
@@ -211,11 +223,11 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
 
                     }
                     if(checked == null) {
-                        if(q.s("type") != "choice") Action(tr("بررسی پاسخ", "Check answer"), enabled = complete(q, answer) && !busy) {
+                        if(q.s("type") != "choice") Action(tr("بررسی پاسخ", "Check answer"), Modifier.fillMaxWidth(), enabled = complete(q, answer) && !busy) {
                             submit(answer.toList())
                         }
                     } else {
-                        Text(if(checked!!.correct) tr("✓ آفرین، درست بود", "✓ You got it") else tr("نیاز به مرور؛ اشکالی ندارد", "Needs review — keep going"), style = MaterialTheme.typography.titleMedium)
+                        QuestionFeedback(checked!!.correct)
                         q.tr("explanation", fa).takeIf { it.isNotBlank() }?.let { PersianText(it) }
                         if(q.s("type") == "match" && !checked!!.correct) {
                             Text(tr("پاسخ صحیح", "Correct matches"), style = MaterialTheme.typography.titleMedium)
@@ -228,7 +240,7 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
                                 PersianText(formattedAnswer(q, correctAnswer(q), fa), style = MaterialTheme.typography.bodyLarge)
                             } else Foreign(formattedAnswer(q, correctAnswer(q), fa), large = true)
                         }
-                        if(!checked!!.correct) Action(tr("ادامه", "Continue"), enabled = !busy) {
+                        if(!checked!!.correct) Action(tr("ادامه", "Continue"), Modifier.fillMaxWidth(), enabled = !busy) {
                             val result = checked
                             if(!busy && index == questionIndex && result != null) {
                                 grades.add(answer.toList() to result)
@@ -238,6 +250,33 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable private fun QuestionProgress(index: Int, count: Int, source: String?) {
+    val colors = MaterialTheme.colorScheme
+    Surface(Modifier.fillMaxWidth(), shape = GroupedCardShape, color = colors.surfaceContainerLow) {
+        Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(tr("سؤال ${index + 1} از $count", "Question ${index + 1} of $count"),
+                style = MaterialTheme.typography.labelLarge, color = colors.primary)
+            if(!source.isNullOrBlank()) Text(source, style = MaterialTheme.typography.titleSmall)
+            LinearProgressIndicator(progress = { index.toFloat() / count },
+                modifier = Modifier.fillMaxWidth().height(5.dp).clip(CircleShape), trackColor = colors.surfaceContainerHighest)
+        }
+    }
+}
+
+@Composable private fun QuestionFeedback(correct: Boolean) {
+    val colors = MaterialTheme.colorScheme
+    Surface(Modifier.fillMaxWidth(), shape = InsetControlShape,
+        color = if(correct) colors.surfaceContainerHigh else colors.errorContainer,
+        contentColor = if(correct) colors.onSurface else colors.onErrorContainer) {
+        Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if(correct) AppIcon(UiIcons.Check, null, Modifier.size(18.dp), tint = colors.primary)
+            Text(if(correct) tr("آفرین، درست بود", "You got it") else tr("نیاز به مرور؛ اشکالی ندارد", "Needs review — keep going"),
+                style = MaterialTheme.typography.titleMedium)
         }
     }
 }

@@ -22,7 +22,7 @@ import com.hydro.reedance.domain.Grade
         val background = when {
             correct -> Color(0xFF176B3A)
             wrong -> Color(0xFFA82232)
-            else -> MaterialTheme.colorScheme.surface
+            else -> MaterialTheme.colorScheme.surfaceContainerHigh
         }
         val foreground = if(correct || wrong) Color.White else MaterialTheme.colorScheme.onSurface
         val state = when {
@@ -30,8 +30,8 @@ import com.hydro.reedance.domain.Grade
             wrong -> tr("پاسخ اشتباه", "Incorrect answer")
             else -> ""
         }
-        PressOutlinedButton({ onSelect(id) }, Modifier.fillMaxWidth().semantics { stateDescription = state },
-            enabled = result == null && !busy,
+        PressOutlinedButton({ onSelect(id) }, Modifier.fillMaxWidth().heightIn(min = 48.dp).semantics { stateDescription = state },
+            enabled = result == null && !busy, shape = InsetControlShape, border = null,
             colors = ButtonDefaults.outlinedButtonColors(containerColor = background, contentColor = foreground,
                 disabledContainerColor = background, disabledContentColor = foreground)) {
             PersianText((if(correct) "✓ " else if(wrong) "✕ " else if(selected == id) "● " else "○ ") + option.s(if(fa) "fa" else "en"))
