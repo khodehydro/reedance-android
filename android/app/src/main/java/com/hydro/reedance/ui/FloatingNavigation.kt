@@ -32,9 +32,9 @@ import kotlinx.coroutines.launch
 private data class Destination(val id: String, val label: String, val outline: Int, val filled: Int)
 
 internal val navigationMenuHorizontalInset = 12.dp
-internal fun navigationMenuWidth(compact: Boolean) = if(compact) 150.dp else 264.dp
+internal fun navigationMenuWidth(compact: Boolean) = if(compact) 146.dp else 216.dp
 
-// Apply the same fixed width to the mini-player and tab bar for each mode.
+// Clamp the requested floating bar width to the available space.
 internal fun Modifier.navigationBarWidth(width: () -> Dp): Modifier = layout { measurable, constraints ->
     val px = width().roundToPx().coerceIn(constraints.minWidth, constraints.maxWidth)
     val child = measurable.measure(constraints.copy(minWidth = px, maxWidth = px))

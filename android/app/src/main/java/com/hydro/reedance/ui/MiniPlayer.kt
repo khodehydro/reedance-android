@@ -23,7 +23,7 @@ import com.hydro.reedance.data.ActivePlayback
     toggle: () -> Unit,
     openSong: () -> Unit,
     compact: Boolean = false,
-    menuWidth: () -> Dp = { navigationMenuWidth(compact) }
+    menuWidth: () -> Dp = { if(compact) 150.dp else 264.dp }
 ) {
     var shareDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
