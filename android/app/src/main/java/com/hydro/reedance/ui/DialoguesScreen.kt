@@ -5,6 +5,8 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -17,8 +19,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 
-@Composable internal fun DialoguesScreen(pauseSong: () -> Unit, exit: () -> Unit) {
-    var categoryIndex by rememberSaveable { mutableIntStateOf(-1) }
+@Composable internal fun DialoguesScreen(pauseSong: () -> Unit, initialCategory: Int, exit: () -> Unit) {
+    var categoryIndex by rememberSaveable { mutableIntStateOf(initialCategory) }
     var dialogueIndex by rememberSaveable { mutableIntStateOf(-1) }
     var reader by rememberSaveable { mutableStateOf(false) }
     val category = dialogueCategories.getOrNull(categoryIndex)
@@ -87,8 +89,8 @@ import androidx.compose.ui.unit.dp
     }
 }
 
-@Composable private fun DialogueArtworkCard(@DrawableRes artwork: Int, title: String, detail: String, open: () -> Unit) {
-    Surface(onClick = open, modifier = Modifier.fillMaxWidth(), shape = GroupedCardShape) {
+@Composable private fun DialogueArtworkCard(@DrawableRes artwork: Int, title: String, detail: String, modifier: Modifier = Modifier.fillMaxWidth(), open: () -> Unit) {
+    Surface(onClick = open, modifier = modifier, shape = GroupedCardShape) {
         Column {
             DialogueCover(artwork, Modifier.fillMaxWidth().aspectRatio(2f))
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
@@ -102,4 +104,24 @@ import androidx.compose.ui.unit.dp
 
 @Composable private fun DialogueCover(@DrawableRes artwork: Int, modifier: Modifier) {
     Image(painterResource(artwork), contentDescription = null, modifier = modifier, contentScale = ContentScale.Crop)
+}
+
+@Composable internal fun HomeDialogueCategories(open: (Int) -> Unit) {
+    if(dialogueCategories.isEmpty()) return
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(tr("موضوعات گفت‌وگو", "Dialogue topics"), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+            PressTextButton({ open(-1) }) { Text(tr("دیدن همه", "See all")) }
+        }
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Demo catalog entries are listed in publication order (oldest first).
+            items(dialogueCategories.indices.reversed().take(2), key = { it }) { index ->
+                val category = dialogueCategories[index]
+                val count = category.demos.size
+                DialogueArtworkCard(category.artwork, tr(category.fa, category.en),
+                    tr("$count گفت‌وگو", if(count == 1) "1 dialogue" else "$count dialogues"), Modifier.width(236.dp)) { open(index) }
+            }
+        }
+    }
 }

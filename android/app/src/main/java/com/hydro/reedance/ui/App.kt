@@ -68,6 +68,7 @@ import com.hydro.reedance.data.*
     var premiumReturnPage by rememberSaveable { mutableStateOf("profile") }
     var profileReturnPage by rememberSaveable { mutableStateOf("home") }
     var studyReturnPage by rememberSaveable { mutableStateOf(StudyHubRoute) }
+    var initialDialogueCategory by rememberSaveable { mutableIntStateOf(-1) }
     val currentPage by rememberUpdatedState(page)
     val snackbar = remember { SnackbarHostState() }
     val message by model.message.collectAsStateWithLifecycle()
@@ -109,6 +110,7 @@ import com.hydro.reedance.data.*
             mountedSongPages.removeAll { it.first == to && it.second != songId }
             if(route !in mountedSongPages) mountedSongPages += route
         }
+        if(to != DialoguesRoute) initialDialogueCategory = -1
         page = to
     }
     LaunchedEffect(model) {
@@ -235,7 +237,10 @@ import com.hydro.reedance.data.*
                                             songReturnPage = songReturnPage,
                                             explorePager = explorePager,
                                             exploreArtistKey = exploreArtistKey,
-                                            setExploreArtist = { exploreArtistKey = it }
+                                            setExploreArtist = { exploreArtistKey = it },
+                                            initialDialogueCategory = initialDialogueCategory,
+                                            openDialogues = { index -> initialDialogueCategory = index; navigateAction(DialoguesRoute) },
+                                            closeDialogues = { navigateAction(studyReturnPage) }
                                         )
                                     }
                                 }
@@ -266,7 +271,10 @@ import com.hydro.reedance.data.*
                                             songReturnPage = songReturnPage,
                                             explorePager = explorePager,
                                             exploreArtistKey = exploreArtistKey,
-                                            setExploreArtist = { exploreArtistKey = it }
+                                            setExploreArtist = { exploreArtistKey = it },
+                                            initialDialogueCategory = initialDialogueCategory,
+                                            openDialogues = { index -> initialDialogueCategory = index; navigateAction(DialoguesRoute) },
+                                            closeDialogues = { navigateAction(studyReturnPage) }
                                         )
                                     }
                                 }
@@ -302,10 +310,13 @@ internal fun Modifier.visiblePageLayout(active: Boolean): Modifier = if(active) 
     songReturnPage: String,
     explorePager: PagerState,
     exploreArtistKey: String?,
-    setExploreArtist: (String?) -> Unit
+    setExploreArtist: (String?) -> Unit,
+    initialDialogueCategory: Int,
+    openDialogues: (Int) -> Unit,
+    closeDialogues: () -> Unit
 ) {
     when(page) {
-        "home", "explore" -> CatalogScreen(model, page == "home", openSong, starter, { navigate("library") }, exploreArtistKey, setExploreArtist, explorePager) { navigate("explore") }
+        "home", "explore" -> CatalogScreen(model, page == "home", openSong, starter, { navigate("library") }, exploreArtistKey, setExploreArtist, explorePager, openDialogues) { navigate("explore") }
         "song-download" -> SongDownloadScreen(model, songId, { navigate(songReturnPage) }) { navigate("song-playback") }
         "song-playback" -> SongPlaybackScreen(
             model, songId, songTab, setSongTab, { navigate(songReturnPage) }, { navigate("song-download") },
@@ -313,7 +324,7 @@ internal fun Modifier.visiblePageLayout(active: Boolean): Modifier = if(active) 
         ) { setPremiumReturnPage("song-playback"); navigate("premium") }
         StudyHubRoute -> StudyHubScreen(navigate)
         StoriesRoute -> StoriesScreen(model, openStory)
-        DialoguesRoute -> if(LocalPageActive.current) DialoguesScreen(model::pause) { navigate(StudyHubRoute) }
+        DialoguesRoute -> if(LocalPageActive.current) DialoguesScreen(model::pause, initialDialogueCategory, closeDialogues)
         "game" -> GameScreen(model) { setPremiumReturnPage("game"); navigate("premium") }
         "quiz" -> QuizScreen(model, { navigate("song-playback") }, { navigate("review") })
         "review" -> ReviewScreen(model)

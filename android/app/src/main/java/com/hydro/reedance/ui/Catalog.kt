@@ -81,12 +81,12 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
     }
 }
 @Composable fun CatalogScreen(model: AppModel, home: Boolean, openSong: (String) -> Unit, starter: () -> Unit, openLibrary: () -> Unit,
-    artistKey: String?, onArtist: (String?) -> Unit, explorePager: PagerState, explore: () -> Unit) {
-    if(home) CatalogFeed(model, true, openSong, starter, openLibrary, explore)
+    artistKey: String?, onArtist: (String?) -> Unit, explorePager: PagerState, openDialogues: (Int) -> Unit, explore: () -> Unit) {
+    if(home) CatalogFeed(model, true, openSong, starter, openLibrary, explore, openDialogues)
     else ExploreCatalogScreen(model, openSong, artistKey, onArtist, explorePager)
 }
 
-@Composable private fun CatalogFeed(model: AppModel, home: Boolean, openSong: (String) -> Unit, starter: () -> Unit, openLibrary: () -> Unit, explore: () -> Unit) {
+@Composable private fun CatalogFeed(model: AppModel, home: Boolean, openSong: (String) -> Unit, starter: () -> Unit, openLibrary: () -> Unit, explore: () -> Unit, openDialogues: (Int) -> Unit) {
     val catalog by model.catalog.collectAsStateWithLifecycle()
     val settings by model.settings.collectAsStateWithLifecycle()
     val targetLanguage = settings.targetLanguage
@@ -108,7 +108,9 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
             item(key = "hero", span = { GridItemSpan(maxLineSpan) }) {
                 HomePager(model, explore)
             }
-
+            item(key = "dialogue-categories", span = { GridItemSpan(maxLineSpan) }) {
+                HomeDialogueCategories(openDialogues)
+            }
         }
         item(key = "heading", span = { GridItemSpan(maxLineSpan) }) {
             Heading(if(home) tr("آخرین آهنگ‌ها", "Latest songs") else tr("کشف موسیقی", "Discover music"), tr("موسیقی را بشنو، کلمه‌ها را کشف کن.", "Good music. Words that stay with you."))
