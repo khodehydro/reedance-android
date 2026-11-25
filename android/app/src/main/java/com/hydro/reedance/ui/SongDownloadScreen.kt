@@ -10,6 +10,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
@@ -17,7 +18,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -78,7 +78,6 @@ import kotlin.math.roundToInt
     onCancel: () -> Unit
 ) {
     val transfer by model.installTransfer.collectAsStateWithLifecycle()
-    val context = LocalContext.current
     val reduced = LocalReducedMotion.current
     val coverMorph by animateFloatAsState(
         targetValue = if(busy) 1f else 0f,
@@ -87,7 +86,6 @@ import kotlin.math.roundToInt
     )
     val transferFraction = transfer?.takeIf { it.phase in listOf("download", "copy") }?.fraction
     val downloadProgress = transfer?.takeIf { it.phase == "download" }?.fraction
-    val downloadSize = song.n("packageSizeBytes")
     val countItems = listOf(
         Triple(UiIcons.WordsFilled, tr("لغت", "Words"), "vocabularyCount"),
         Triple(UiIcons.NotesFilled, tr("نکته", "Notes"), "grammarCount"),
@@ -106,7 +104,6 @@ import kotlin.math.roundToInt
     }
 
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(18.dp)) {
-        Text(tr("اطلاعات آهنگ", "SONG INFO"), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         Box(Modifier.size(228.dp), contentAlignment = Alignment.Center) {
             if(busy) CircularWaveProgress(transferFraction, Modifier.fillMaxSize())
             CoverImage(
@@ -118,7 +115,9 @@ import kotlin.math.roundToInt
             )
         }
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(song.s("artist"), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            Text(song.s("title"), style = MaterialTheme.typography.headlineMedium,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            Text(song.s("artist"), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             if(busy) {
                 Text(
                     downloadProgress?.let { "${(it * 100f).roundToInt()}% · $phaseText" } ?: phaseText,
@@ -134,40 +133,23 @@ import kotlin.math.roundToInt
             if(song.s("duration").isNotBlank()) DownloadMetaChip(tr("زمان", "Duration"), song.s("duration"), Modifier.weight(1f))
         }
 
-        Surface(
-            Modifier.fillMaxWidth(),
-            shape = GroupedCardShape,
-            color = MaterialTheme.colorScheme.surface.copy(alpha = .78f),
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f))
-        ) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                AppIcon(UiIcons.Check, null, Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.width(12.dp))
-                Text(tr("حجم دانلود", "Download size"), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-                Text(
-                    if(downloadSize > 0) android.text.format.Formatter.formatFileSize(context, downloadSize)
-                    else tr("هنوز مشخص نیست", "Not available yet"),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
-
-        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(tr("محتوای این آهنگ", "Included learning content"), style = MaterialTheme.typography.titleMedium)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                countItems.forEach { (icon, label, key) ->
-                    val count = if(song.has(key)) song.n(key).toString() else "—"
-                    Surface(
-                        Modifier.weight(1f),
-                        shape = NestedTileShape,
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = .72f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .45f))
-                    ) {
-                        Column(Modifier.padding(vertical = 12.dp, horizontal = 4.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            AppIcon(icon, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
-                            Text(count, style = MaterialTheme.typography.titleMedium)
-                            Text(label, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(tr("محتوای این آهنگ", "Included learning content"), Modifier.padding(horizontal = 12.dp),
+                style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Surface(Modifier.fillMaxWidth(), shape = GroupedCardShape, color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                Column {
+                    countItems.forEachIndexed { index, (icon, label, key) ->
+                        if(index > 0) HorizontalDivider(Modifier.padding(start = 58.dp, end = 14.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .55f))
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Surface(shape = NestedTileShape, color = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer) {
+                                Box(Modifier.size(32.dp), contentAlignment = Alignment.Center) { AppIcon(icon, null, Modifier.size(16.dp)) }
+                            }
+                            Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                            Text(if(song.has(key)) song.n(key).toString() else "—", style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -204,7 +186,7 @@ import kotlin.math.roundToInt
 }
 
 @Composable private fun DownloadMetaChip(label: String, value: String, modifier: Modifier = Modifier) {
-    Surface(modifier, shape = NestedTileShape, color = MaterialTheme.colorScheme.surface.copy(alpha = .68f)) {
+    Surface(modifier, shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
         Column(Modifier.padding(horizontal = 10.dp, vertical = 9.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(value, style = MaterialTheme.typography.labelLarge)
