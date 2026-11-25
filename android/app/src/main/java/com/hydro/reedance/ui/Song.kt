@@ -150,7 +150,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                         val renderLine: @Composable (JsonObject) -> Unit = { line ->
                             val lineId = line.s("id")
                             val active by remember(activeLineId, lineId) { derivedStateOf { activeLineId.value == lineId } }
-                            LyricLine(line, mode, active, single = singleLyric, playing = playing && active && activePlayback?.songId == songId,
+                            LyricLine(line, mode, active, songLanguage = lesson?.s("targetLanguage").orEmpty(), single = singleLyric, playing = playing && active && activePlayback?.songId == songId,
                                 onPlay = {
                                     if(playing && active && activePlayback?.songId == songId) model.pause()
                                     else model.playFromLine(songId, line.n("startMs"))

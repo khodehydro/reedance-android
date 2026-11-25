@@ -353,6 +353,7 @@
         "tokens"
       ],
       "properties": {
+        "language": { "type": "string", "pattern": "^[a-z]{2,3}$", "description": "Optional ISO language code for this line. Omit to inherit targetLanguage." },
         "id": {
           "$ref": "#/$defs/id"
         },
@@ -395,6 +396,7 @@
         "tokens"
       ],
       "properties": {
+        "language": { "type": "string", "pattern": "^[a-z]{2,3}$", "description": "Optional ISO language code for this line. Omit to inherit targetLanguage." },
         "id": {
           "$ref": "#/$defs/id"
         },

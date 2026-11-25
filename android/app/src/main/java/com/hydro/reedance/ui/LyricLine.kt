@@ -13,10 +13,12 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.google.gson.JsonObject
 import com.hydro.reedance.data.*
+import com.hydro.reedance.domain.alternateLyricLanguage
+import java.util.Locale
 
 /** A play action at the start of the original line; translation sits below the text, not the button. */
 @OptIn(ExperimentalLayoutApi::class)
-@Composable internal fun LyricLine(line: JsonObject, mode: Int, active: Boolean, onPlay: () -> Unit, onToken: (JsonObject) -> Unit, playing: Boolean = false, single: Boolean = false, onLine: (() -> Unit)? = null) {
+@Composable internal fun LyricLine(line: JsonObject, mode: Int, active: Boolean, onPlay: () -> Unit, onToken: (JsonObject) -> Unit, playing: Boolean = false, single: Boolean = false, onLine: (() -> Unit)? = null, songLanguage: String = "") {
     val fa = LearningLanguage.persian
     val interfaceDirection = LayoutDirection.Rtl
     val lineAction = if(onLine == null) Modifier else Modifier.clip(GroupedCardShape)
@@ -30,6 +32,19 @@ import com.hydro.reedance.data.*
                         tint = if(active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    alternateLyricLanguage(songLanguage, line.s("language"))?.let { language ->
+                        val code = language.uppercase(Locale.ROOT)
+                        val names = remember(language) {
+                            val locale = Locale.forLanguageTag(language)
+                            locale.getDisplayLanguage(Locale.forLanguageTag("fa")) to locale.getDisplayLanguage(Locale.ENGLISH)
+                        }
+                        val label = tr(names.first, names.second).takeUnless { it.isBlank() || it.equals(language, ignoreCase = true) } ?: code
+                        Surface(Modifier.align(if(single) Alignment.CenterHorizontally else Alignment.Start),
+                            shape = InsetControlShape, color = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer) {
+                            Text(label, Modifier.padding(horizontal = 8.dp, vertical = 3.dp), style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
                     FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = if(single) Arrangement.spacedBy(2.dp, Alignment.CenterHorizontally) else Arrangement.spacedBy(2.dp)) {
                         line.a("tokens").forEach { token ->
                             Column(Modifier.clickable(onClickLabel = tr("معنی واژه", "Word meaning")) { onToken(token) }.padding(horizontal = 3.dp, vertical = 8.dp), horizontalAlignment = if(single) Alignment.CenterHorizontally else Alignment.Start) {
