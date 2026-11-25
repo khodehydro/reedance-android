@@ -168,7 +168,7 @@ import com.hydro.reedance.data.*
          LocalLayoutDirection.current, swipeNavigate)) {
       val scaffoldInsets = if(artistDetail || page == "song-story" || page == "premium") WindowInsets(0, 0, 0, 0) else ScaffoldDefaults.contentWindowInsets
       Scaffold(Modifier.fillMaxSize(), contentWindowInsets = scaffoldInsets, containerColor = Color.Transparent, snackbarHost = { SnackbarHost(snackbar) }, topBar = {
-        if(!artistDetail && !songPage && page != "premium") Surface(color = MaterialTheme.colorScheme.background, contentColor = MaterialTheme.colorScheme.onSurface) { Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        if(!artistDetail && !songPage && page != "premium" && page != DialoguesRoute) Surface(color = MaterialTheme.colorScheme.background, contentColor = MaterialTheme.colorScheme.onSurface) { Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             if(page == "quiz" || page == "profile" || studySection) {
                 PressIconButton(::goBack) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
                 if(page == "quiz") Text(tr("آزمون", "Practice"), style = MaterialTheme.typography.titleLarge)
@@ -313,6 +313,7 @@ internal fun Modifier.visiblePageLayout(active: Boolean): Modifier = if(active) 
         ) { setPremiumReturnPage("song-playback"); navigate("premium") }
         StudyHubRoute -> StudyHubScreen(navigate)
         StoriesRoute -> StoriesScreen(model, openStory)
+        DialoguesRoute -> if(LocalPageActive.current) DialoguesScreen(model::pause) { navigate(StudyHubRoute) }
         "game" -> GameScreen(model) { setPremiumReturnPage("game"); navigate("premium") }
         "quiz" -> QuizScreen(model, { navigate("song-playback") }, { navigate("review") })
         "review" -> ReviewScreen(model)

@@ -18,13 +18,15 @@ import androidx.compose.ui.unit.dp
 
 internal const val StudyHubRoute = "study"
 internal const val StoriesRoute = "stories"
-internal val studySectionRoutes = setOf("review", "gym", "game", "library", StoriesRoute)
+internal const val DialoguesRoute = "dialogues"
+internal val studySectionRoutes = setOf("review", "gym", "game", "library", StoriesRoute, DialoguesRoute)
 
 @Composable internal fun studySectionTitle(route: String): String = when(route) {
     "review" -> tr("مرور", "Review")
     "gym" -> tr("باشگاه", "Gym")
     "game" -> tr("بازی", "Game")
     "library" -> tr("کتابخانه", "Library")
+    DialoguesRoute -> tr("گفت‌وگو", "Dialogues")
     StoriesRoute -> tr("داستان‌ها", "Stories")
     else -> tr("یادگیری", "Learn")
 }
@@ -36,7 +38,8 @@ private val studyTiles = listOf(
     StudyTile("gym", UiIcons.Dumbbell, UiIcons.DumbbellFilled, Color(0xFF17634F)),
     StudyTile("game", UiIcons.Game, UiIcons.GameFilled, Color(0xFF603C91)),
     StudyTile("library", UiIcons.Library, UiIcons.LibraryFilled, Color(0xFF814B20)),
-    StudyTile(StoriesRoute, UiIcons.Headphones, UiIcons.Headphones, Color(0xFF903D5B))
+    StudyTile(StoriesRoute, UiIcons.Headphones, UiIcons.Headphones, Color(0xFF903D5B)),
+    StudyTile(DialoguesRoute, UiIcons.Phrases, UiIcons.PhrasesFilled, Color(0xFF24616E))
 )
 
 @Composable internal fun StudyHubScreen(open: (String) -> Unit) {
