@@ -50,6 +50,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     var singleLyric by rememberSaveable(songId) { mutableStateOf(false) }
     var autoScroll by rememberSaveable(songId) { mutableStateOf(true) }
     val setAutoScroll: (Boolean) -> Unit = { autoScroll = it }
+    var selectedLineId by rememberSaveable(songId) { mutableStateOf<String?>(null) }
     var selectedWord by remember { mutableStateOf<JsonObject?>(null) }
     val scroll = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -144,7 +145,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                 }
                 when(tab) {
                     0 -> {
-                        item(key = "lyric-help") { Text(tr("برای پخش از هر خط، روی آیکون پخش کنار آن بزن؛ برای معنی روی واژه بزن.", "Tap the play icon beside a line to play from there, or a word to explore it."), style = MaterialTheme.typography.bodySmall) }
+                        item(key = "lyric-help") { Text(if(singleLyric) tr("برای معنی روی واژه بزن.", "Tap a word to see its meaning.") else tr("برای یادگیری روی خط و برای پخش روی دکمهٔ کنار آن بزن.", "Tap a line to learn it, or its play button to listen."), style = MaterialTheme.typography.bodySmall) }
                         val visibleLines = lines.take(access.limit("lyrics"))
                         val renderLine: @Composable (JsonObject) -> Unit = { line ->
                             val lineId = line.s("id")
@@ -153,7 +154,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                                 onPlay = {
                                     if(playing && active && activePlayback?.songId == songId) model.pause()
                                     else model.playFromLine(songId, line.n("startMs"))
-                                }, onToken = { token ->
+                                }, onLine = if(!singleLyric && lineId in visibleLyricIndices) ({ selectedLineId = lineId }) else null, onToken = { token ->
                                 if(access.preview && token.s("lexemeId") !in wordsById) subscriptionInfo = true
                                 else selectedWord = wordsById[token.s("lexemeId")] ?: JsonObject().apply {
                                     addProperty("lemma", token.s("surface")); addProperty("translationFa", token.s("translationFa")); addProperty("translationEn", token.s("translationEn"))
@@ -215,6 +216,11 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
         confirmButton = { PressTextButton({ subscriptionInfo = false; premium() }) { Text(tr("دیدن امکانات پریمیوم", "Explore Premium")) } },
         dismissButton = { PressTextButton({ subscriptionInfo = false }) { Text(tr("بعداً", "Later")) } }
     )
+    if(LocalPageActive.current && lesson != null) {
+        lines.take(access.limit("lyrics")).firstOrNull { it.s("id") == selectedLineId }?.let { line ->
+            key(songId, selectedLineId) { LineLearningSheet(model, lesson, line, access) { selectedLineId = null } }
+        }
+    }
     selectedWord?.let { word -> ReedanceBottomSheet(onDismissRequest = { selectedWord = null }) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             WordLearningContent(word)

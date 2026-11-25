@@ -15,7 +15,7 @@ import com.hydro.reedance.data.*
 
 /** A play action at the start of the original line; translation sits below the text, not the button. */
 @OptIn(ExperimentalLayoutApi::class)
-@Composable internal fun LyricLine(line: JsonObject, mode: Int, active: Boolean, onPlay: () -> Unit, onToken: (JsonObject) -> Unit, playing: Boolean = false, single: Boolean = false) {
+@Composable internal fun LyricLine(line: JsonObject, mode: Int, active: Boolean, onPlay: () -> Unit, onToken: (JsonObject) -> Unit, playing: Boolean = false, single: Boolean = false, onLine: (() -> Unit)? = null) {
     val fa = LearningLanguage.persian
     val interfaceDirection = LayoutDirection.Rtl
     Panel(tone = if(active) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface) {
@@ -26,10 +26,10 @@ import com.hydro.reedance.data.*
                         if(playing) tr("مکث خط: ${line.s("text")}", "Pause line: ${line.s("text")}") else tr("پخش خط: ${line.s("text")}", "Play line: ${line.s("text")}"), Modifier.size(18.dp),
                         tint = if(active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(Modifier.weight(1f).then(if(onLine != null) Modifier.clickable(onClickLabel = tr("یادگیری این خط", "Learn this line"), onClick = onLine) else Modifier), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = if(single) Arrangement.spacedBy(2.dp, Alignment.CenterHorizontally) else Arrangement.spacedBy(2.dp)) {
                         line.a("tokens").forEach { token ->
-                            Column(Modifier.clickable { onToken(token) }.padding(horizontal = 3.dp, vertical = 8.dp), horizontalAlignment = if(single) Alignment.CenterHorizontally else Alignment.Start) {
+                            Column(Modifier.then(if(onLine == null) Modifier.clickable { onToken(token) } else Modifier).padding(horizontal = 3.dp, vertical = 8.dp), horizontalAlignment = if(single) Alignment.CenterHorizontally else Alignment.Start) {
                                 Text(token.s("surface"), style = MaterialTheme.typography.titleMedium)
                                 if(mode == 2) Text(token.tr("translation", fa), style = MaterialTheme.typography.labelSmall.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Rtl), color = MaterialTheme.colorScheme.primary)
                             }
