@@ -49,7 +49,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
-@Composable internal fun DialogueReader(demo: DialogueDemo) {
+@Composable internal fun DialogueReader(demo: DialogueDemo, paperIndex: Int, dim: Boolean,
+    onPaperChange: () -> Unit, onDimChange: () -> Unit) {
     val tabs = listOf(tr("چت", "Chat"), tr("لغات", "Words"), tr("گرامر", "Grammar"), tr("اصطلاحات", "Phrases"), tr("سؤالات", "Questions"))
     val pager = rememberPagerState { tabs.size }
     val scope = rememberCoroutineScope()
@@ -68,8 +69,6 @@ import kotlinx.coroutines.launch
     var listMode by rememberSaveable { mutableStateOf(true) }
     var speedIndex by rememberSaveable { mutableIntStateOf(1) }
     var fontIndex by rememberSaveable { mutableIntStateOf(1) }
-    var paperIndex by rememberSaveable { mutableIntStateOf(0) }
-    var dim by rememberSaveable { mutableStateOf(false) }
     var appearance by remember { mutableStateOf(false) }
     val speed = listOf(.75f, 1f, 1.25f, 1.5f)[speedIndex]
     val activeTurn = singleTurn ?: current
@@ -141,13 +140,11 @@ import kotlinx.coroutines.launch
         HorizontalPager(pager, Modifier.weight(1f)) { page ->
             if(page == 0) {
                 val scheme = MaterialTheme.colorScheme
-                val paper = if(dim) Color(0xFF171717) else when(paperIndex) { 1 -> Color(0xFFF3E6CA); 2 -> Color(0xFFE0EDF0); else -> scheme.background }
-                val ink = if(dim) Color.White else if(paperIndex != 0) Color(0xFF20252B) else scheme.onSurface
                 Column(Modifier.fillMaxSize()) {
                     if(demo.turns.none { it.audio != null }) Text(tr("دموی متنی · بدون فایل صوتی", "Text demo · no recorded audio"),
                         Modifier.padding(horizontal = 16.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall)
                     if(audioFailed) Text(tr("فایل صوتی پخش نشد.", "Could not play the recording."), color = scheme.error)
-                    Surface(Modifier.weight(1f).fillMaxWidth(), color = paper, contentColor = ink) {
+                    Surface(Modifier.weight(1f).fillMaxWidth(), color = scheme.background, contentColor = scheme.onBackground) {
                         Box(Modifier.fillMaxSize()) {
                             DialogueMessages(demo, revealed, activeTurn.takeIf { playing } ?: -1, modes, hideAll, listMode, fontIndex, translation, ::selectTurn)
                             if(!startedDialogue && revealed == 0) {
@@ -215,8 +212,8 @@ import kotlinx.coroutines.launch
     if(appearance) AlertDialog(onDismissRequest = { appearance = false }, title = { Text(tr("ظاهر چت", "Chat appearance")) }, text = {
         Column {
             SettingsAction(UiIcons.WordMode, tr("اندازهٔ نوشته", "Text size"), listOf(tr("کوچک", "Small"), tr("متوسط", "Medium"), tr("بزرگ", "Large"))[fontIndex]) { fontIndex = (fontIndex + 1) % 3 }
-            SettingsAction(UiIcons.Light, tr("نور", "Brightness"), if(dim) tr("کم", "Dim") else tr("عادی", "Normal")) { dim = !dim }
-            SettingsAction(UiIcons.System, tr("پس‌زمینه", "Background"), listOf(tr("سیستم", "System"), tr("کاهی", "Sepia"), tr("آبی", "Blue"))[paperIndex]) { paperIndex = (paperIndex + 1) % 3 }
+            SettingsAction(UiIcons.Light, tr("نور", "Brightness"), if(dim) tr("کم", "Dim") else tr("عادی", "Normal"), onDimChange)
+            SettingsAction(UiIcons.System, tr("پس‌زمینه", "Background"), listOf(tr("سیستم", "System"), tr("کاهی", "Sepia"), tr("آبی", "Blue"))[paperIndex], onPaperChange)
         }
     }, confirmButton = { PressTextButton({ appearance = false }) { Text(tr("بستن", "Close")) } })
 }
@@ -299,8 +296,8 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
             val textSize = listOf(14, 17, 21)[font].sp
             val bubbleSize = if(hidden) Modifier.widthIn(min = 48.dp) else Modifier.fillMaxWidth(.84f)
             Surface(onClick = play, modifier = bubbleSize, shape = InsetControlShape,
-                color = if(active || turn.speaker == 1) colors.primaryContainer else colors.surface,
-                contentColor = if(active || turn.speaker == 1) colors.onPrimaryContainer else colors.onSurface) {
+                color = when { active -> colors.primaryContainer; turn.speaker == 1 -> colors.secondaryContainer; else -> colors.surfaceContainer },
+                contentColor = when { active -> colors.onPrimaryContainer; turn.speaker == 1 -> colors.onSecondaryContainer; else -> colors.onSurface }) {
                 Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     if(hidden) {
                         Text("...", Modifier.align(Alignment.CenterHorizontally), fontSize = textSize)
@@ -373,7 +370,9 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
         SpeakerMode.ROLE -> tr("نقش‌آفرینی", "Role-play")
     }
     Column(modifier.clickable(onClick = change).semantics { stateDescription = label }.padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Surface(Modifier.size(40.dp), shape = CircleShape, color = if(first) Color(0xFF245198) else Color(0xFF17634F), contentColor = Color.White) {
+        val colors = MaterialTheme.colorScheme
+        Surface(Modifier.size(40.dp), shape = CircleShape, color = if(first) colors.primary else colors.tertiary,
+            contentColor = if(first) colors.onPrimary else colors.onTertiary) {
             Box(contentAlignment = Alignment.Center) {
                 AppIcon(if(speaker.gender == DialogueGender.WOMAN) R.drawable.dialogue_avatar_woman else R.drawable.dialogue_avatar_man,
                     null, Modifier.size(28.dp))

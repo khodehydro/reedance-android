@@ -31,45 +31,52 @@ import androidx.compose.ui.unit.dp
         }
     }
     BackHandler { back() }
-    Column(Modifier.fillMaxSize().padding(bottom = LocalOverlayBottomInset.current)) {
-        HeaderSurface {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                PressIconButton(::back) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
-                Text(when {
-                    reader && dialogue != null -> tr(dialogue.titleFa, dialogue.titleEn)
-                    dialogue != null -> tr("دانلود گفت‌وگو", "Download dialogue")
-                    category != null -> tr(category.fa, category.en)
-                    else -> tr("گفت‌وگو", "Dialogues")
-                }, style = MaterialTheme.typography.titleLarge)
+    var paperIndex by rememberSaveable { mutableIntStateOf(0) }
+    var dim by rememberSaveable { mutableStateOf(false) }
+    DialoguePalette(enabled = reader && dialogue != null, paperIndex = paperIndex, dim = dim) {
+        Column(Modifier.fillMaxSize().padding(bottom = LocalOverlayBottomInset.current)) {
+            HeaderSurface {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    PressIconButton(::back) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
+                    Text(when {
+                        reader && dialogue != null -> tr(dialogue.titleFa, dialogue.titleEn)
+                        dialogue != null -> tr("دانلود گفت‌وگو", "Download dialogue")
+                        category != null -> tr(category.fa, category.en)
+                        else -> tr("گفت‌وگو", "Dialogues")
+                    }, style = MaterialTheme.typography.titleLarge)
+                }
             }
-        }
-        if(reader && dialogue != null) {
-            key(categoryIndex, dialogueIndex) { DialogueReader(dialogue) }
-        } else {
-            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                when {
-                    dialogue != null -> Panel {
-                        DialogueCover(dialogue.artwork, Modifier.fillMaxWidth().aspectRatio(5f / 3f).clip(InsetControlShape))
-                        Text(tr(dialogue.titleFa, dialogue.titleEn), style = MaterialTheme.typography.headlineSmall)
-                        Text(tr("نسخهٔ نمایشی: دانلود و فایل‌های صوتی هنوز متصل نیستند.", "Demo: downloads and recorded audio are not connected yet."))
-                        Action(tr("باز کردن دمو", "Open demo"), Modifier.fillMaxWidth()) {
-                            pauseSong()
-                            reader = true
+            if(reader && dialogue != null) {
+                key(categoryIndex, dialogueIndex) {
+                    DialogueReader(dialogue, paperIndex, dim, onPaperChange = { paperIndex = (paperIndex + 1) % 3 },
+                        onDimChange = { dim = !dim })
+                }
+            } else {
+                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    when {
+                        dialogue != null -> Panel {
+                            DialogueCover(dialogue.artwork, Modifier.fillMaxWidth().aspectRatio(5f / 3f).clip(InsetControlShape))
+                            Text(tr(dialogue.titleFa, dialogue.titleEn), style = MaterialTheme.typography.headlineSmall)
+                            Text(tr("نسخهٔ نمایشی: دانلود و فایل‌های صوتی هنوز متصل نیستند.", "Demo: downloads and recorded audio are not connected yet."))
+                            Action(tr("باز کردن دمو", "Open demo"), Modifier.fillMaxWidth()) {
+                                pauseSong()
+                                reader = true
+                            }
                         }
-                    }
-                    category != null -> {
-                        Heading(tr("گفت‌وگوها", "Dialogues"))
-                        category.demos.forEachIndexed { index, item ->
-                            DialogueArtworkCard(item.artwork, tr(item.titleFa, item.titleEn), tr("دمو", "Demo")) { dialogueIndex = index }
+                        category != null -> {
+                            Heading(tr("گفت‌وگوها", "Dialogues"))
+                            category.demos.forEachIndexed { index, item ->
+                                DialogueArtworkCard(item.artwork, tr(item.titleFa, item.titleEn), tr("دمو", "Demo")) { dialogueIndex = index }
+                            }
                         }
-                    }
-                    else -> {
-                        Heading(tr("دسته‌بندی‌ها", "Categories"))
-                        dialogueCategories.forEachIndexed { index, item ->
-                            val count = item.demos.size
-                            DialogueArtworkCard(item.artwork, tr(item.fa, item.en),
-                                tr("$count گفت‌وگو", if(count == 1) "1 dialogue" else "$count dialogues")) { categoryIndex = index }
+                        else -> {
+                            Heading(tr("دسته‌بندی‌ها", "Categories"))
+                            dialogueCategories.forEachIndexed { index, item ->
+                                val count = item.demos.size
+                                DialogueArtworkCard(item.artwork, tr(item.fa, item.en),
+                                    tr("$count گفت‌وگو", if(count == 1) "1 dialogue" else "$count dialogues")) { categoryIndex = index }
+                            }
                         }
                     }
                 }
