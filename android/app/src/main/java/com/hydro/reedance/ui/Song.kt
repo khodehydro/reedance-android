@@ -210,7 +210,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                         if(data.a(type).size > access.limit(type)) item(key = "$type-preview") { PremiumPreview() }
                     }
                 }
-                if(!subscribed) item(key = "subscription") { ProfileMembershipCard(premium, clickableCard = true) }
+                item(key = "telegram-channel") { SongTelegramCard() }
             }
         }
     }
