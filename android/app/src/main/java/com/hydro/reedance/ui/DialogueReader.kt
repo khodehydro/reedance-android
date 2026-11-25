@@ -307,6 +307,8 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
         Box(Modifier.fillMaxWidth(), contentAlignment = if(turn.speaker == 0) Alignment.CenterStart else Alignment.CenterEnd) {
             val colors = MaterialTheme.colorScheme
             val textSize = listOf(14, 17, 21)[font].sp
+            val meaningSize = listOf(11, 12, 15)[font].sp
+            val meaningLineHeight = listOf(15, 16, 21)[font].sp
             val bubbleSize = if(hidden) Modifier.widthIn(min = 48.dp) else Modifier.fillMaxWidth(.84f)
             Surface(onClick = play, modifier = bubbleSize, shape = InsetControlShape,
                 color = when { active -> colors.primaryContainer; turn.speaker == 1 -> colors.secondaryContainer; else -> colors.surfaceContainer },
@@ -329,14 +331,15 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(word, fontSize = textSize)
                                     turn.glosses.getOrNull(index)?.takeIf { it.isNotBlank() }?.let { gloss ->
-                                        Text(gloss, fontSize = listOf(11, 12, 14)[font].sp, textAlign = TextAlign.Center)
+                                        Text(gloss, fontSize = meaningSize, lineHeight = meaningLineHeight, textAlign = TextAlign.Center)
                                     }
                                 }
                             }
                         }
                     } else Text(turn.text, fontSize = textSize)
                     if(translation == DialogueTranslation.SENTENCE) {
-                        PersianText(turn.meaning, style = MaterialTheme.typography.bodySmall)
+                        PersianText(turn.meaning, style = MaterialTheme.typography.bodySmall.copy(
+                            fontSize = meaningSize, lineHeight = meaningLineHeight))
                     }
                 }
             }

@@ -1,5 +1,6 @@
 package com.hydro.reedance.ui
 
+import android.util.DisplayMetrics
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -25,11 +26,13 @@ import com.hydro.reedance.data.*
 @Composable fun ReedanceApp(model: AppModel, destination: (@Composable () -> Unit)? = null) {
     val settings by model.settings.collectAsStateWithLifecycle()
     val ready by model.ready.collectAsStateWithLifecycle()
-    val density = LocalDensity.current
+    // Keep app sizing independent of Android's font and display-size overrides.
+    // The device's baseline density still maps dp to the appropriate pixel size.
+    val appDensity = DisplayMetrics.DENSITY_DEVICE_STABLE / DisplayMetrics.DENSITY_DEFAULT.toFloat()
     val context = LocalContext.current
     val fa = settings.language != "en"
     CompositionLocalProvider(LocalFa provides fa, LocalReducedMotion provides false, LocalLayoutDirection provides if(fa) LayoutDirection.Rtl else LayoutDirection.Ltr,
-        LocalDensity provides Density(density.density, density.fontScale * listOf(.9f, 1f, 1.15f)[settings.textSize.coerceIn(0,2)])) {
+        LocalDensity provides Density(appDensity, listOf(.9f, 1f, 1.15f)[settings.textSize.coerceIn(0,2)])) {
         ReedanceTheme(settings) {
             val lightBars = settings.permissionsSetup && MaterialTheme.colorScheme.background.luminance() > .5f
             SideEffect {
