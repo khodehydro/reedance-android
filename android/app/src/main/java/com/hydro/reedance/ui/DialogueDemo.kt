@@ -9,8 +9,8 @@ internal enum class DialogueGender { WOMAN, MAN }
 internal data class DialogueSpeaker(val name: String, val gender: DialogueGender)
 
 internal data class DialogueDemo(val titleEn: String, val titleFa: String, val speakers: List<DialogueSpeaker>,
-    val turns: List<DialogueTurn>, val learning: DialogueLearning, @DrawableRes val artwork: Int)
-internal data class DialogueCategory(val en: String, val fa: String, val demos: List<DialogueDemo>, @DrawableRes val artwork: Int)
+    val turns: List<DialogueTurn>, val learning: DialogueLearning, @DrawableRes val artwork: Int, val premium: Boolean = false)
+internal data class DialogueCategory(val en: String, val fa: String, val demos: List<DialogueDemo>, @DrawableRes val artwork: Int, val premium: Boolean = false)
 
 internal val dialogueCategories = listOf(
     DialogueCategory("Everyday life", "زندگی روزمره", listOf(DialogueDemo("At a café", "در کافه", listOf(DialogueSpeaker("Elif", DialogueGender.WOMAN), DialogueSpeaker("Deniz", DialogueGender.WOMAN)), listOf(
@@ -36,7 +36,7 @@ internal val dialogueCategories = listOf(
         DialogueTurn(1, "Evet, sağda.", "بله، سمت راست است.", glosses = listOf("بله", "سمت راست")),
         DialogueTurn(0, "Yardımınız için teşekkür ederim.", "از کمکتان ممنونم.", glosses = listOf("کمکتان", "برای", "تشکر", "می‌کنم")),
         DialogueTurn(1, "Rica ederim.", "خواهش می‌کنم.", glosses = listOf("خواهش", "می‌کنم"))
-    ), stationLearning, R.drawable.dialogue_art_station)), R.drawable.dialogue_art_travel)
+    ), stationLearning, R.drawable.dialogue_art_station, premium = true)), R.drawable.dialogue_art_travel, premium = true)
 )
 
 internal enum class SpeakerMode(val audio: Boolean, val messages: Boolean) {

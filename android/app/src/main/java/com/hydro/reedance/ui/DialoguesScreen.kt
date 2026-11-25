@@ -62,7 +62,7 @@ import androidx.compose.ui.unit.dp
                     when {
                         dialogue != null -> Panel {
                             DialogueCover(dialogue.artwork, Modifier.fillMaxWidth().aspectRatio(5f / 3f).clip(InsetControlShape))
-                            Text(tr(dialogue.titleFa, dialogue.titleEn), style = MaterialTheme.typography.headlineSmall)
+                            SongTitle(tr(dialogue.titleFa, dialogue.titleEn), category?.premium == true || dialogue.premium, MaterialTheme.typography.headlineSmall)
                             Text(tr("نسخهٔ نمایشی: دانلود و فایل‌های صوتی هنوز متصل نیستند.", "Demo: downloads and recorded audio are not connected yet."))
                             Action(tr("باز کردن دمو", "Open demo"), Modifier.fillMaxWidth()) {
                                 pauseSong()
@@ -72,7 +72,7 @@ import androidx.compose.ui.unit.dp
                         category != null -> {
                             Heading(tr("گفت‌وگوها", "Dialogues"))
                             category.demos.forEachIndexed { index, item ->
-                                DialogueArtworkCard(item.artwork, tr(item.titleFa, item.titleEn), tr("دمو", "Demo")) { dialogueIndex = index }
+                                DialogueArtworkCard(item.artwork, tr(item.titleFa, item.titleEn), tr("دمو", "Demo"), premium = category.premium || item.premium) { dialogueIndex = index }
                             }
                         }
                         else -> {
@@ -80,7 +80,7 @@ import androidx.compose.ui.unit.dp
                             dialogueCategories.forEachIndexed { index, item ->
                                 val count = item.demos.size
                                 DialogueArtworkCard(item.artwork, tr(item.fa, item.en),
-                                    tr("$count گفت‌وگو", if(count == 1) "1 dialogue" else "$count dialogues")) { categoryIndex = index }
+                                    tr("$count گفت‌وگو", if(count == 1) "1 dialogue" else "$count dialogues"), premium = item.premium) { categoryIndex = index }
                             }
                         }
                     }
@@ -90,13 +90,13 @@ import androidx.compose.ui.unit.dp
     }
 }
 
-@Composable private fun DialogueArtworkCard(@DrawableRes artwork: Int, title: String, detail: String, modifier: Modifier = Modifier.fillMaxWidth(), open: () -> Unit) {
+@Composable private fun DialogueArtworkCard(@DrawableRes artwork: Int, title: String, detail: String, modifier: Modifier = Modifier.fillMaxWidth(), premium: Boolean = false, open: () -> Unit) {
     Surface(onClick = open, modifier = modifier, shape = GroupedCardShape) {
         Column {
             DialogueCover(artwork, Modifier.fillMaxWidth().aspectRatio(2f))
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                Box(Modifier.weight(1f)) { SongTitle(title, premium, MaterialTheme.typography.titleMedium) }
                 Text(detail, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -134,7 +134,7 @@ import androidx.compose.ui.unit.dp
                     val count = category.demos.size
                     DialogueArtworkCard(category.artwork, tr(category.fa, category.en),
                         tr("$count گفت‌وگو", if(count == 1) "1 dialogue" else "$count dialogues"),
-                        modifier = Modifier.width(210.dp)) { open(index) }
+                        modifier = Modifier.width(210.dp), premium = category.premium) { open(index) }
                 }
             }
         }
