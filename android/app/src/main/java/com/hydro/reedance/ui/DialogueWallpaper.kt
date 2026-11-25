@@ -27,10 +27,13 @@ internal fun Modifier.dialogueWallpaper(accent: Color, theme: Int): Modifier = d
             "M51,121 Q56,106 72,111 Q83,117 76,128 Q71,135 61,131 L54,135 L55,128 Q50,126 51,121 " +
             "M109,121 Q109,128 116,129 Q109,130 108,137 Q107,130 101,129 Q108,128 109,121"
     ).toPath()
-    val extra = PathParser().parsePathString(when(theme) {
-        1 -> "M99,56 Q91,50 94,42 Q103,43 105,51 Q103,55 99,56 M99,50 L105,58 M22,127 Q30,119 37,126"
-        2 -> "M95,52 Q96,41 107,41 Q107,50 95,52 M95,52 L91,57 M26,122 Q35,114 41,122"
-        else -> "M92,55 Q99,43 108,50 Q107,61 96,61 M24,126 Q32,117 42,124"
+    val extra = PathParser().parsePathString(when(DialoguePaper.entries[theme]) {
+        DialoguePaper.Sepia -> "M99,56 Q91,50 94,42 Q103,43 105,51 Q103,55 99,56 M99,50 L105,58 M22,127 Q30,119 37,126"
+        DialoguePaper.Blue -> "M95,52 Q96,41 107,41 Q107,50 95,52 M95,52 L91,57 M26,122 Q35,114 41,122"
+        DialoguePaper.Peach -> "M89,61 Q100,49 111,61 M89,56 Q100,44 111,56 M89,51 Q100,39 111,51 M21,128 Q31,118 41,127"
+        DialoguePaper.Mint -> "M93,59 Q94,43 111,40 Q113,55 93,59 M91,62 Q99,51 104,48 M25,128 Q21,119 34,116 Q39,127 25,128"
+        DialoguePaper.Lavender -> "M101,40 Q101,49 111,50 Q101,51 101,61 Q100,51 91,50 Q101,49 101,40 M26,118 Q26,124 34,125 Q26,126 26,133 Q25,126 19,125 Q26,124 26,118"
+        DialoguePaper.System -> "M92,55 Q99,43 108,50 Q107,61 96,61 M24,126 Q32,117 42,124"
     }).toPath()
     val rows = ceil(size.height / tile).toInt()
     val columns = ceil(size.width / tile).toInt()

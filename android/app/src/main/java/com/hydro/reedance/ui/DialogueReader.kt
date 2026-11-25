@@ -226,7 +226,7 @@ import kotlinx.coroutines.launch
         Column {
             SettingsAction(UiIcons.WordMode, tr("اندازهٔ نوشته", "Text size"), listOf(tr("کوچک", "Small"), tr("متوسط", "Medium"), tr("بزرگ", "Large"))[fontIndex]) { fontIndex = (fontIndex + 1) % 3 }
             SettingsAction(UiIcons.Light, tr("نور", "Brightness"), if(dim) tr("کم", "Dim") else tr("عادی", "Normal"), onDimChange)
-            SettingsAction(UiIcons.System, tr("پس‌زمینه", "Background"), listOf(tr("سیستم", "System"), tr("کاهی", "Sepia"), tr("آبی", "Blue"))[paperIndex], onPaperChange)
+            SettingsAction(UiIcons.System, tr("پس‌زمینه", "Background"), DialoguePaper.entries[paperIndex].label(), onPaperChange)
         }
     }, confirmButton = { PressTextButton({ appearance = false }) { Text(tr("بستن", "Close")) } })
 }

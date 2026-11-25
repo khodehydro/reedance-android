@@ -35,7 +35,7 @@ import androidx.compose.ui.unit.dp
         }
     }
     BackHandler { back() }
-    var paperIndex by rememberDialoguePreference("paper", 0, 0..2)
+    var paperIndex by rememberDialoguePreference("paper", 0, DialoguePaper.entries.indices)
     var dim by rememberDialogueToggle("dim", false)
     DialoguePalette(enabled = reader && dialogue != null, paperIndex = paperIndex, dim = dim) {
         Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
@@ -53,7 +53,7 @@ import androidx.compose.ui.unit.dp
             }
             if(reader && dialogue != null) {
                 key(categoryIndex, dialogueIndex) {
-                    DialogueReader(dialogue, paperIndex, dim, onPaperChange = { paperIndex = (paperIndex + 1) % 3 },
+                    DialogueReader(dialogue, paperIndex, dim, onPaperChange = { paperIndex = (paperIndex + 1) % DialoguePaper.entries.size },
                         onDimChange = { dim = !dim })
                 }
             } else {
