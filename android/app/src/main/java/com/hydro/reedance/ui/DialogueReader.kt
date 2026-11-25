@@ -307,7 +307,8 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
                         return@Column
                     }
                     if(showWave) {
-                        Box(Modifier.semantics { contentDescription = tr("در حال پخش", "Playing") }) {
+                        val playingLabel = tr("در حال پخش", "Playing")
+                        Box(Modifier.semantics { contentDescription = playingLabel }) {
                             DialogueListeningWave(listening = true, compact = true)
                         }
                     }
