@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.LayoutDirection
@@ -35,6 +36,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import com.hydro.reedance.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -138,10 +140,23 @@ import kotlinx.coroutines.launch
                     Surface(Modifier.weight(1f).fillMaxWidth(), color = paper, contentColor = ink) {
                         DialogueMessages(demo, revealed, activeTurn.takeIf { playing } ?: -1, modes, hideAll, listMode, fontIndex, translation, ::selectTurn)
                     }
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                            SpeakerAvatar(demo.names[0], modes[0], true) { firstMode = modes[0].next().ordinal }
-                            SpeakerAvatar(demo.names[1], modes[1], false) { secondMode = modes[1].next().ordinal }
+                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                        Box(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
+                            SpeakerAvatar(demo.speakers[0], modes[0], true, Modifier.align(Alignment.CenterStart)) {
+                                firstMode = modes[0].next().ordinal
+                            }
+                            PressIconButton(::playPause, Modifier.align(Alignment.Center).size(56.dp)) {
+                                Surface(Modifier.fillMaxSize(), shape = CircleShape,
+                                    color = scheme.primary, contentColor = scheme.onPrimary) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        AppIcon(if(playing) UiIcons.PauseFilled else UiIcons.PlayFilled,
+                                            if(playing) tr("مکث", "Pause") else tr("پخش", "Play"), Modifier.size(24.dp))
+                                    }
+                                }
+                            }
+                            SpeakerAvatar(demo.speakers[1], modes[1], false, Modifier.align(Alignment.CenterEnd)) {
+                                secondMode = modes[1].next().ordinal
+                            }
                         }
                     }
                     val translationLabel = when(translation) {
@@ -153,25 +168,31 @@ import kotlinx.coroutines.launch
                     val pairState = tr("دو پیام آخر", "Last two messages")
                     Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceEvenly) {
-                        PressIconButton(::playPause) {
-                            AppIcon(if(playing) UiIcons.PauseFilled else UiIcons.PlayFilled, if(playing) tr("مکث", "Pause") else tr("پخش", "Play"))
-                        }
-                        PressTextButton({ speedIndex = (speedIndex + 1) % 4 }) { Text("${speed}×") }
-                        PressIconButton({ listMode = !listMode }, Modifier.semantics {
+                        val speedLabel = tr("سرعت پخش", "Playback speed")
+                        DialogueControl({ speedIndex = (speedIndex + 1) % 4 }, Modifier.semantics {
+                            contentDescription = speedLabel
+                            stateDescription = "${speed}×"
+                        }, selected = speed != 1f) { Text("${speed}×", style = MaterialTheme.typography.labelMedium) }
+                        DialogueControl({ listMode = !listMode }, Modifier.semantics {
                             stateDescription = if(listMode) listState else pairState
-                        }) { AppIcon(UiIcons.Lines, tr("لیست یا دو پیام آخر", "List or last two messages")) }
-                        PressIconButton({ hideAll = !hideAll }) {
-                            AppIcon(if(hideAll) UiIcons.EyeClosed else UiIcons.Eye, tr("نمایش یا پنهان‌کردن پیام‌ها", "Show or hide messages"))
+                        }, selected = !listMode) {
+                            AppIcon(if(listMode) UiIcons.Lines else UiIcons.Notes, tr("لیست یا دو پیام آخر", "List or last two messages"), Modifier.size(19.dp))
                         }
-                        PressIconButton({ translationIndex = (translationIndex + 1) % DialogueTranslation.entries.size },
-                            Modifier.semantics { stateDescription = translationLabel }) {
+                        DialogueControl({ hideAll = !hideAll }, selected = hideAll) {
+                            AppIcon(if(hideAll) UiIcons.EyeClosed else UiIcons.Eye, tr("نمایش یا پنهان‌کردن پیام‌ها", "Show or hide messages"), Modifier.size(19.dp))
+                        }
+                        DialogueControl({ translationIndex = (translationIndex + 1) % DialogueTranslation.entries.size },
+                            Modifier.semantics { stateDescription = translationLabel }, selected = translation != DialogueTranslation.ORIGINAL) {
                             AppIcon(when(translation) {
                                 DialogueTranslation.ORIGINAL -> UiIcons.Original
                                 DialogueTranslation.SENTENCE -> UiIcons.Lines
                                 DialogueTranslation.WORD -> UiIcons.WordMode
-                            }, tr("حالت ترجمهٔ چت", "Chat translation mode"))
+                            }, tr("حالت ترجمهٔ چت", "Chat translation mode"), Modifier.size(19.dp))
                         }
-                        PressTextButton({ appearance = true }) { Text("Aa") }
+                        val appearanceLabel = tr("ظاهر چت", "Chat appearance")
+                        DialogueControl({ appearance = true }, Modifier.semantics { contentDescription = appearanceLabel }) {
+                            Text("Aa", style = MaterialTheme.typography.labelLarge)
+                        }
                     }
                 }
             } else DialogueLearningTab(demo, page)
@@ -257,18 +278,33 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
     }
 }
 
-@Composable private fun SpeakerAvatar(name: String, mode: SpeakerMode, first: Boolean, change: () -> Unit) {
+@Composable private fun DialogueControl(action: () -> Unit, modifier: Modifier = Modifier, selected: Boolean = false,
+    content: @Composable () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    PressIconButton(action, modifier.size(48.dp)) {
+        Surface(Modifier.size(40.dp), shape = NestedTileShape,
+            color = if(selected) colors.primaryContainer else colors.surfaceContainerHigh,
+            contentColor = if(selected) colors.onPrimaryContainer else colors.onSurface) {
+            Box(contentAlignment = Alignment.Center) { content() }
+        }
+    }
+}
+
+@Composable private fun SpeakerAvatar(speaker: DialogueSpeaker, mode: SpeakerMode, first: Boolean, modifier: Modifier, change: () -> Unit) {
     val label = when(mode) {
         SpeakerMode.BOTH -> tr("صدا و پیام", "Audio and messages")
         SpeakerMode.MUTE -> tr("بی‌صدا", "Muted")
         SpeakerMode.LISTEN -> tr("فقط صدا", "Audio only")
         SpeakerMode.ROLE -> tr("نقش‌آفرینی", "Role-play")
     }
-    Column(Modifier.clickable(onClick = change).semantics { stateDescription = label }.padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(modifier.clickable(onClick = change).semantics { stateDescription = label }.padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Surface(Modifier.size(40.dp), shape = CircleShape, color = if(first) Color(0xFF245198) else Color(0xFF17634F), contentColor = Color.White) {
-            Box(contentAlignment = Alignment.Center) { Text(name.take(1)) }
+            Box(contentAlignment = Alignment.Center) {
+                AppIcon(if(speaker.gender == DialogueGender.WOMAN) R.drawable.dialogue_avatar_woman else R.drawable.dialogue_avatar_man,
+                    null, Modifier.size(28.dp))
+            }
         }
-        Text(name, style = MaterialTheme.typography.labelLarge)
+        Text(speaker.name, style = MaterialTheme.typography.labelLarge)
         Text(label, style = MaterialTheme.typography.labelSmall)
     }
 }
