@@ -6,10 +6,15 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.annotation.DrawableRes
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
 import com.hydro.reedance.BuildConfig
 import androidx.compose.ui.unit.dp
@@ -62,6 +67,13 @@ import com.hydro.reedance.data.*
                     style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
             }
         }
+        SettingsSection(tr("اعضای ری‌دنس", "Reedance team")) {
+            ReedanceMember("حمید رضا سلیم وند", "Hamidreza Salimvand", "HS",
+                tr("بنیان‌گذار ری‌دنس", "Reedance founder"))
+            SettingsDivider()
+            ReedanceMember("سجاد علی وزیری", "Sajjad Alivaziri", "SA",
+                tr("مدیر بخش محتوا", "Content lead"))
+        }
         SettingsSection(tr("پشتیبانی و دربارهٔ برنامه", "Support & about")) {
             SettingsAction(UiIcons.ShareFilled, tr("اشتراک‌گذاری برنامه", "Share Reedance")) {
                 context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain")
@@ -94,6 +106,30 @@ import com.hydro.reedance.data.*
             if(language) languages else sizes, if(language) languageIndex else sizeIndex, { picker = "" }) {
             if(language) model.language(if(it == 0) "en" else "fa") else model.textSize(it)
             picker = ""
+        }
+    }
+}
+
+@Composable private fun ReedanceMember(nameFa: String, nameEn: String, initials: String, role: String,
+    @DrawableRes portrait: Int? = null) {
+    val colors = MaterialTheme.colorScheme
+    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Surface(Modifier.size(52.dp), shape = CircleShape, color = colors.primaryContainer,
+            contentColor = colors.onPrimaryContainer) {
+            if(portrait != null) {
+                Image(painterResource(portrait), contentDescription = null,
+                    modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+            } else {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(initials, style = MaterialTheme.typography.titleMedium)
+                }
+            }
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(tr(nameFa, nameEn), style = MaterialTheme.typography.titleMedium)
+            Text(tr(nameEn, nameFa), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+            Text(role, style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
         }
     }
 }
