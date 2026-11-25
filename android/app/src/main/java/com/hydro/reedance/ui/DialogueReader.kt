@@ -1,6 +1,11 @@
 package com.hydro.reedance.ui
 
 import android.net.Uri
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,6 +28,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.media3.common.MediaItem
@@ -46,6 +52,8 @@ import kotlinx.coroutines.launch
     var firstMode by rememberSaveable { mutableIntStateOf(0) }
     var secondMode by rememberSaveable { mutableIntStateOf(0) }
     var hideAll by rememberSaveable { mutableStateOf(false) }
+    var translationIndex by rememberSaveable { mutableIntStateOf(0) }
+    val translation = DialogueTranslation.entries[translationIndex]
     var listMode by rememberSaveable { mutableStateOf(true) }
     var speedIndex by rememberSaveable { mutableIntStateOf(1) }
     var fontIndex by rememberSaveable { mutableIntStateOf(1) }
@@ -128,13 +136,18 @@ import kotlinx.coroutines.launch
                         Modifier.padding(horizontal = 16.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall)
                     if(audioFailed) Text(tr("فایل صوتی پخش نشد.", "Could not play the recording."), color = scheme.error)
                     Surface(Modifier.weight(1f).fillMaxWidth(), color = paper, contentColor = ink) {
-                        DialogueMessages(demo, revealed, activeTurn.takeIf { playing } ?: -1, modes, hideAll, listMode, fontIndex, ::selectTurn)
+                        DialogueMessages(demo, revealed, activeTurn.takeIf { playing } ?: -1, modes, hideAll, listMode, fontIndex, translation, ::selectTurn)
                     }
                     Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                             SpeakerAvatar(demo.names[0], modes[0], true) { firstMode = modes[0].next().ordinal }
                             SpeakerAvatar(demo.names[1], modes[1], false) { secondMode = modes[1].next().ordinal }
                         }
+                    }
+                    val translationLabel = when(translation) {
+                        DialogueTranslation.ORIGINAL -> tr("متن اصلی", "Original")
+                        DialogueTranslation.SENTENCE -> tr("ترجمهٔ جمله", "Sentence translation")
+                        DialogueTranslation.WORD -> tr("کلمه‌به‌کلمه", "Word by word")
                     }
                     val listState = tr("لیست", "List")
                     val pairState = tr("دو پیام آخر", "Last two messages")
@@ -149,6 +162,14 @@ import kotlinx.coroutines.launch
                         }) { AppIcon(UiIcons.Lines, tr("لیست یا دو پیام آخر", "List or last two messages")) }
                         PressIconButton({ hideAll = !hideAll }) {
                             AppIcon(if(hideAll) UiIcons.EyeClosed else UiIcons.Eye, tr("نمایش یا پنهان‌کردن پیام‌ها", "Show or hide messages"))
+                        }
+                        PressIconButton({ translationIndex = (translationIndex + 1) % DialogueTranslation.entries.size },
+                            Modifier.semantics { stateDescription = translationLabel }) {
+                            AppIcon(when(translation) {
+                                DialogueTranslation.ORIGINAL -> UiIcons.Original
+                                DialogueTranslation.SENTENCE -> UiIcons.Lines
+                                DialogueTranslation.WORD -> UiIcons.WordMode
+                            }, tr("حالت ترجمهٔ چت", "Chat translation mode"))
                         }
                         PressTextButton({ appearance = true }) { Text("Aa") }
                     }
@@ -165,39 +186,63 @@ import kotlinx.coroutines.launch
     }, confirmButton = { PressTextButton({ appearance = false }) { Text(tr("بستن", "Close")) } })
 }
 
+private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
+
 @Composable private fun DialogueMessages(demo: DialogueDemo, revealed: Int, active: Int, modes: List<SpeakerMode>, hideAll: Boolean,
-    listMode: Boolean, font: Int, playLine: (Int) -> Unit) {
+    listMode: Boolean, font: Int, translation: DialogueTranslation, playLine: (Int) -> Unit) {
     if(hideAll) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(tr("پیام‌ها پنهان‌اند", "Messages hidden")) }
         return
     }
-    val messages = demo.turns.take(revealed).withIndex().filter { modes[it.value.speaker].messages }
-    if(listMode) {
-        val scroll = rememberLazyListState()
-        LaunchedEffect(revealed, messages.size) { if(messages.isNotEmpty()) scroll.animateScrollToItem(messages.lastIndex) }
-        LazyColumn(Modifier.fillMaxSize(), state = scroll, contentPadding = PaddingValues(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.Bottom)) {
-            items(messages, key = { it.index }) {
-                Box(Modifier.animateItem()) { DialogueBubble(it.value, it.index == active, font) { playLine(it.index) } }
-            }
+    val visible = demo.turns.take(revealed).withIndex().filter { modes[it.value.speaker].messages }
+    val messages = if(listMode) visible else visible.takeLast(2)
+    val scroll = rememberLazyListState()
+    val reduced = LocalReducedMotion.current
+    LaunchedEffect(messages.lastOrNull()?.index, listMode) {
+        if(listMode && messages.isNotEmpty()) {
+            if(reduced) scroll.scrollToItem(messages.lastIndex) else scroll.animateScrollToItem(messages.lastIndex)
         }
-    } else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            messages.takeLast(2).forEach { item -> key(item.index) { DialogueBubble(item.value, item.index == active, font) { playLine(item.index) } } }
+    }
+    LazyColumn(Modifier.fillMaxSize(), state = scroll, contentPadding = PaddingValues(12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp, if(listMode) Alignment.Bottom else Alignment.CenterVertically)) {
+        items(messages, key = { it.index }) { item ->
+            val entering = remember { MutableTransitionState(reduced || item.index != revealed - 1 || item.index != active) }
+            SideEffect { entering.targetState = true }
+            Box(if(reduced) Modifier else Modifier.animateItem(fadeInSpec = null)) {
+                AnimatedVisibility(entering, enter = fadeIn(tween(180)) + slideInVertically(tween(260)) { it / 3 }) {
+                    DialogueBubble(item.value, item.index == active, font, translation) { playLine(item.index) }
+                }
+            }
         }
     }
 }
 
-@Composable private fun DialogueBubble(turn: DialogueTurn, active: Boolean, font: Int, play: () -> Unit) {
+@OptIn(ExperimentalLayoutApi::class)
+@Composable private fun DialogueBubble(turn: DialogueTurn, active: Boolean, font: Int, translation: DialogueTranslation, play: () -> Unit) {
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Box(Modifier.fillMaxWidth(), contentAlignment = if(turn.speaker == 0) Alignment.CenterStart else Alignment.CenterEnd) {
             val colors = MaterialTheme.colorScheme
+            val textSize = listOf(14, 17, 21)[font].sp
             Surface(onClick = play, modifier = Modifier.fillMaxWidth(.84f), shape = InsetControlShape,
                 color = if(active || turn.speaker == 1) colors.primaryContainer else colors.surface,
                 contentColor = if(active || turn.speaker == 1) colors.onPrimaryContainer else colors.onSurface) {
                 Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(turn.text, fontSize = listOf(14, 17, 21)[font].sp)
-                    PersianText(turn.meaning, style = MaterialTheme.typography.bodySmall)
+                    if(translation == DialogueTranslation.WORD) {
+                        val words = remember(turn.text) { turn.text.split(Regex("\\s+")).filter { it.isNotBlank() } }
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(9.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                            words.forEachIndexed { index, word ->
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(word, fontSize = textSize)
+                                    turn.glosses.getOrNull(index)?.takeIf { it.isNotBlank() }?.let { gloss ->
+                                        Text(gloss, fontSize = listOf(11, 12, 14)[font].sp, textAlign = TextAlign.Center)
+                                    }
+                                }
+                            }
+                        }
+                    } else Text(turn.text, fontSize = textSize)
+                    if(translation == DialogueTranslation.SENTENCE) {
+                        PersianText(turn.meaning, style = MaterialTheme.typography.bodySmall)
+                    }
                 }
             }
         }
