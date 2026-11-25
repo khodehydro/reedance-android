@@ -6,6 +6,7 @@ import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,6 +22,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.contentDescription
@@ -48,6 +50,7 @@ import kotlinx.coroutines.launch
     var playing by remember { mutableStateOf(false) }
     var singleTurn by remember { mutableStateOf<Int?>(null) }
     var current by rememberSaveable { mutableIntStateOf(0) }
+    var startedDialogue by rememberSaveable { mutableStateOf(false) }
     var revealed by rememberSaveable { mutableIntStateOf(0) }
     var elapsed by remember { mutableIntStateOf(0) }
     var replay by remember { mutableIntStateOf(0) }
@@ -121,6 +124,7 @@ import kotlinx.coroutines.launch
     }
     fun playPause() {
         if(playing) { playing = false; return }
+        startedDialogue = true
         if(singleTurn == null && current >= demo.turns.size) { current = 0; revealed = 0; elapsed = 0; replay++ }
         playing = true
     }
@@ -138,7 +142,12 @@ import kotlinx.coroutines.launch
                         Modifier.padding(horizontal = 16.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall)
                     if(audioFailed) Text(tr("فایل صوتی پخش نشد.", "Could not play the recording."), color = scheme.error)
                     Surface(Modifier.weight(1f).fillMaxWidth(), color = paper, contentColor = ink) {
-                        DialogueMessages(demo, revealed, activeTurn.takeIf { playing } ?: -1, modes, hideAll, listMode, fontIndex, translation, ::selectTurn)
+                        Box(Modifier.fillMaxSize()) {
+                            DialogueMessages(demo, revealed, activeTurn.takeIf { playing } ?: -1, modes, hideAll, listMode, fontIndex, translation, ::selectTurn)
+                            if(!startedDialogue && revealed == 0) {
+                                DialoguePlayHint(Modifier.align(Alignment.BottomCenter).padding(horizontal = 16.dp, vertical = 2.dp))
+                            }
+                        }
                     }
                     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                         Box(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
@@ -274,6 +283,25 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable private fun DialoguePlayHint(modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.colorScheme
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Surface(shape = InsetControlShape, color = colors.primaryContainer, contentColor = colors.onPrimaryContainer) {
+            Text(tr("برای شروع گفت‌وگو روی پخش بزن", "Tap play to start the dialogue"),
+                Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center)
+        }
+        Canvas(Modifier.size(width = 14.dp, height = 7.dp)) {
+            drawPath(Path().apply {
+                moveTo(0f, 0f)
+                lineTo(size.width, 0f)
+                lineTo(size.width / 2f, size.height)
+                close()
+            }, color = colors.primaryContainer)
         }
     }
 }
