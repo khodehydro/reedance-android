@@ -11,6 +11,7 @@ import com.hydro.reedance.R
 object UiIcons {
     val Settings = R.drawable.uicon_settings
     val Headphones = R.drawable.uicon_headphones
+    val HeadphonesFilled = R.drawable.uicon_headphones_filled
     val Game = R.drawable.uicon_game
     val GameFilled = R.drawable.uicon_game_filled
     val Dumbbell = R.drawable.uicon_dumbbell

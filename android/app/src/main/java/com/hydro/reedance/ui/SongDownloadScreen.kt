@@ -154,7 +154,7 @@ import kotlin.math.roundToInt
                         }
                     }
                     DownloadContentDivider()
-                    DownloadContentRow(UiIcons.LinesFilled, tr("داستان", "Story")) {
+                    DownloadContentRow(UiIcons.HeadphonesFilled, tr("داستان", "Story")) {
                         Text(when(hasStory) { true -> "✓"; false -> "×"; null -> "—" },
                             Modifier.semantics { contentDescription = storyStatus },
                             style = MaterialTheme.typography.titleMedium,

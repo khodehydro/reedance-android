@@ -50,7 +50,7 @@ private data class StoryEntry(val songId: String, val title: String, val songTit
             } }
             else -> items(entries, key = { it.songId }) { entry ->
                 Surface(shape = GroupedCardShape) {
-                    SettingsAction(UiIcons.Headphones, entry.title, onClick = { open(entry.songId) })
+                    SettingsAction(UiIcons.HeadphonesFilled, entry.title, onClick = { open(entry.songId) })
                 }
                 if(entry.songTitle.isNotBlank()) Text(entry.songTitle, Modifier.padding(start = 16.dp, top = 4.dp),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

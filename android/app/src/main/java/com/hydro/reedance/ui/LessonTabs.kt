@@ -44,7 +44,7 @@ import androidx.compose.ui.unit.dp
                 }
             }
             if(onStory != null) {
-                LessonTab(PillOption(tr("داستان", "Song story"), UiIcons.Headphones), false, Modifier.weight(1f),
+                LessonTab(PillOption(tr("داستان", "Song story"), UiIcons.HeadphonesFilled), false, Modifier.weight(1f),
                     action = true, compact = compact, onClick = onStory)
             }
         }

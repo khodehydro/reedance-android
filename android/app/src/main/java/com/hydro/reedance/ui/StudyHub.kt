@@ -39,7 +39,7 @@ private val studyTiles = listOf(
     StudyTile("gym", UiIcons.Dumbbell, UiIcons.DumbbellFilled, Color(0xFF17634F)),
     StudyTile("game", UiIcons.Game, UiIcons.GameFilled, Color(0xFF603C91)),
     StudyTile("library", UiIcons.Library, UiIcons.LibraryFilled, Color(0xFF814B20)),
-    StudyTile(StoriesRoute, UiIcons.Headphones, UiIcons.Headphones, Color(0xFF903D5B)),
+    StudyTile(StoriesRoute, UiIcons.HeadphonesFilled, UiIcons.HeadphonesFilled, Color(0xFF903D5B)),
     StudyTile(DialoguesRoute, UiIcons.Phrases, UiIcons.PhrasesFilled, Color(0xFF24616E))
 )
 
