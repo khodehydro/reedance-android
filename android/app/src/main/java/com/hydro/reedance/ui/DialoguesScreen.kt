@@ -32,8 +32,8 @@ import androidx.compose.ui.unit.dp
         }
     }
     BackHandler { back() }
-    var paperIndex by rememberSaveable { mutableIntStateOf(0) }
-    var dim by rememberSaveable { mutableStateOf(false) }
+    var paperIndex by rememberDialoguePreference("paper", 0, 0..2)
+    var dim by rememberDialogueToggle("dim", false)
     DialoguePalette(enabled = reader && dialogue != null, paperIndex = paperIndex, dim = dim) {
         Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
             .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom))) {

@@ -61,14 +61,14 @@ import kotlinx.coroutines.launch
     var revealed by rememberSaveable { mutableIntStateOf(0) }
     var elapsed by remember { mutableIntStateOf(0) }
     var replay by remember { mutableIntStateOf(0) }
-    var firstMode by rememberSaveable { mutableIntStateOf(0) }
-    var secondMode by rememberSaveable { mutableIntStateOf(0) }
-    var hideAll by rememberSaveable { mutableStateOf(false) }
-    var translationIndex by rememberSaveable { mutableIntStateOf(0) }
+    var firstMode by rememberDialoguePreference("speaker_0:${demo.titleEn}", 0, SpeakerMode.entries.indices)
+    var secondMode by rememberDialoguePreference("speaker_1:${demo.titleEn}", 0, SpeakerMode.entries.indices)
+    var hideAll by rememberDialogueToggle("hide_all", false)
+    var translationIndex by rememberDialoguePreference("translation", 0, DialogueTranslation.entries.indices)
     val translation = DialogueTranslation.entries[translationIndex]
-    var listMode by rememberSaveable { mutableStateOf(true) }
-    var speedIndex by rememberSaveable { mutableIntStateOf(1) }
-    var fontIndex by rememberSaveable { mutableIntStateOf(1) }
+    var listMode by rememberDialogueToggle("list_mode", true)
+    var speedIndex by rememberDialoguePreference("speed", 1, 0..3)
+    var fontIndex by rememberDialoguePreference("font", 1, 0..2)
     var appearance by remember { mutableStateOf(false) }
     val speed = listOf(.75f, 1f, 1.25f, 1.5f)[speedIndex]
     val activeTurn = singleTurn ?: current
