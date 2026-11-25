@@ -35,7 +35,6 @@ import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.gson.JsonObject
 import com.hydro.reedance.data.AppModel
 import com.hydro.reedance.data.LearningLanguage
@@ -108,14 +107,12 @@ internal fun lessonStory(lesson: JsonObject?, songId: String): LessonStory? {
 }
 
 @Composable internal fun SongStoryScreen(model: AppModel, songId: String, back: () -> Unit) {
-    val loaded by model.lesson.collectAsStateWithLifecycle()
-    val lesson = loaded?.takeIf { it.s("songId") == songId } ?: model.cachedLesson(songId)
-    val story = remember(lesson, songId) { lessonStory(lesson, songId) }
-    LaunchedEffect(songId) {
-        if(lesson == null) try { model.openInstalled(songId) }
+    val lesson by produceState(model.cachedLesson(songId), model, songId) {
+        try { value = model.lessonForReview(songId) }
         catch(cancelled: CancellationException) { throw cancelled }
-        catch(_: Exception) { /* Keep the unavailable state visible. */ }
+        catch(_: Exception) { value = null }
     }
+    val story = remember(lesson, songId) { lessonStory(lesson, songId) }
     if(story == null) {
         Column(Modifier.fillMaxSize().safeDrawingPadding().padding(16.dp)) {
             PressIconButton(back) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }

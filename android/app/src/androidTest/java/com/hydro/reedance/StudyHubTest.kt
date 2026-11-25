@@ -20,6 +20,7 @@ class StudyHubTest {
             }
         }
         listOf("Review", "Gym", "Game", "Library").forEach { compose.onNodeWithText(it).performClick() }
-        compose.runOnIdle { assertEquals(listOf("review", "gym", "game", "library"), opened) }
+        compose.onNodeWithText("Stories").performScrollTo().performClick()
+        compose.runOnIdle { assertEquals(listOf("review", "gym", "game", "library", "stories"), opened) }
     }
 }

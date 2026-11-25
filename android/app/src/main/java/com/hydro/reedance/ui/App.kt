@@ -61,6 +61,7 @@ import com.hydro.reedance.data.*
 }
 @Composable internal fun MainShell(model: AppModel) {
     var page by rememberSaveable { mutableStateOf("home") }
+    var storyReturnPage by rememberSaveable { mutableStateOf("song-playback") }
     var songReturnPage by rememberSaveable { mutableStateOf("home") }
     var songId by rememberSaveable { mutableStateOf("") }
     var songTab by rememberSaveable { mutableIntStateOf(0) }
@@ -94,12 +95,13 @@ import com.hydro.reedance.data.*
     val mountedSongPages = remember {
         mutableStateListOf<Pair<String, String>>().apply {
             if(page in songPageTypes && songId.isNotBlank()) add(page to songId)
-            if(page in setOf("quiz", "song-story") && songId.isNotBlank()) add("song-playback" to songId)
+            if((page == "quiz" || page == "song-story" && storyReturnPage == "song-playback") && songId.isNotBlank()) add("song-playback" to songId)
         }
     }
     LaunchedEffect(message) { if(message.isNotEmpty()) { snackbar.showSnackbar(message); model.message.value = "" } }
     fun navigate(to: String) {
         if(to in studySectionRoutes && page in setOf(StudyHubRoute, "home", "profile", "quiz")) studyReturnPage = page
+        if(to == "song-story" && page != to) storyReturnPage = page
         if(to == "quiz" || to == "song-story") model.pause()
         if(to in mainPageTypes && to !in mountedPages) mountedPages += to
         if(to in songPageTypes) {
@@ -134,6 +136,11 @@ import com.hydro.reedance.data.*
     val swipeNavigate = remember { { destination: String -> swipeNavigateLatest.value(destination) } }
     val openSongLatest = rememberUpdatedState<(String) -> Unit>({ id -> openSong(id) })
     val openSongAction = remember { { id: String -> openSongLatest.value(id) } }
+    val openStoryLatest = rememberUpdatedState<(String) -> Unit>({ id ->
+        songId = id
+        navigate("song-story")
+    })
+    val openStoryAction = remember { { id: String -> openStoryLatest.value(id) } }
     val setSongTabLatest = rememberUpdatedState<(Int) -> Unit>({ songTab = it })
     val setSongTabAction = remember { { tab: Int -> setSongTabLatest.value(tab) } }
     val setPremiumReturnLatest = rememberUpdatedState<(String) -> Unit>({ premiumReturnPage = it })
@@ -146,7 +153,7 @@ import com.hydro.reedance.data.*
     fun goBack() {
         if(artistDetail) exploreArtistKey = null
         else navigate(when(page) {
-            "song-story" -> "song-playback"
+            "song-story" -> storyReturnPage
             "song-download", "song-playback" -> songReturnPage
             "quiz" -> "song-playback"
             "premium" -> premiumReturnPage
@@ -222,6 +229,7 @@ import com.hydro.reedance.data.*
                                             setSongTab = setSongTabAction,
                                             navigate = navigateAction,
                                             openSong = openSongAction,
+                                            openStory = openStoryAction,
                                             starter = starterAction,
                                             setPremiumReturnPage = setPremiumReturnAction,
                                             songReturnPage = songReturnPage,
@@ -242,7 +250,7 @@ import com.hydro.reedance.data.*
                             CompositionLocalProvider(LocalPageActive provides active) {
                                 Box(Modifier.visiblePageLayout(active)) {
                                     if(route == "song-story") {
-                                        if(active) SongStoryScreen(model, routeSongId) { navigateAction("song-playback") }
+                                        if(active) SongStoryScreen(model, routeSongId) { navigateAction(storyReturnPage) }
                                     } else {
                                         ShellPageContent(
                                             page = route,
@@ -252,6 +260,7 @@ import com.hydro.reedance.data.*
                                             setSongTab = setSongTabAction,
                                             navigate = navigateAction,
                                             openSong = openSongAction,
+                                            openStory = openStoryAction,
                                             starter = starterAction,
                                             setPremiumReturnPage = setPremiumReturnAction,
                                             songReturnPage = songReturnPage,
@@ -287,6 +296,7 @@ internal fun Modifier.visiblePageLayout(active: Boolean): Modifier = if(active) 
     setSongTab: (Int) -> Unit,
     navigate: (String) -> Unit,
     openSong: (String) -> Unit,
+    openStory: (String) -> Unit,
     starter: () -> Unit,
     setPremiumReturnPage: (String) -> Unit,
     songReturnPage: String,
@@ -302,6 +312,7 @@ internal fun Modifier.visiblePageLayout(active: Boolean): Modifier = if(active) 
             { navigate("quiz") }, { navigate("song-story") }
         ) { setPremiumReturnPage("song-playback"); navigate("premium") }
         StudyHubRoute -> StudyHubScreen(navigate)
+        StoriesRoute -> StoriesScreen(model, openStory)
         "game" -> GameScreen(model) { setPremiumReturnPage("game"); navigate("premium") }
         "quiz" -> QuizScreen(model, { navigate("song-playback") }, { navigate("review") })
         "review" -> ReviewScreen(model)

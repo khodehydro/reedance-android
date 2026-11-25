@@ -17,13 +17,15 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 
 internal const val StudyHubRoute = "study"
-internal val studySectionRoutes = setOf("review", "gym", "game", "library")
+internal const val StoriesRoute = "stories"
+internal val studySectionRoutes = setOf("review", "gym", "game", "library", StoriesRoute)
 
 @Composable internal fun studySectionTitle(route: String): String = when(route) {
     "review" -> tr("مرور", "Review")
     "gym" -> tr("باشگاه", "Gym")
     "game" -> tr("بازی", "Game")
     "library" -> tr("کتابخانه", "Library")
+    StoriesRoute -> tr("داستان‌ها", "Stories")
     else -> tr("یادگیری", "Learn")
 }
 
@@ -49,6 +51,9 @@ private val studyTiles = listOf(
                     }
                 }
             }
+        }
+        Surface(Modifier.fillMaxWidth(), shape = GroupedCardShape) {
+            SettingsAction(UiIcons.Headphones, studySectionTitle(StoriesRoute)) { open(StoriesRoute) }
         }
     }
 }
