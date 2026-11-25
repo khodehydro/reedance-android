@@ -35,7 +35,8 @@ private val studyTiles = listOf(
     StudyTile("review", UiIcons.Review, UiIcons.ReviewFilled, Color(0xFF245198)),
     StudyTile("gym", UiIcons.Dumbbell, UiIcons.DumbbellFilled, Color(0xFF17634F)),
     StudyTile("game", UiIcons.Game, UiIcons.GameFilled, Color(0xFF603C91)),
-    StudyTile("library", UiIcons.Library, UiIcons.LibraryFilled, Color(0xFF814B20))
+    StudyTile("library", UiIcons.Library, UiIcons.LibraryFilled, Color(0xFF814B20)),
+    StudyTile(StoriesRoute, UiIcons.Headphones, UiIcons.Headphones, Color(0xFF903D5B))
 )
 
 @Composable internal fun StudyHubScreen(open: (String) -> Unit) {
@@ -49,11 +50,9 @@ private val studyTiles = listOf(
                     tiles.forEach { tile ->
                         StudySectionTile(tile, Modifier.weight(1f)) { open(tile.route) }
                     }
+                    if(tiles.size == 1) Spacer(Modifier.weight(1f))
                 }
             }
-        }
-        Surface(Modifier.fillMaxWidth(), shape = GroupedCardShape) {
-            SettingsAction(UiIcons.Headphones, studySectionTitle(StoriesRoute)) { open(StoriesRoute) }
         }
     }
 }
