@@ -96,7 +96,6 @@ import kotlin.math.roundToInt
             if(song.has("idiomCount") && song.has("sentenceCount")) (song.n("idiomCount") + song.n("sentenceCount")).toString() else "—"),
         Triple(UiIcons.QuizFilled, tr("سؤال‌ها", "Questions"), count("questionCount"))
     )
-    val hasMissingCounts = listOf("vocabularyCount", "grammarCount", "idiomCount", "sentenceCount", "questionCount").any { !song.has(it) }
     val hasStory = song.get("hasStory")?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isBoolean }?.asBoolean
     val storyStatus = when(hasStory) {
         true -> tr("داستان دارد", "Story included")
@@ -167,8 +166,8 @@ import kotlin.math.roundToInt
                     }
                 }
             }
-            if(hasMissingCounts) Text(
-                tr("تعداد دقیق محتوا تا زمانی که آمار معتبر منتشر نشود نمایش داده نمی‌شود.", "Exact counts will appear when verified content data is available."),
+            if(available && !busy) Text(
+                tr("برای دانلود بهتر، VPN را خاموش کنید.", "For a smoother download, turn off your VPN."),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
