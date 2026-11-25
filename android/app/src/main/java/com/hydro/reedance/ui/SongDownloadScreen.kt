@@ -92,9 +92,9 @@ import kotlin.math.roundToInt
     val countItems = listOf(
         Triple(UiIcons.WordsFilled, tr("لغت", "Words"), count("vocabularyCount")),
         Triple(UiIcons.NotesFilled, tr("نکته", "Notes"), count("grammarCount")),
-        Triple(UiIcons.PhrasesFilled, tr("اصطلاحات / جملات", "Expressions / sentences"),
-            "${count("idiomCount")} / ${count("sentenceCount")}"),
-        Triple(UiIcons.Quiz, tr("سؤال‌ها", "Questions"), count("questionCount"))
+        Triple(UiIcons.PhrasesFilled, tr("اصطلاحات و جملات", "Expressions and sentences"),
+            if(song.has("idiomCount") && song.has("sentenceCount")) (song.n("idiomCount") + song.n("sentenceCount")).toString() else "—"),
+        Triple(UiIcons.QuizFilled, tr("سؤال‌ها", "Questions"), count("questionCount"))
     )
     val hasMissingCounts = listOf("vocabularyCount", "grammarCount", "idiomCount", "sentenceCount", "questionCount").any { !song.has(it) }
     val hasStory = song.get("hasStory")?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isBoolean }?.asBoolean

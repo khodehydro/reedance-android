@@ -63,6 +63,7 @@ object UiIcons {
     val BookmarkFilled = R.drawable.uicon_bookmark_filled
     val Bookmark = R.drawable.uicon_bookmark
     val Quiz = R.drawable.uicon_quiz
+    val QuizFilled = R.drawable.uicon_quiz_filled
     val Repeat = R.drawable.uicon_repeat
     val Replay10 = R.drawable.uicon_replay10
     val Forward10 = R.drawable.uicon_forward10
