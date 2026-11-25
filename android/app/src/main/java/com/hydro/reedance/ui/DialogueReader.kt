@@ -204,9 +204,8 @@ import kotlinx.coroutines.launch
                                 DialogueTranslation.WORD -> UiIcons.WordMode
                             }, tr("حالت ترجمهٔ چت", "Chat translation mode"), Modifier.size(19.dp))
                         }
-                        val appearanceLabel = tr("ظاهر چت", "Chat appearance")
-                        DialogueControl({ appearance = true }, Modifier.semantics { contentDescription = appearanceLabel }) {
-                            Text("Aa", style = MaterialTheme.typography.labelLarge)
+                        DialogueControl({ appearance = true }) {
+                            AppIcon(UiIcons.Settings, tr("تنظیمات ظاهر چت", "Chat appearance settings"), Modifier.size(19.dp))
                         }
                     }
                 }
