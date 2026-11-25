@@ -16,8 +16,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -111,48 +109,32 @@ import androidx.compose.ui.unit.dp
 
 @Composable internal fun HomeDialogueCategories(open: (Int) -> Unit) {
     if(dialogueCategories.isEmpty()) return
+    val colors = MaterialTheme.colorScheme
     Surface(Modifier.fillMaxWidth(), shape = GroupedCardShape,
-        color = Color(0xFF14263B), contentColor = Color.White) {
-        Column(Modifier.background(Brush.linearGradient(listOf(Color(0xFF144B50), Color(0xFF14263B), Color(0xFF252846))))
-            .padding(vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        color = colors.secondaryContainer, contentColor = colors.onSecondaryContainer) {
+        Column(Modifier.padding(vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Surface(shape = CircleShape, color = Color(0xFFABF0DA), contentColor = Color(0xFF123E3C)) {
-                    Box(Modifier.size(38.dp), contentAlignment = Alignment.Center) {
-                        AppIcon(UiIcons.Phrases, null, Modifier.size(19.dp))
+                horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(ReeTalkName, style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                    Text(tr("تمرین مکالمه", "Conversation practice"), style = MaterialTheme.typography.bodySmall)
+                }
+                Surface(onClick = { open(-1) }, shape = CircleShape,
+                    color = colors.surface, contentColor = colors.onSurface) {
+                    Box(Modifier.heightIn(min = 48.dp).padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
+                        Text(tr("دیدن همه", "See all"), style = MaterialTheme.typography.labelLarge)
                     }
                 }
-                Column(Modifier.weight(1f)) {
-                    Text(ReeTalkName, style = MaterialTheme.typography.titleLarge,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                    Text(tr("بشنو، تمرین کن، نقش بگیر", "Listen. Practice. Play a role."),
-                        style = MaterialTheme.typography.labelMedium, color = Color(0xFFBDE0DE))
-                }
             }
-            LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 // Demo catalog entries are listed in publication order (oldest first).
                 items(dialogueCategories.indices.reversed().take(2), key = { it }) { index ->
                     val category = dialogueCategories[index]
                     val count = category.demos.size
-                    Surface(onClick = { open(index) }, modifier = Modifier.width(188.dp), shape = InsetControlShape,
-                        color = Color(0xFF132437), contentColor = Color.White) {
-                        Box(Modifier.fillMaxWidth().heightIn(min = 112.dp)) {
-                            DialogueCover(category.artwork, Modifier.matchParentSize())
-                            Box(Modifier.matchParentSize().background(Brush.verticalGradient(
-                                0f to Color.Transparent, .28f to Color.Transparent, 1f to Color(0xF20D1826))))
-                            Column(Modifier.align(Alignment.BottomStart).padding(horizontal = 12.dp, vertical = 9.dp)) {
-                                Text(tr(category.fa, category.en), style = MaterialTheme.typography.titleSmall)
-                                Text(tr("$count گفت‌وگو", if(count == 1) "1 dialogue" else "$count dialogues"),
-                                    style = MaterialTheme.typography.labelSmall, color = Color(0xFFE4F2F1))
-                            }
-                        }
-                    }
-                }
-            }
-            Surface(onClick = { open(-1) }, modifier = Modifier.align(Alignment.End).padding(horizontal = 16.dp),
-                shape = CircleShape, color = Color(0xFFABF0DA), contentColor = Color(0xFF123E3C)) {
-                Box(Modifier.sizeIn(minHeight = 48.dp).padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
-                    Text(tr("دیدن همه", "See all"), style = MaterialTheme.typography.labelLarge)
+                    DialogueArtworkCard(category.artwork, tr(category.fa, category.en),
+                        tr("$count گفت‌وگو", if(count == 1) "1 dialogue" else "$count dialogues"),
+                        modifier = Modifier.width(210.dp)) { open(index) }
                 }
             }
         }
