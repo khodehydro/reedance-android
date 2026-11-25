@@ -50,13 +50,13 @@ import com.hydro.reedance.R
 
 @Composable private fun PremiumScreenContent(onClose: () -> Unit) {
     var quarterly by rememberSaveable { mutableStateOf(true) }
-    var dialog by remember { mutableStateOf<String?>(null) }
+    var showSubscribeDialog by remember { mutableStateOf(false) }
     val period = if(quarterly) tr("سه‌ماهه", "Three months") else tr("ماهیانه", "Monthly")
     val price = if(quarterly) tr("۵۶۰٬۰۰۰", "560,000") else tr("۲۸۰٬۰۰۰", "280,000")
     val unit = tr("تومان", "toman")
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
         .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom))) {
-        PaywallHero(onClose) { dialog = "restore" }
+        PaywallHero(onClose)
         Column(Modifier.widthIn(max = 520.dp).fillMaxWidth().align(Alignment.CenterHorizontally)
             .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -67,7 +67,7 @@ import com.hydro.reedance.R
                     tr("یک ماه رایگان", "One month free"), quarterly, Modifier.weight(1f),
                     savings = tr("۲۸۰٬۰۰۰ تومان صرفه‌جویی", "Save 280,000 T")) { quarterly = true }
             }
-            PressButton(onClick = { dialog = "subscribe" }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+            PressButton(onClick = { showSubscribeDialog = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
                 shape = CircleShape, colors = ButtonDefaults.buttonColors(containerColor = Blue, contentColor = Color.White)) {
                 Text(tr("خرید اشتراک", "Subscribe"), style = MaterialTheme.typography.titleMedium)
             }
@@ -76,20 +76,18 @@ import com.hydro.reedance.R
             SnappPayBanner()
         }
     }
-    if(dialog != null) {
-        val restoring = dialog == "restore"
+    if(showSubscribeDialog) {
         AlertDialog(
-            onDismissRequest = { dialog = null },
-            title = { Text(if(restoring) tr("بازیابی خرید", "Restore purchase") else tr("خرید اشتراک پریمیوم", "Subscribe to Premium")) },
-            text = { Text(if(restoring) tr("بازیابی خرید هنوز در این نسخه فعال نیست.", "Purchase restoration is not available in this version.")
-                else tr("طرح $period · $price $unit\nپرداخت هنوز فعال نیست و مبلغی دریافت نمی‌شود.",
+            onDismissRequest = { showSubscribeDialog = false },
+            title = { Text(tr("خرید اشتراک پریمیوم", "Subscribe to Premium")) },
+            text = { Text(tr("طرح $period · $price $unit\nپرداخت هنوز فعال نیست و مبلغی دریافت نمی‌شود.",
                     "$period · $price $unit\nPayments are not active yet. You won’t be charged.")) },
-            confirmButton = { PressTextButton({ dialog = null }) { Text(tr("متوجه شدم", "Got it")) } }
+            confirmButton = { PressTextButton({ showSubscribeDialog = false }) { Text(tr("متوجه شدم", "Got it")) } }
         )
     }
 }
 
-@Composable private fun PaywallHero(onClose: () -> Unit, onRestore: () -> Unit) {
+@Composable private fun PaywallHero(onClose: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val background = colors.background
     Box(Modifier.fillMaxWidth()) {
@@ -107,7 +105,6 @@ import com.hydro.reedance.R
                     Text("×", style = MaterialTheme.typography.headlineMedium,
                         modifier = Modifier.clearAndSetSemantics { contentDescription = close })
                 }
-                PressTextButton(onRestore) { Text(tr("بازیابی", "Restore"), color = colors.onBackground) }
             }
             Text(tr("ری‌دنس پریمیوم", "Reedance Premium"), modifier = Modifier.padding(horizontal = 20.dp),
                 style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
