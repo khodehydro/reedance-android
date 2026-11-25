@@ -2,7 +2,11 @@ package com.hydro.reedance.ui
 
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
@@ -21,7 +25,9 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -221,7 +227,14 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
 @Composable private fun DialogueMessages(demo: DialogueDemo, revealed: Int, active: Int, modes: List<SpeakerMode>, hideAll: Boolean,
     listMode: Boolean, font: Int, translation: DialogueTranslation, playLine: (Int) -> Unit) {
     if(hideAll) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(tr("پیام‌ها پنهان‌اند", "Messages hidden")) }
+        val activeSpeaker = demo.turns.getOrNull(active)?.speaker
+        val listening = activeSpeaker != null && modes[activeSpeaker].audio
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                DialogueListeningWave(listening)
+                Text(tr("پیام‌ها پنهان‌اند", "Messages hidden"), style = MaterialTheme.typography.titleSmall)
+            }
+        }
         return
     }
     // Speaker visibility changes only the bubble contents, never the message keys or order.
@@ -244,6 +257,30 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
                     DialogueBubble(item.value, item.index == active, font, translation,
                         hidden = !modes[item.value.speaker].messages) { playLine(item.index) }
                 }
+            }
+        }
+    }
+}
+
+/** A decorative listening cue; it doesn't sample microphone or audio data. */
+@Composable private fun DialogueListeningWave(listening: Boolean) {
+    val colors = MaterialTheme.colorScheme
+    val phase = if(listening && !LocalReducedMotion.current) {
+        rememberInfiniteTransition(label = "dialogue listening").animateFloat(
+            initialValue = 0f, targetValue = 1f,
+            animationSpec = infiniteRepeatable(tween(1250, easing = LinearEasing)), label = "wave phase")
+    } else null
+    Surface(shape = CircleShape, color = colors.primaryContainer, contentColor = colors.onPrimaryContainer) {
+        Canvas(Modifier.size(width = 110.dp, height = 58.dp).padding(horizontal = 16.dp, vertical = 11.dp)) {
+            val angle = (phase?.value ?: 0f) * 2.0 * Math.PI
+            repeat(9) { bar ->
+                val centerWeight = 1f - kotlin.math.abs(bar - 4) * .125f
+                val pulse = if(phase == null) .55f else (.55 + .36 * kotlin.math.sin(angle + bar * .82)).toFloat()
+                val half = size.height * .48f * centerWeight * pulse
+                val x = size.width * (bar + .5f) / 9
+                drawLine(colors.onPrimaryContainer.copy(alpha = if(listening) .94f else .48f),
+                    Offset(x, size.height / 2f - half), Offset(x, size.height / 2f + half),
+                    strokeWidth = 3.dp.toPx(), cap = StrokeCap.Round)
             }
         }
     }
