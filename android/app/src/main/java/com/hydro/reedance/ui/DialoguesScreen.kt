@@ -3,6 +3,7 @@ package com.hydro.reedance.ui
 import androidx.activity.compose.BackHandler
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -34,9 +35,10 @@ import androidx.compose.ui.unit.dp
     var paperIndex by rememberSaveable { mutableIntStateOf(0) }
     var dim by rememberSaveable { mutableStateOf(false) }
     DialoguePalette(enabled = reader && dialogue != null, paperIndex = paperIndex, dim = dim) {
-        Column(Modifier.fillMaxSize().padding(bottom = LocalOverlayBottomInset.current)) {
+        Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom))) {
             HeaderSurface {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top)).padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                     PressIconButton(::back) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
                     Text(when {
                         reader && dialogue != null -> tr(dialogue.titleFa, dialogue.titleEn)

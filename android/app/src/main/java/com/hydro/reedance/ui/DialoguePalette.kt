@@ -4,20 +4,35 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import android.app.Activity
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.view.WindowCompat
 
 @Composable internal fun DialoguePalette(enabled: Boolean, paperIndex: Int, dim: Boolean, content: @Composable () -> Unit) {
     val app = MaterialTheme.colorScheme
-    if(!enabled) {
-        content()
-        return
+    val colors = remember(app, enabled, paperIndex, dim) { if(enabled) dialogueColors(app, paperIndex, dim) else app }
+    val window = (LocalContext.current as? Activity)?.window
+    val controller = remember(window) { window?.let { WindowCompat.getInsetsController(it, it.decorView) } }
+    DisposableEffect(controller) {
+        val appLightBars = app.background.luminance() > .5f
+        onDispose {
+            controller?.isAppearanceLightStatusBars = appLightBars
+            controller?.isAppearanceLightNavigationBars = appLightBars
+        }
     }
-    val colors = remember(app, paperIndex, dim) { dialogueColors(app, paperIndex, dim) }
+    val lightBars = colors.background.luminance() > .5f
+    SideEffect {
+        controller?.isAppearanceLightStatusBars = lightBars
+        controller?.isAppearanceLightNavigationBars = lightBars
+    }
     MaterialTheme(colorScheme = colors) {
         Surface(Modifier.fillMaxSize(), color = colors.background, contentColor = colors.onBackground, content = content)
     }

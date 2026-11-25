@@ -145,7 +145,7 @@ import kotlinx.coroutines.launch
                         Modifier.padding(horizontal = 16.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall)
                     if(audioFailed) Text(tr("فایل صوتی پخش نشد.", "Could not play the recording."), color = scheme.error)
                     Surface(Modifier.weight(1f).fillMaxWidth(), color = scheme.background, contentColor = scheme.onBackground) {
-                        Box(Modifier.fillMaxSize()) {
+                        Box(Modifier.fillMaxSize().dialogueWallpaper(scheme.primary, paperIndex)) {
                             DialogueMessages(demo, revealed, activeTurn.takeIf { playing } ?: -1, modes, hideAll, listMode, fontIndex, translation, ::selectTurn)
                             if(!startedDialogue && revealed == 0) {
                                 DialoguePlayHint(Modifier.align(Alignment.BottomCenter).padding(horizontal = 16.dp, vertical = 2.dp))

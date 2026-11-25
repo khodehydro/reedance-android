@@ -76,7 +76,7 @@ import com.hydro.reedance.data.*
     var exploreArtistKey by rememberSaveable(settings.targetLanguage) { mutableStateOf<String?>(null) }
     val lightSystemBars = page != "premium" && MaterialTheme.colorScheme.background.luminance() > .5f
     SideEffect {
-        if(page != "song-story") (context as? android.app.Activity)?.window?.let { window ->
+        if(page != "song-story" && page != DialoguesRoute) (context as? android.app.Activity)?.window?.let { window ->
             WindowCompat.getInsetsController(window, window.decorView).apply {
                 isAppearanceLightStatusBars = lightSystemBars
                 isAppearanceLightNavigationBars = lightSystemBars
@@ -166,7 +166,7 @@ import com.hydro.reedance.data.*
     SearchDismissHost {
      Box(Modifier.fillMaxSize().mainTabSwipe(page, page in mainTabRoutes && !independent,
          LocalLayoutDirection.current, swipeNavigate)) {
-      val scaffoldInsets = if(artistDetail || page == "song-story" || page == "premium") WindowInsets(0, 0, 0, 0) else ScaffoldDefaults.contentWindowInsets
+      val scaffoldInsets = if(artistDetail || page == "song-story" || page == "premium" || page == DialoguesRoute) WindowInsets(0, 0, 0, 0) else ScaffoldDefaults.contentWindowInsets
       Scaffold(Modifier.fillMaxSize(), contentWindowInsets = scaffoldInsets, containerColor = Color.Transparent, snackbarHost = { SnackbarHost(snackbar) }, topBar = {
         if(!artistDetail && !songPage && page != "premium" && page != DialoguesRoute) Surface(color = MaterialTheme.colorScheme.background, contentColor = MaterialTheme.colorScheme.onSurface) { Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             if(page == "quiz" || page == "profile" || studySection) {
