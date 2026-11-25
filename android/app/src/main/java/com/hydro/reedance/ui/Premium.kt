@@ -28,15 +28,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.hydro.reedance.R
 
-private val PaywallBackground = Color(0xFF151716)
-private val PaywallAccent = Color(0xFF89B8FF)
-private val PaywallMuted = Color(0xFFB4BCBC)
-private val PaywallColors = darkColorScheme(
-    primary = PaywallAccent, onPrimary = Deep,
-    surface = PaywallBackground, onSurface = Color.White,
-    onSurfaceVariant = PaywallMuted
-)
-
 /** Never compose hidden text/actions: blur is presentation, not access control.
  * Placeholder bars also work below API 31, where Compose's blur is unsupported. */
 @Composable internal fun PremiumPreview() {
@@ -51,10 +42,9 @@ private val PaywallColors = darkColorScheme(
 }
 
 @Composable internal fun PremiumScreen(onClose: () -> Unit) {
-    MaterialTheme(colorScheme = PaywallColors, typography = MaterialTheme.typography) {
-        Surface(color = PaywallBackground, modifier = Modifier.fillMaxSize()) {
-            PremiumScreenContent(onClose)
-        }
+    val colors = MaterialTheme.colorScheme
+    Surface(color = colors.background, contentColor = colors.onBackground, modifier = Modifier.fillMaxSize()) {
+        PremiumScreenContent(onClose)
     }
 }
 
@@ -82,7 +72,7 @@ private val PaywallColors = darkColorScheme(
                 Text(tr("خرید اشتراک", "Subscribe"), style = MaterialTheme.typography.titleMedium)
             }
             Text(tr("پرداخت در این نسخه فعال نیست.", "Payments are not active in this version."),
-                style = MaterialTheme.typography.bodySmall, color = PaywallMuted, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
             SnappPayBanner()
         }
     }
@@ -100,12 +90,14 @@ private val PaywallColors = darkColorScheme(
 }
 
 @Composable private fun PaywallHero(onClose: () -> Unit, onRestore: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val background = colors.background
     Box(Modifier.fillMaxWidth()) {
         Image(painterResource(R.drawable.premium_placeholder), contentDescription = null,
             modifier = Modifier.matchParentSize(), contentScale = ContentScale.Crop, alignment = Alignment.TopCenter)
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(
-            0f to Color(0xD500080B), .30f to Color(0x2900080B), .55f to Color.Transparent,
-            .72f to PaywallBackground.copy(alpha = .65f), 1f to PaywallBackground
+            0f to background, .24f to background.copy(alpha = .88f), .52f to Color.Transparent,
+            .69f to background.copy(alpha = .78f), .84f to background, 1f to background
         )))
         Column(Modifier.fillMaxWidth().statusBarsPadding(), horizontalAlignment = Alignment.CenterHorizontally) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically,
@@ -115,7 +107,7 @@ private val PaywallColors = darkColorScheme(
                     Text("×", style = MaterialTheme.typography.headlineMedium,
                         modifier = Modifier.clearAndSetSemantics { contentDescription = close })
                 }
-                PressTextButton(onRestore) { Text(tr("بازیابی", "Restore"), color = Color.White) }
+                PressTextButton(onRestore) { Text(tr("بازیابی", "Restore"), color = colors.onBackground) }
             }
             Text(tr("ری‌دنس پریمیوم", "Reedance Premium"), modifier = Modifier.padding(horizontal = 20.dp),
                 style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
@@ -132,7 +124,7 @@ private val PaywallColors = darkColorScheme(
                     tr("پخش در پس‌زمینه", "Background playback")
                 ).forEach { benefit ->
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        AppIcon(UiIcons.Check, null, Modifier.size(18.dp), tint = PaywallAccent)
+                        AppIcon(UiIcons.Check, null, Modifier.size(18.dp), tint = colors.primary)
                         Text(benefit, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
                     }
                 }
@@ -144,27 +136,28 @@ private val PaywallColors = darkColorScheme(
 @Composable private fun PaywallPlan(title: String, price: String, unit: String, detail: String,
     selected: Boolean, modifier: Modifier, savings: String? = null, onSelect: () -> Unit) {
     val shape = GroupedCardShape
-    val ink = if(selected) PaywallAccent else Color.White
+    val colors = MaterialTheme.colorScheme
+    val ink = if(selected) colors.primary else colors.onSurface
     Surface(modifier.fillMaxHeight().heightIn(min = 128.dp).clip(shape)
         .selectable(selected, role = Role.RadioButton, onClick = onSelect), shape = shape,
         color = Color.Transparent, contentColor = ink,
-        border = BorderStroke(1.dp, if(selected) PaywallAccent else Color(0xFF636969))) {
+        border = BorderStroke(1.dp, if(selected) colors.primary else colors.outline)) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(title, Modifier.weight(1f), color = ink,
                     style = MaterialTheme.typography.labelLarge)
-                if(selected) AppIcon(UiIcons.CheckFilled, null, Modifier.size(16.dp), tint = PaywallAccent)
+                if(selected) AppIcon(UiIcons.CheckFilled, null, Modifier.size(16.dp), tint = colors.primary)
             }
             Text(price, color = ink, style = MaterialTheme.typography.headlineSmall)
-            Text(unit, style = MaterialTheme.typography.labelMedium, color = PaywallMuted)
+            Text(unit, style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
             if(savings != null) {
-                Surface(shape = CircleShape, color = PaywallAccent, contentColor = Deep) {
+                Surface(shape = CircleShape, color = colors.primaryContainer, contentColor = colors.onPrimaryContainer) {
                     Text(savings, Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall)
                 }
             }
             Spacer(Modifier.weight(1f))
-            Text(detail, color = if(selected) PaywallAccent else PaywallMuted, style = MaterialTheme.typography.labelMedium)
+            Text(detail, color = if(selected) colors.primary else colors.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
         }
     }
 }

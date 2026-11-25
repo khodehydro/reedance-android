@@ -79,7 +79,7 @@ import com.hydro.reedance.domain.PremiumEntitlement
     val context = LocalContext.current
     val settings by model.settings.collectAsStateWithLifecycle()
     var exploreArtistKey by rememberSaveable(settings.targetLanguage) { mutableStateOf<String?>(null) }
-    val lightSystemBars = page != "premium" && MaterialTheme.colorScheme.background.luminance() > .5f
+    val lightSystemBars = MaterialTheme.colorScheme.background.luminance() > .5f
     SideEffect {
         if(page != "song-story" && page != DialoguesRoute) (context as? android.app.Activity)?.window?.let { window ->
             WindowCompat.getInsetsController(window, window.decorView).apply {
