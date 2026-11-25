@@ -145,7 +145,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                 }
                 when(tab) {
                     0 -> {
-                        item(key = "lyric-help") { Text(if(singleLyric) tr("برای معنی روی واژه بزن.", "Tap a word to see its meaning.") else tr("برای یادگیری روی خط و برای پخش روی دکمهٔ کنار آن بزن.", "Tap a line to learn it, or its play button to listen."), style = MaterialTheme.typography.bodySmall) }
+                        item(key = "lyric-help") { Text(if(singleLyric) tr("برای معنی روی واژه بزن.", "Tap a word to see its meaning.") else tr("روی واژه برای معنی، روی کارت برای نکات خط و روی دکمهٔ پخش برای شنیدن بزن.", "Tap a word for its meaning, the card for line notes, or play to listen."), style = MaterialTheme.typography.bodySmall) }
                         val visibleLines = lines.take(access.limit("lyrics"))
                         val renderLine: @Composable (JsonObject) -> Unit = { line ->
                             val lineId = line.s("id")
@@ -158,6 +158,11 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                                 if(access.preview && token.s("lexemeId") !in wordsById) subscriptionInfo = true
                                 else selectedWord = wordsById[token.s("lexemeId")] ?: JsonObject().apply {
                                     addProperty("lemma", token.s("surface")); addProperty("translationFa", token.s("translationFa")); addProperty("translationEn", token.s("translationEn"))
+                                    add("example", JsonObject().apply {
+                                        addProperty("text", line.s("text"))
+                                        addProperty("translationFa", line.s("translationFa"))
+                                        addProperty("translationEn", line.s("translationEn"))
+                                    })
                                 }
                             })
                         }

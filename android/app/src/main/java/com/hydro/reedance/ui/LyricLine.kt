@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.style.TextAlign
@@ -18,7 +19,9 @@ import com.hydro.reedance.data.*
 @Composable internal fun LyricLine(line: JsonObject, mode: Int, active: Boolean, onPlay: () -> Unit, onToken: (JsonObject) -> Unit, playing: Boolean = false, single: Boolean = false, onLine: (() -> Unit)? = null) {
     val fa = LearningLanguage.persian
     val interfaceDirection = LayoutDirection.Rtl
-    Panel(tone = if(active) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface) {
+    val lineAction = if(onLine == null) Modifier else Modifier.clip(GroupedCardShape)
+        .clickable(onClickLabel = tr("یادگیری این خط", "Learn this line"), onClick = onLine)
+    Panel(modifier = lineAction, tone = if(active) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface) {
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 if(!single) PressIconButton(onPlay, Modifier.size(48.dp)) {
@@ -26,10 +29,10 @@ import com.hydro.reedance.data.*
                         if(playing) tr("مکث خط: ${line.s("text")}", "Pause line: ${line.s("text")}") else tr("پخش خط: ${line.s("text")}", "Play line: ${line.s("text")}"), Modifier.size(18.dp),
                         tint = if(active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Column(Modifier.weight(1f).then(if(onLine != null) Modifier.clickable(onClickLabel = tr("یادگیری این خط", "Learn this line"), onClick = onLine) else Modifier), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = if(single) Arrangement.spacedBy(2.dp, Alignment.CenterHorizontally) else Arrangement.spacedBy(2.dp)) {
                         line.a("tokens").forEach { token ->
-                            Column(Modifier.then(if(onLine == null) Modifier.clickable { onToken(token) } else Modifier).padding(horizontal = 3.dp, vertical = 8.dp), horizontalAlignment = if(single) Alignment.CenterHorizontally else Alignment.Start) {
+                            Column(Modifier.clickable(onClickLabel = tr("معنی واژه", "Word meaning")) { onToken(token) }.padding(horizontal = 3.dp, vertical = 8.dp), horizontalAlignment = if(single) Alignment.CenterHorizontally else Alignment.Start) {
                                 Text(token.s("surface"), style = MaterialTheme.typography.titleMedium)
                                 if(mode == 2) Text(token.tr("translation", fa), style = MaterialTheme.typography.labelSmall.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Rtl), color = MaterialTheme.colorScheme.primary)
                             }
