@@ -153,7 +153,7 @@ import kotlinx.coroutines.launch
                         Box(Modifier.fillMaxSize().dialogueWallpaper(scheme.primary, paperIndex)) {
                             DialogueMessages(demo, revealed, activeTurn.takeIf { playing } ?: -1, modes, hideAll, listMode, fontIndex, translation, ::selectTurn)
                             val reducedMotion = LocalReducedMotion.current
-                            AnimatedVisibility(visible = !startedDialogue && revealed == 0 && !hideAll,
+                            androidx.compose.animation.AnimatedVisibility(visible = !startedDialogue && revealed == 0 && !hideAll,
                                 modifier = Modifier.align(Alignment.Center), enter = EnterTransition.None,
                                 exit = if(reducedMotion) ExitTransition.None else
                                     slideOutVertically(tween(360)) { -it } + fadeOut(tween(300))) {
