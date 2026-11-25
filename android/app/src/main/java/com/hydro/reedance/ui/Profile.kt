@@ -17,6 +17,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
 import com.hydro.reedance.BuildConfig
+import com.hydro.reedance.R
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hydro.reedance.data.*
@@ -69,7 +70,7 @@ import com.hydro.reedance.data.*
         }
         SettingsSection(tr("اعضای ری‌دنس", "Reedance team")) {
             ReedanceMember("حمید رضا سلیم وند", "Hamidreza Salimvand", "HS",
-                tr("بنیان‌گذار ری‌دنس", "Reedance founder"))
+                tr("بنیان‌گذار ری‌دنس", "Reedance founder"), portrait = R.drawable.reedance_founder)
             SettingsDivider()
             ReedanceMember("سجاد علی وزیری", "Sajjad Alivaziri", "SA",
                 tr("مدیر بخش محتوا", "Content lead"))
