@@ -254,7 +254,8 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
             Box(if(reduced) Modifier else Modifier.animateItem(fadeInSpec = null)) {
                 AnimatedVisibility(entering, enter = fadeIn(tween(180)) + slideInVertically(tween(260)) { it / 3 }) {
                     DialogueBubble(item.value, item.index == active, font, translation,
-                        hidden = !modes[item.value.speaker].messages) { playLine(item.index) }
+                        hidden = !modes[item.value.speaker].messages,
+                        showWave = item.index == active && modes[item.value.speaker].audio) { playLine(item.index) }
                 }
             }
         }
@@ -262,24 +263,28 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
 }
 
 /** A decorative listening cue; it doesn't sample microphone or audio data. */
-@Composable private fun DialogueListeningWave(listening: Boolean) {
+@Composable private fun DialogueListeningWave(listening: Boolean, compact: Boolean = false) {
     val colors = MaterialTheme.colorScheme
     val phase = if(listening && !LocalReducedMotion.current) {
         rememberInfiniteTransition(label = "dialogue listening").animateFloat(
             initialValue = 0f, targetValue = 1f,
             animationSpec = infiniteRepeatable(tween(1250, easing = LinearEasing)), label = "wave phase")
     } else null
-    Surface(shape = CircleShape, color = colors.primaryContainer, contentColor = colors.onPrimaryContainer) {
-        Canvas(Modifier.size(width = 110.dp, height = 58.dp).padding(horizontal = 16.dp, vertical = 11.dp)) {
+    val bars = if(compact) 5 else 9
+    val waveSize = if(compact) Modifier.size(width = 24.dp, height = 18.dp)
+        else Modifier.size(width = 110.dp, height = 58.dp).padding(horizontal = 16.dp, vertical = 11.dp)
+    Surface(shape = CircleShape, color = if(compact) Color.Transparent else colors.primaryContainer,
+        contentColor = colors.onPrimaryContainer) {
+        Canvas(waveSize) {
             val angle = (phase?.value ?: 0f) * 2.0 * Math.PI
-            repeat(9) { bar ->
-                val centerWeight = 1f - kotlin.math.abs(bar - 4) * .125f
+            repeat(bars) { bar ->
+                val centerWeight = 1f - kotlin.math.abs(bar - bars / 2) / (bars - 1f)
                 val pulse = if(phase == null) .55f else (.55 + .36 * kotlin.math.sin(angle + bar * .82)).toFloat()
                 val half = size.height * .48f * centerWeight * pulse
-                val x = size.width * (bar + .5f) / 9
+                val x = size.width * (bar + .5f) / bars
                 drawLine(colors.onPrimaryContainer.copy(alpha = if(listening) .94f else .48f),
                     Offset(x, size.height / 2f - half), Offset(x, size.height / 2f + half),
-                    strokeWidth = 3.dp.toPx(), cap = StrokeCap.Round)
+                    strokeWidth = (if(compact) 2.dp else 3.dp).toPx(), cap = StrokeCap.Round)
             }
         }
     }
@@ -287,7 +292,7 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable private fun DialogueBubble(turn: DialogueTurn, active: Boolean, font: Int, translation: DialogueTranslation,
-    hidden: Boolean, play: () -> Unit) {
+    hidden: Boolean, showWave: Boolean, play: () -> Unit) {
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Box(Modifier.fillMaxWidth(), contentAlignment = if(turn.speaker == 0) Alignment.CenterStart else Alignment.CenterEnd) {
             val colors = MaterialTheme.colorScheme
@@ -300,6 +305,11 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
                     if(hidden) {
                         Text("...", Modifier.align(Alignment.CenterHorizontally), fontSize = textSize)
                         return@Column
+                    }
+                    if(showWave) {
+                        Box(Modifier.semantics { contentDescription = tr("در حال پخش", "Playing") }) {
+                            DialogueListeningWave(listening = true, compact = true)
+                        }
                     }
                     if(translation == DialogueTranslation.WORD) {
                         val words = remember(turn.text) { turn.text.split(Regex("\\s+")).filter { it.isNotBlank() } }
