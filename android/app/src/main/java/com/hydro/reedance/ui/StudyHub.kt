@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 internal const val StudyHubRoute = "study"
 internal const val StoriesRoute = "stories"
 internal const val DialoguesRoute = "dialogues"
+internal const val ReeTalkName = "ReeTalk"
 internal val studySectionRoutes = setOf("review", "gym", "game", "library", StoriesRoute, DialoguesRoute)
 
 @Composable internal fun studySectionTitle(route: String): String = when(route) {
@@ -26,7 +27,7 @@ internal val studySectionRoutes = setOf("review", "gym", "game", "library", Stor
     "gym" -> tr("باشگاه", "Gym")
     "game" -> tr("بازی", "Game")
     "library" -> tr("کتابخانه", "Library")
-    DialoguesRoute -> tr("گفت‌وگو", "Dialogues")
+    DialoguesRoute -> ReeTalkName
     StoriesRoute -> tr("داستان‌ها", "Stories")
     else -> tr("یادگیری", "Learn")
 }

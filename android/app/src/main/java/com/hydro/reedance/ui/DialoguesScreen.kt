@@ -46,7 +46,7 @@ import androidx.compose.ui.unit.dp
                         reader && dialogue != null -> tr(dialogue.titleFa, dialogue.titleEn)
                         dialogue != null -> tr("دانلود گفت‌وگو", "Download dialogue")
                         category != null -> tr(category.fa, category.en)
-                        else -> tr("گفت‌وگو", "Dialogues")
+                        else -> ReeTalkName
                     }, style = MaterialTheme.typography.titleLarge)
                 }
             }
@@ -111,7 +111,7 @@ import androidx.compose.ui.unit.dp
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(tr("موضوعات گفت‌وگو", "Dialogue topics"), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+            Text(ReeTalkName, Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
             PressTextButton({ open(-1) }) { Text(tr("دیدن همه", "See all")) }
         }
         LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
