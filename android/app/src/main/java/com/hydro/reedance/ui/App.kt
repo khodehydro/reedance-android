@@ -28,7 +28,7 @@ import com.hydro.reedance.data.*
     val ready by model.ready.collectAsStateWithLifecycle()
     // Keep app sizing independent of Android's font and display-size overrides.
     // The device's baseline density still maps dp to the appropriate pixel size.
-    val appDensity = (DisplayMetrics.DENSITY_DEVICE_STABLE / DisplayMetrics.DENSITY_DEFAULT.toFloat()) * .80f
+    val appDensity = (DisplayMetrics.DENSITY_DEVICE_STABLE / DisplayMetrics.DENSITY_DEFAULT.toFloat()) * .75f
     val context = LocalContext.current
     val fa = settings.language != "en"
     CompositionLocalProvider(LocalFa provides fa, LocalReducedMotion provides false, LocalLayoutDirection provides if(fa) LayoutDirection.Rtl else LayoutDirection.Ltr,
