@@ -194,8 +194,9 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(tr("پیام‌ها پنهان‌اند", "Messages hidden")) }
         return
     }
-    val visible = demo.turns.take(revealed).withIndex().filter { modes[it.value.speaker].messages }
-    val messages = if(listMode) visible else visible.takeLast(2)
+    // Speaker visibility changes only the bubble contents, never the message keys or order.
+    val revealedTurns = demo.turns.take(revealed).withIndex().toList()
+    val messages = if(listMode) revealedTurns else revealedTurns.takeLast(2)
     val scroll = rememberLazyListState()
     val reduced = LocalReducedMotion.current
     LaunchedEffect(messages.lastOrNull()?.index, listMode) {
@@ -210,7 +211,8 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
             SideEffect { entering.targetState = true }
             Box(if(reduced) Modifier else Modifier.animateItem(fadeInSpec = null)) {
                 AnimatedVisibility(entering, enter = fadeIn(tween(180)) + slideInVertically(tween(260)) { it / 3 }) {
-                    DialogueBubble(item.value, item.index == active, font, translation) { playLine(item.index) }
+                    DialogueBubble(item.value, item.index == active, font, translation,
+                        hidden = !modes[item.value.speaker].messages) { playLine(item.index) }
                 }
             }
         }
@@ -218,15 +220,21 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
-@Composable private fun DialogueBubble(turn: DialogueTurn, active: Boolean, font: Int, translation: DialogueTranslation, play: () -> Unit) {
+@Composable private fun DialogueBubble(turn: DialogueTurn, active: Boolean, font: Int, translation: DialogueTranslation,
+    hidden: Boolean, play: () -> Unit) {
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Box(Modifier.fillMaxWidth(), contentAlignment = if(turn.speaker == 0) Alignment.CenterStart else Alignment.CenterEnd) {
             val colors = MaterialTheme.colorScheme
             val textSize = listOf(14, 17, 21)[font].sp
-            Surface(onClick = play, modifier = Modifier.fillMaxWidth(.84f), shape = InsetControlShape,
+            val bubbleSize = if(hidden) Modifier.widthIn(min = 48.dp) else Modifier.fillMaxWidth(.84f)
+            Surface(onClick = play, modifier = bubbleSize, shape = InsetControlShape,
                 color = if(active || turn.speaker == 1) colors.primaryContainer else colors.surface,
                 contentColor = if(active || turn.speaker == 1) colors.onPrimaryContainer else colors.onSurface) {
                 Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if(hidden) {
+                        Text("...", Modifier.align(Alignment.CenterHorizontally), fontSize = textSize)
+                        return@Column
+                    }
                     if(translation == DialogueTranslation.WORD) {
                         val words = remember(turn.text) { turn.text.split(Regex("\\s+")).filter { it.isNotBlank() } }
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(9.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
