@@ -103,7 +103,7 @@ import androidx.compose.ui.unit.dp
     }
 }
 
-@Composable private fun DialogueCover(@DrawableRes artwork: Int, modifier: Modifier) {
+@Composable internal fun DialogueCover(@DrawableRes artwork: Int, modifier: Modifier) {
     Image(painterResource(artwork), contentDescription = null, modifier = modifier, contentScale = ContentScale.Crop)
 }
 

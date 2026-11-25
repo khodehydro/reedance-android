@@ -2,6 +2,10 @@ package com.hydro.reedance.ui
 
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.animateFloat
@@ -24,6 +28,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -147,6 +152,14 @@ import kotlinx.coroutines.launch
                     Surface(Modifier.weight(1f).fillMaxWidth(), color = scheme.background, contentColor = scheme.onBackground) {
                         Box(Modifier.fillMaxSize().dialogueWallpaper(scheme.primary, paperIndex)) {
                             DialogueMessages(demo, revealed, activeTurn.takeIf { playing } ?: -1, modes, hideAll, listMode, fontIndex, translation, ::selectTurn)
+                            val reducedMotion = LocalReducedMotion.current
+                            AnimatedVisibility(visible = !startedDialogue && revealed == 0 && !hideAll,
+                                modifier = Modifier.align(Alignment.Center), enter = EnterTransition.None,
+                                exit = if(reducedMotion) ExitTransition.None else
+                                    slideOutVertically(tween(360)) { -it } + fadeOut(tween(300))) {
+                                DialogueCover(demo.artwork, Modifier.padding(horizontal = 28.dp).widthIn(max = 320.dp)
+                                    .fillMaxWidth().aspectRatio(5f / 3f).clip(GroupedCardShape))
+                            }
                             if(!startedDialogue && revealed == 0) {
                                 DialoguePlayHint(Modifier.align(Alignment.BottomCenter).padding(horizontal = 16.dp, vertical = 2.dp))
                             }
