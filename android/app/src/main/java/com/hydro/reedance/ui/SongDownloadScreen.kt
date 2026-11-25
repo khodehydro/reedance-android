@@ -14,6 +14,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -86,13 +88,21 @@ import kotlin.math.roundToInt
     )
     val transferFraction = transfer?.takeIf { it.phase in listOf("download", "copy") }?.fraction
     val downloadProgress = transfer?.takeIf { it.phase == "download" }?.fraction
+    fun count(key: String): String = if(song.has(key)) song.n(key).toString() else "—"
     val countItems = listOf(
-        Triple(UiIcons.WordsFilled, tr("لغت", "Words"), "vocabularyCount"),
-        Triple(UiIcons.NotesFilled, tr("نکته", "Notes"), "grammarCount"),
-        Triple(UiIcons.PhrasesFilled, tr("اصطلاح", "Expressions"), "idiomCount"),
-        Triple(UiIcons.LinesFilled, tr("جمله", "Sentences"), "sentenceCount")
+        Triple(UiIcons.WordsFilled, tr("لغت", "Words"), count("vocabularyCount")),
+        Triple(UiIcons.NotesFilled, tr("نکته", "Notes"), count("grammarCount")),
+        Triple(UiIcons.PhrasesFilled, tr("اصطلاحات / جملات", "Expressions / sentences"),
+            "${count("idiomCount")} / ${count("sentenceCount")}"),
+        Triple(UiIcons.Quiz, tr("سؤال‌ها", "Questions"), count("questionCount"))
     )
-    val hasMissingCounts = countItems.any { !song.has(it.third) }
+    val hasMissingCounts = listOf("vocabularyCount", "grammarCount", "idiomCount", "sentenceCount", "questionCount").any { !song.has(it) }
+    val hasStory = song.get("hasStory")?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isBoolean }?.asBoolean
+    val storyStatus = when(hasStory) {
+        true -> tr("داستان دارد", "Story included")
+        false -> tr("داستان ندارد", "No story included")
+        null -> tr("وضعیت داستان نامشخص است", "Story availability unknown")
+    }
     val phaseText = when(transfer?.phase) {
         "manifest" -> tr("در حال آماده‌سازی دانلود", "Preparing download")
         "download" -> tr("در حال دانلود آهنگ", "Downloading song")
@@ -138,19 +148,22 @@ import kotlin.math.roundToInt
                 style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Surface(Modifier.fillMaxWidth(), shape = GroupedCardShape, color = MaterialTheme.colorScheme.surfaceContainerLow) {
                 Column {
-                    countItems.forEachIndexed { index, (icon, label, key) ->
-                        if(index > 0) HorizontalDivider(Modifier.padding(start = 58.dp, end = 14.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .55f))
-                        Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Surface(shape = NestedTileShape, color = MaterialTheme.colorScheme.primaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer) {
-                                Box(Modifier.size(32.dp), contentAlignment = Alignment.Center) { AppIcon(icon, null, Modifier.size(16.dp)) }
-                            }
-                            Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-                            Text(if(song.has(key)) song.n(key).toString() else "—", style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    countItems.forEachIndexed { index, (icon, label, value) ->
+                        if(index > 0) DownloadContentDivider()
+                        DownloadContentRow(icon, label) {
+                            Text(value, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
+                    }
+                    DownloadContentDivider()
+                    DownloadContentRow(UiIcons.LinesFilled, tr("داستان", "Story")) {
+                        Text(when(hasStory) { true -> "✓"; false -> "×"; null -> "—" },
+                            Modifier.semantics { contentDescription = storyStatus },
+                            style = MaterialTheme.typography.titleMedium,
+                            color = when(hasStory) {
+                                true -> MaterialTheme.colorScheme.primary
+                                false -> MaterialTheme.colorScheme.error
+                                null -> MaterialTheme.colorScheme.onSurfaceVariant
+                            })
                     }
                 }
             }
@@ -182,6 +195,23 @@ import kotlin.math.roundToInt
             tr("نسخهٔ آزمایشی از GitHub دانلود می‌شود؛ اندازه و SHA-256 پیش از رمزگشایی بررسی می‌شوند. این مسیر فقط برای debug است و امضای ناشر ندارد.", "Debug test: downloaded from GitHub; size and SHA-256 are checked before decryption. This path is not publisher-signed and is disabled in release builds."),
             Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+}
+
+@Composable private fun DownloadContentDivider() {
+    HorizontalDivider(Modifier.padding(start = 58.dp, end = 14.dp),
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .55f))
+}
+
+@Composable private fun DownloadContentRow(icon: Int, label: String, value: @Composable () -> Unit) {
+    Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Surface(shape = NestedTileShape, color = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer) {
+            Box(Modifier.size(32.dp), contentAlignment = Alignment.Center) { AppIcon(icon, null, Modifier.size(16.dp)) }
+        }
+        Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+        value()
     }
 }
 
