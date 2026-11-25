@@ -375,19 +375,44 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
 }
 
 @Composable private fun DialogueLearningTab(demo: DialogueDemo, tab: Int) {
-    var answer by rememberSaveable { mutableIntStateOf(-1) }
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        if(tab == 4) item {
-            Panel {
-                PersianText(demo.question, style = MaterialTheme.typography.titleLarge)
-                demo.answers.forEachIndexed { index, text ->
-                    PressOutlinedButton({ answer = index }, Modifier.fillMaxWidth(), enabled = answer < 0, shape = InsetControlShape) {
-                        PersianText((if(answer >= 0 && index == demo.correct) "✓ " else if(index == answer) "✕ " else "") + text)
-                    }
+    val learning = demo.learning
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        when(tab) {
+            1 -> {
+                item(key = "word-table") { Panel { LearningTable(learning.wordTable, fitWhenPossible = true) } }
+                itemsIndexed(learning.words, key = { index, _ -> "word-$index" }) { _, word ->
+                    Panel { WordLearningContent(word) }
                 }
             }
-        } else itemsIndexed(when(tab) { 1 -> demo.words; 2 -> demo.grammar; else -> demo.phrases }) { _, item ->
-            Panel { Foreign(item.first, large = true); PersianText(item.second) }
+            2 -> itemsIndexed(learning.grammar, key = { index, _ -> "grammar-$index" }) { _, note ->
+                LearningNote(note, fitTablesWhenPossible = true)
+            }
+            3 -> {
+                item(key = "phrase-table") { Panel { LearningTable(learning.phraseTable, fitWhenPossible = true) } }
+                itemsIndexed(learning.phrases, key = { index, _ -> "phrase-$index" }) { _, phrase ->
+                    Panel { PhraseLearningContent(phrase); WrittenPronunciation(phrase) }
+                }
+            }
+            4 -> itemsIndexed(learning.questions, key = { index, _ -> "question-$index" }) { _, question ->
+                DialogueQuestionCard(question)
+            }
+        }
+    }
+}
+
+@Composable private fun DialogueQuestionCard(question: DialogueQuestion) {
+    var answer by rememberSaveable { mutableIntStateOf(-1) }
+    Panel {
+        PersianText(question.prompt, style = MaterialTheme.typography.titleLarge)
+        question.options.forEachIndexed { index, text ->
+            val marker = if(answer >= 0 && index == question.correct) "✓ " else if(index == answer) "✕ " else ""
+            PressOutlinedButton({ answer = index }, Modifier.fillMaxWidth(), enabled = answer < 0, shape = InsetControlShape) {
+                PersianText(marker + text)
+            }
+        }
+        if(answer >= 0) {
+            SettingsDivider()
+            PersianText(question.explanation, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
