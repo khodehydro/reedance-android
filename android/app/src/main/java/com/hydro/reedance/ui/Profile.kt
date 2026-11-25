@@ -55,7 +55,7 @@ import com.hydro.reedance.data.*
         SettingsSection(tr("فضای من", "My space")) {
             SettingsAction(UiIcons.Library, tr("کتابخانه", "Library"), onClick = library)
             SettingsDivider()
-            SettingsAction(UiIcons.CrownFilled, tr("عضویت پریمیوم", "Premium membership"), onClick = premium)
+            SettingsAction(UiIcons.Crown, tr("عضویت پریمیوم", "Premium membership"), onClick = premium)
             SettingsDivider()
             SettingsAction(UiIcons.Explore, tr("ورود به استارتر", "Open Starter")) {
                 context.startActivity(Intent(context, com.hydro.reedance.StarterActivity::class.java))
@@ -76,7 +76,7 @@ import com.hydro.reedance.data.*
                 tr("مدیر بخش محتوا", "Content lead"))
         }
         SettingsSection(tr("پشتیبانی و دربارهٔ برنامه", "Support & about")) {
-            SettingsAction(UiIcons.ShareFilled, tr("اشتراک‌گذاری برنامه", "Share Reedance")) {
+            SettingsAction(UiIcons.Share, tr("اشتراک‌گذاری برنامه", "Share Reedance")) {
                 context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain")
                     .putExtra(Intent.EXTRA_TEXT, "Reedance — learn languages through music. https://github.com/khodehydro/reedance-android"), "Reedance"))
             }
