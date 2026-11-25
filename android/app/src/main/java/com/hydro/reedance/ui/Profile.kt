@@ -70,7 +70,10 @@ import com.hydro.reedance.data.*
         }
         SettingsSection(tr("اعضای ری‌دنس", "Reedance team")) {
             ReedanceMember("حمید رضا سلیم وند", "Hamidreza Salimvand", "HS",
-                tr("بنیان‌گذار ری‌دنس", "Reedance founder"), portrait = R.drawable.reedance_founder)
+                tr("بنیان‌گذار ری‌دنس", "Reedance founder"), portrait = R.drawable.reedance_founder, onInstagram = {
+                    try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.instagram.com/8.25.4.18.15/"))) }
+                    catch(_: ActivityNotFoundException) { Toast.makeText(context, unavailable, Toast.LENGTH_SHORT).show() }
+                })
             SettingsDivider()
             ReedanceMember("سجاد علی وزیری", "Sajjad Alivaziri", "SA",
                 tr("مدیر بخش محتوا", "Content lead"))
@@ -112,7 +115,7 @@ import com.hydro.reedance.data.*
 }
 
 @Composable private fun ReedanceMember(nameFa: String, nameEn: String, initials: String, role: String,
-    @DrawableRes portrait: Int? = null) {
+    @DrawableRes portrait: Int? = null, onInstagram: (() -> Unit)? = null) {
     val colors = MaterialTheme.colorScheme
     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -131,6 +134,11 @@ import com.hydro.reedance.data.*
             Text(tr(nameFa, nameEn), style = MaterialTheme.typography.titleMedium)
             Text(tr(nameEn, nameFa), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
             Text(role, style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
+        }
+        if(onInstagram != null) {
+            PressIconButton(onInstagram) {
+                AppIcon(R.drawable.uicon_instagram, tr("اینستاگرام $nameFa", "$nameEn on Instagram"), Modifier.size(22.dp))
+            }
         }
     }
 }
