@@ -16,13 +16,13 @@ internal val dialogueCategories = listOf(
         DialogueTurn(1, "Tabii. Şeker ister misiniz?", "البته. شکر می‌خواهید؟", glosses = listOf("البته", "شکر", "می‌خواهید", "آیا؟")),
         DialogueTurn(0, "Hayır, teşekkür ederim.", "نه، ممنونم.", glosses = listOf("نه", "تشکر", "می‌کنم")),
         DialogueTurn(1, "Buyurun, afiyet olsun!", "بفرمایید، نوش جان!", glosses = listOf("بفرمایید", "گوارا", "باشد"))
-    ), cafeLearning)),
+    ), cafeLearning))),
     DialogueCategory("Travel", "سفر", listOf(DialogueDemo("At the station", "در ایستگاه", listOf(DialogueSpeaker("Ece", DialogueGender.WOMAN), DialogueSpeaker("Mert", DialogueGender.MAN)), listOf(
         DialogueTurn(0, "Affedersiniz, tren ne zaman kalkıyor?", "ببخشید، قطار کی حرکت می‌کند؟", glosses = listOf("ببخشید", "قطار", "چه", "زمانی", "حرکت می‌کند")),
         DialogueTurn(1, "Saat üçte kalkıyor.", "ساعت سه حرکت می‌کند.", glosses = listOf("ساعت", "در سه", "حرکت می‌کند")),
         DialogueTurn(0, "Hangi perondan?", "از کدام سکو؟", glosses = listOf("کدام", "از سکو")),
         DialogueTurn(1, "İkinci perondan.", "از سکوی دوم.", glosses = listOf("دوم", "از سکو"))
-    ), stationLearning))
+    ), stationLearning)))
 )
 
 internal enum class SpeakerMode(val audio: Boolean, val messages: Boolean) {
