@@ -19,13 +19,28 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.hydro.reedance.domain.PremiumEntitlement
 
-@Composable internal fun DialoguesScreen(pauseSong: () -> Unit, initialCategory: Int, exit: () -> Unit) {
+@Composable internal fun DialoguesScreen(pauseSong: () -> Unit, initialCategory: Int, exit: () -> Unit, openPremium: () -> Unit) {
     var categoryIndex by rememberSaveable { mutableIntStateOf(initialCategory) }
     var dialogueIndex by rememberSaveable { mutableIntStateOf(-1) }
     var reader by rememberSaveable { mutableStateOf(false) }
     val category = dialogueCategories.getOrNull(categoryIndex)
     val dialogue = category?.demos?.getOrNull(dialogueIndex)
+    val subscribed by PremiumEntitlement.active.collectAsStateWithLifecycle()
+    val lockedCategory = category?.premium == true && !subscribed
+    val lockedDialogue = dialogue?.premium == true && !subscribed
+    // Restored navigation or an entitlement change must not expose a locked detail screen.
+    if(lockedCategory || lockedDialogue) {
+        LaunchedEffect(lockedCategory, lockedDialogue) {
+            reader = false
+            dialogueIndex = -1
+            if(lockedCategory) categoryIndex = -1
+            openPremium()
+        }
+        return
+    }
     fun back() {
         when {
             reader -> reader = false
@@ -65,14 +80,23 @@ import androidx.compose.ui.unit.dp
                             SongTitle(tr(dialogue.titleFa, dialogue.titleEn), category?.premium == true || dialogue.premium, MaterialTheme.typography.headlineSmall)
                             Text(tr("نسخهٔ نمایشی: دانلود و فایل‌های صوتی هنوز متصل نیستند.", "Demo: downloads and recorded audio are not connected yet."))
                             Action(tr("باز کردن دمو", "Open demo"), Modifier.fillMaxWidth()) {
-                                pauseSong()
-                                reader = true
+                                if((category?.premium == true || dialogue.premium) && !PremiumEntitlement.active.value) {
+                                    dialogueIndex = -1
+                                    if(category?.premium == true) categoryIndex = -1
+                                    openPremium()
+                                } else {
+                                    pauseSong()
+                                    reader = true
+                                }
                             }
                         }
                         category != null -> {
                             Heading(tr("گفت‌وگوها", "Dialogues"))
                             category.demos.forEachIndexed { index, item ->
-                                DialogueArtworkCard(item.artwork, tr(item.titleFa, item.titleEn), tr("دمو", "Demo"), premium = category.premium || item.premium) { dialogueIndex = index }
+                                DialogueArtworkCard(item.artwork, tr(item.titleFa, item.titleEn), tr("دمو", "Demo"), premium = category.premium || item.premium) {
+                                    if(item.premium && !PremiumEntitlement.active.value) openPremium()
+                                    else dialogueIndex = index
+                                }
                             }
                         }
                         else -> {
@@ -80,7 +104,10 @@ import androidx.compose.ui.unit.dp
                             dialogueCategories.forEachIndexed { index, item ->
                                 val count = item.demos.size
                                 DialogueArtworkCard(item.artwork, tr(item.fa, item.en),
-                                    tr("$count گفت‌وگو", if(count == 1) "1 dialogue" else "$count dialogues"), premium = item.premium) { categoryIndex = index }
+                                    tr("$count گفت‌وگو", if(count == 1) "1 dialogue" else "$count dialogues"), premium = item.premium) {
+                                    if(item.premium && !PremiumEntitlement.active.value) openPremium()
+                                    else categoryIndex = index
+                                }
                             }
                         }
                     }

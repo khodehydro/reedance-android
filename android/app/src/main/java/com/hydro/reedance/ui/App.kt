@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.*
 import androidx.compose.ui.unit.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hydro.reedance.data.*
+import com.hydro.reedance.domain.PremiumEntitlement
 
 @Composable fun ReedanceApp(model: AppModel, destination: (@Composable () -> Unit)? = null) {
     val settings by model.settings.collectAsStateWithLifecycle()
@@ -129,6 +130,15 @@ import com.hydro.reedance.data.*
     }
     val navigateLatest = rememberUpdatedState<(String) -> Unit>({ destination -> navigate(destination) })
     val navigateAction = remember { { destination: String -> navigateLatest.value(destination) } }
+    val openDialogues: (Int) -> Unit = { index ->
+        if(dialogueCategories.getOrNull(index)?.premium == true && !PremiumEntitlement.active.value) {
+            premiumReturnPage = "home"
+            navigateAction("premium")
+        } else {
+            initialDialogueCategory = index
+            navigateAction(DialoguesRoute)
+        }
+    }
     val swipeNavigateLatest = rememberUpdatedState<(String) -> Unit>({ destination ->
         val exploreTarget = explorePageForMainSwipe(page, destination, explorePager.settledPage)
         if(page == "explore" && exploreTarget != null) {
@@ -242,7 +252,7 @@ import com.hydro.reedance.data.*
                                             exploreArtistKey = exploreArtistKey,
                                             setExploreArtist = { exploreArtistKey = it },
                                             initialDialogueCategory = initialDialogueCategory,
-                                            openDialogues = { index -> initialDialogueCategory = index; navigateAction(DialoguesRoute) },
+                                            openDialogues = openDialogues,
                                             closeDialogues = { navigateAction(studyReturnPage) }
                                         )
                                     }
@@ -276,7 +286,7 @@ import com.hydro.reedance.data.*
                                             exploreArtistKey = exploreArtistKey,
                                             setExploreArtist = { exploreArtistKey = it },
                                             initialDialogueCategory = initialDialogueCategory,
-                                            openDialogues = { index -> initialDialogueCategory = index; navigateAction(DialoguesRoute) },
+                                            openDialogues = openDialogues,
                                             closeDialogues = { navigateAction(studyReturnPage) }
                                         )
                                     }
@@ -327,7 +337,10 @@ internal fun Modifier.visiblePageLayout(active: Boolean): Modifier = if(active) 
         ) { setPremiumReturnPage("song-playback"); navigate("premium") }
         StudyHubRoute -> StudyHubScreen(navigate)
         StoriesRoute -> StoriesScreen(model, openStory)
-        DialoguesRoute -> if(LocalPageActive.current) DialoguesScreen(model::pause, initialDialogueCategory, closeDialogues)
+        DialoguesRoute -> if(LocalPageActive.current) DialoguesScreen(model::pause, initialDialogueCategory, closeDialogues) {
+            setPremiumReturnPage(DialoguesRoute)
+            navigate("premium")
+        }
         "game" -> GameScreen(model) { setPremiumReturnPage("game"); navigate("premium") }
         "quiz" -> QuizScreen(model, { navigate("song-playback") }, { navigate("review") })
         "review" -> ReviewScreen(model)
