@@ -225,9 +225,13 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
                                 phase = step
                                 fraction = if(step == "download" && total > 0) (bytes.toFloat() / total).coerceIn(0f, 1f) else null
                             })
-                        } catch(cancelled: CancellationException) { throw cancelled }
-                        catch(_: Exception) { failed = true }
-                        finally { job = null }
+                        } catch(cancelled: CancellationException) {
+                            throw cancelled
+                        } catch(ignored: Exception) {
+                            failed = true
+                        } finally {
+                            job = null
+                        }
                     }
                 }
             }
