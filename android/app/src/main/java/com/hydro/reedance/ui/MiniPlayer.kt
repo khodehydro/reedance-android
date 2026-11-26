@@ -9,6 +9,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -63,8 +65,9 @@ import com.hydro.reedance.data.ActivePlayback
 }
 
 @Composable private fun MiniCover(song: ActivePlayback) {
-    val image = installedArtwork(song.coverPath.takeIf { song.coverUrl.isBlank() })
-    Box(Modifier.size(28.dp).clip(CircleShape)) {
+    var size by remember { mutableStateOf(IntSize.Zero) }
+    val image = installedArtwork(song.coverPath.takeIf { song.coverUrl.isBlank() }, size)
+    Box(Modifier.size(28.dp).clip(CircleShape).onSizeChanged { size = it }) {
         if(image != null) Image(image, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         else CoverImage(song.songId, song.title, Modifier.fillMaxSize(), coverUrl = song.coverUrl)
     }

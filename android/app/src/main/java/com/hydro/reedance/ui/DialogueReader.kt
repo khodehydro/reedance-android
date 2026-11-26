@@ -30,6 +30,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -320,9 +322,12 @@ import kotlinx.coroutines.launch
 }
 
 @Composable private fun DialogueReaderCover(demo: DialogueDemo, modifier: Modifier) {
-    val image = installedArtwork(demo.artworkPath)
-    if(image != null) Image(image, null, modifier, contentScale = ContentScale.Crop)
-    else DialogueCover(demo.artwork, modifier)
+    var size by remember { mutableStateOf(IntSize.Zero) }
+    val image = installedArtwork(demo.artworkPath, size)
+    Box(modifier.onSizeChanged { size = it }) {
+        if(image != null) Image(image, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        else DialogueCover(demo.artwork, Modifier.fillMaxSize())
+    }
 }
 
 private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
