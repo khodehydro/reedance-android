@@ -23,7 +23,9 @@ private val coverClient = OkHttpClient.Builder().followRedirects(false)
 
 internal suspend fun remoteCover(link: String): Bitmap? {
     val url = link.toHttpUrlOrNull() ?: return null
-    if(!url.isHttps || url.host != "raw.githubusercontent.com" || url.port != 443 ||
+    val allowed = url.host == "raw.githubusercontent.com" ||
+        (url.host == "dl.reedance.ir" && url.encodedPath.matches(Regex("/reetalk/01/(01|01(0[1-9]|1[0-2]))[.]png")))
+    if(!url.isHttps || !allowed || url.port != 443 ||
         url.username.isNotEmpty() || url.password.isNotEmpty() || url.query != null || url.fragment != null) return null
     return remoteCovers.get(link) ?: withContext(Dispatchers.IO) {
         remoteCoverLock.withLock {

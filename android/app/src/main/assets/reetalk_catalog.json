@@ -1689,24 +1689,97 @@
   ],
   "scenarioMetadata": {
     "en-t01-s01": {
-      "titleEn": "Sara and Amir say hello",
+      "titleEn": "Hello and Introductions",
       "level": "A1",
-      "downloadUrl": "https://github.com/khodehydro/Drop/raw/refs/heads/main/1.rdpack",
+      "downloadUrl": "https://dl.reedance.ir/reetalk/01/0101.rdpack",
       "downloadBytes": 1073482,
       "downloadSha256": "5dc97c4a17b7703f0cd9233dc6743c9fdd1aaf169f27721bf732ba8f7f8e1120",
-      "contentVersionCode": 1
+      "contentVersionCode": 1,
+      "pinnedDownloadUrl": "https://github.com/khodehydro/Drop/raw/refs/heads/main/1.rdpack",
+      "titleFa": "سلام و آشنایی",
+      "coverUrl": "https://dl.reedance.ir/reetalk/01/0101.png"
     },
     "en-t01-s02": {
-      "titleEn": "Where are you from?",
-      "level": "A1"
+      "titleEn": "Where Are You From?",
+      "level": "A1",
+      "titleFa": "اهل کجایی؟",
+      "downloadUrl": "https://dl.reedance.ir/reetalk/01/0102.rdpack",
+      "coverUrl": "https://dl.reedance.ir/reetalk/01/0102.png"
     },
     "en-t01-s03": {
-      "titleEn": "Maryam’s first day in class",
-      "level": "A1"
+      "titleEn": "Class Introductions",
+      "level": "A1",
+      "titleFa": "معرفی در کلاس",
+      "downloadUrl": "https://dl.reedance.ir/reetalk/01/0103.rdpack",
+      "coverUrl": "https://dl.reedance.ir/reetalk/01/0103.png"
     },
     "en-t01-s04": {
-      "titleEn": "Exchanging contact details",
-      "level": "A1"
+      "titleEn": "Phone Number and Email",
+      "level": "A1",
+      "titleFa": "شماره و ایمیل",
+      "downloadUrl": "https://dl.reedance.ir/reetalk/01/0104.rdpack",
+      "coverUrl": "https://dl.reedance.ir/reetalk/01/0104.png"
+    },
+    "en-t01-s05": {
+      "titleFa": "همسایه جدید",
+      "titleEn": "The New Neighbor",
+      "level": "A2",
+      "downloadUrl": "https://dl.reedance.ir/reetalk/01/0105.rdpack",
+      "coverUrl": "https://dl.reedance.ir/reetalk/01/0105.png"
+    },
+    "en-t01-s06": {
+      "titleFa": "معرفی یک دوست",
+      "titleEn": "Introducing a Friend",
+      "level": "A2",
+      "downloadUrl": "https://dl.reedance.ir/reetalk/01/0106.rdpack",
+      "coverUrl": "https://dl.reedance.ir/reetalk/01/0106.png"
+    },
+    "en-t01-s07": {
+      "titleFa": "آشنایی در مهمانی",
+      "titleEn": "Meeting at a Party",
+      "level": "A2",
+      "downloadUrl": "https://dl.reedance.ir/reetalk/01/0107.rdpack",
+      "coverUrl": "https://dl.reedance.ir/reetalk/01/0107.png"
+    },
+    "en-t01-s08": {
+      "titleFa": "شغل و سرگرمی",
+      "titleEn": "Work and Hobbies",
+      "level": "A2",
+      "downloadUrl": "https://dl.reedance.ir/reetalk/01/0108.rdpack",
+      "coverUrl": "https://dl.reedance.ir/reetalk/01/0108.png"
+    },
+    "en-t01-s09": {
+      "titleFa": "روز اول کار",
+      "titleEn": "First Day at Work",
+      "level": "B1",
+      "downloadUrl": "https://dl.reedance.ir/reetalk/01/0109.rdpack",
+      "coverUrl": "https://dl.reedance.ir/reetalk/01/0109.png"
+    },
+    "en-t01-s10": {
+      "titleFa": "گفت‌وگو در قطار",
+      "titleEn": "Chatting on the Train",
+      "level": "B1",
+      "downloadUrl": "https://dl.reedance.ir/reetalk/01/0110.rdpack",
+      "coverUrl": "https://dl.reedance.ir/reetalk/01/0110.png"
+    },
+    "en-t01-s11": {
+      "titleFa": "پیشنهاد همکاری",
+      "titleEn": "Exploring Collaboration",
+      "level": "B2",
+      "downloadUrl": "https://dl.reedance.ir/reetalk/01/0111.rdpack",
+      "coverUrl": "https://dl.reedance.ir/reetalk/01/0111.png"
+    },
+    "en-t01-s12": {
+      "titleFa": "سخنران همایش",
+      "titleEn": "The Conference Speaker",
+      "level": "C1",
+      "downloadUrl": "https://dl.reedance.ir/reetalk/01/0112.rdpack",
+      "coverUrl": "https://dl.reedance.ir/reetalk/01/0112.png"
+    }
+  },
+  "topicMetadata": {
+    "en-t01": {
+      "coverUrl": "https://dl.reedance.ir/reetalk/01/01.png"
     }
   }
 }

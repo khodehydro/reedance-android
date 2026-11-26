@@ -45,7 +45,7 @@ internal class ReeTalkInstaller(context: Context) {
         try {
             val pack = File(stage, "download.part")
             progress("download", 0, spec.bytes)
-            transport.download(spec.url, pack, spec.bytes, setOf("github.com", "raw.githubusercontent.com")) { received, _ ->
+            transport.download(spec.url, pack, spec.bytes, setOf("github.com", "raw.githubusercontent.com", "dl.reedance.ir")) { received, _ ->
                 check(allowed()); progress("download", received, spec.bytes)
             }
             require(pack.length() == spec.bytes && transport.hash(pack) == spec.sha256) { "Package hash/length mismatch" }

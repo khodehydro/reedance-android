@@ -42,12 +42,17 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
     if(catalog.getAsJsonArray("languages").none { it.asString == language }) return@withContext emptyList()
     val metadata = catalog.obj("scenarioMetadata")
     catalog.a("topics").map { topic ->
-        ReeTalkTopic(topic.s("id"), topic.s("titleFa"), topic.s("titleEn"), topic.s("coverUrl"), topic.s("access") == "paid",
+        val topicEntry = catalog.obj("topicMetadata").obj("$language-${topic.s("code")}")
+        ReeTalkTopic(topic.s("id"), topic.s("titleFa"), topic.s("titleEn"),
+            topicEntry.s("coverUrl").ifBlank { topic.s("coverUrl") }, topic.s("access") == "paid",
             topic.a("scenarios").map { scenario ->
                 val id = "$language-${topic.s("code")}-${scenario.s("code")}"
                 val entry = metadata.obj(id)
-                ReeTalkScenario(id, scenario.s("titleFa"), entry.s("titleEn").ifBlank { scenario.s("titleFa") },
-                    entry.s("level"), entry.s("coverUrl"), entry.s("downloadUrl").takeIf { it.isNotBlank() }?.let { url ->
+                val titleFa = entry.s("titleFa").ifBlank { scenario.s("titleFa") }
+                // A URL alone is not a verified pack. Keep the old pinned pilot available until
+                // the CDN object has its own verified size, hash and content version.
+                ReeTalkScenario(id, titleFa, entry.s("titleEn").ifBlank { titleFa },
+                    entry.s("level"), entry.s("coverUrl"), entry.s("pinnedDownloadUrl").ifBlank { entry.s("downloadUrl") }.takeIf { it.isNotBlank() }?.let { url ->
                         val version = entry.n("contentVersionCode")
                         val bytes = entry.n("downloadBytes")
                         val sha = entry.s("downloadSha256")
