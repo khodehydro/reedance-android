@@ -57,7 +57,8 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
                         val bytes = entry.n("downloadBytes")
                         val sha = entry.s("downloadSha256")
                         if(version in 1..Int.MAX_VALUE.toLong() && bytes > 0 && sha.matches(Regex("[a-f0-9]{64}")))
-                            ReeTalkPackSpec(id, topic.s("id"), language, url, bytes, sha, version.toInt()) else null
+                            ReeTalkPackSpec(id, topic.s("id"), language, url, bytes, sha, version.toInt(),
+                                studioQa = entry.s("studioQa") == "true") else null
                     }, entry.s("access") == "paid", entry.s("downloadUrl").isNotBlank())
             })
     }

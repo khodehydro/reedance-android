@@ -15,7 +15,7 @@ import kotlin.math.abs
 
 /** Direct-link profile: authority is the size/hash pinned in the APK, not a publisher manifest. */
 internal data class ReeTalkPackSpec(val id: String, val categoryId: String, val language: String,
-    val url: String, val bytes: Long, val sha256: String, val version: Int)
+    val url: String, val bytes: Long, val sha256: String, val version: Int, val studioQa: Boolean = false)
 internal data class InstalledReeTalk(val dialogue: JsonObject, val audio: File, val cover: File)
 
 internal class ReeTalkInstaller(context: Context) {
@@ -52,7 +52,7 @@ internal class ReeTalkInstaller(context: Context) {
             val payload = JsonObject().apply { add("package", JsonObject().apply { addProperty("encryptionKeyId", "enc-main") }) }
             val zip = File(stage, "authenticated.zip")
             progress("decrypt", 0, 0)
-            val qaKey = if(BuildConfig.DEBUG && isPilot(spec)) transport.studioDebugConfig()?.let {
+            val qaKey = if(BuildConfig.DEBUG && (isPilot(spec) || spec.studioQa)) transport.studioDebugConfig()?.let {
                 PackVerifier.base64(it.s("packKey")).also { key -> require(key.size == 32) }
             } else null
             transport.decrypt(pack, zip, payload, qaKey)
