@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
@@ -83,8 +84,13 @@ import kotlinx.coroutines.launch
     val modes = listOf(SpeakerMode.entries[firstMode], SpeakerMode.entries[secondMode])
     val context = LocalContext.current
     val audio = turn?.audio
+    // Keep the autoplay queue anchored while Media3 advances within it.
+    var queueStart by remember { mutableIntStateOf(-1) }
+    val loadTurn = singleTurn ?: queueStart.takeIf { it >= 0 } ?: current
+    val loadAudio = demo.turns.getOrNull(loadTurn)?.audio
+    val queueEnabled = singleTurn == null && queueStart >= 0 && modes.all { it.audio }
     var player by remember { mutableStateOf<ExoPlayer?>(null) }
-    var audioStarted by remember(activeTurn, replay) { mutableStateOf(false) }
+    var audioStarted by remember(loadTurn, replay) { mutableStateOf(false) }
     var audioFailed by remember(activeTurn, replay) { mutableStateOf(false) }
     val finished = rememberUpdatedState {
         elapsed = 0
@@ -92,6 +98,7 @@ import kotlinx.coroutines.launch
             playing = false
             singleTurn = null
         } else {
+            queueStart = -1
             current++
             if(current !in demo.turns.indices) playing = false
         }
@@ -102,16 +109,27 @@ import kotlinx.coroutines.launch
         player = engine
         onDispose { engine.release(); player = null }
     }
-    DisposableEffect(player, audio, activeTurn, replay) {
+    DisposableEffect(player, loadAudio, loadTurn, queueEnabled, replay) {
         val engine = player
-        if(engine == null || audio == null) {
+        if(engine == null || loadAudio == null) {
             engine?.stop()
             onDispose { }
         } else {
+            val queuedTurns = demo.turns.drop(loadTurn).takeWhile { it.audio == loadAudio }
+                .let { if(queueEnabled) it else it.take(1) }
             val listener = object : Player.Listener {
+                private fun showPlayingTurn() {
+                    val index = loadTurn + engine.currentMediaItemIndex
+                    revealed = maxOf(revealed, index + 1)
+                }
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
                     audioStarted = isPlaying
-                    if(isPlaying) revealed = maxOf(revealed, activeTurn + 1)
+                    if(isPlaying) showPlayingTurn()
+                }
+                override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                    if(reason != Player.MEDIA_ITEM_TRANSITION_REASON_AUTO || !queueEnabled) return
+                    current = loadTurn + engine.currentMediaItemIndex
+                    if(engine.isPlaying) showPlayingTurn()
                 }
                 override fun onPlaybackStateChanged(state: Int) {
                     if(state == Player.STATE_ENDED) finished.value()
@@ -119,7 +137,7 @@ import kotlinx.coroutines.launch
                 override fun onPlayerError(error: PlaybackException) { fail.value() }
             }
             engine.pause()
-            engine.setMediaItem(dialogueMediaItem(audio, turn?.startMs, turn?.endMs))
+            engine.setMediaItems(queuedTurns.map { dialogueMediaItem(loadAudio, it.startMs, it.endMs) })
             engine.addListener(listener)
             engine.prepare()
             onDispose {
@@ -161,6 +179,7 @@ import kotlinx.coroutines.launch
         }
     }
     fun selectTurn(index: Int) {
+        queueStart = -1
         singleTurn = index
         elapsed = 0
         replay++
@@ -168,9 +187,21 @@ import kotlinx.coroutines.launch
     }
     fun playPause() {
         if(playing) { playing = false; return }
+        val starting = !startedDialogue || current >= demo.turns.size
         startedDialogue = true
         if(singleTurn == null && current >= demo.turns.size) { current = 0; revealed = 0; elapsed = 0; replay++ }
+        if(starting && singleTurn == null && queueStart < 0 && demo.turns.getOrNull(current)?.audio != null && modes.all { it.audio }) {
+            queueStart = current
+        }
         playing = true
+    }
+    fun updateSpeakerModes(next: SpeakerMode, update: () -> Unit) {
+        if(queueStart >= 0 && !next.audio) {
+            player?.pause()
+            queueStart = -1
+            replay++
+        }
+        update()
     }
     DialogueGuide { guiding, highlight ->
         Column(Modifier.fillMaxSize()) {
@@ -203,7 +234,7 @@ import kotlinx.coroutines.launch
                         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                             Box(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
                                 SpeakerAvatar(demo.speakers[0], modes[0], true, Modifier.align(Alignment.CenterStart).then(highlight(DialogueGuideStep.FirstSpeaker))) {
-                                    firstMode = modes[0].next().ordinal
+                                    updateSpeakerModes(modes[0].next()) { firstMode = modes[0].next().ordinal }
                                 }
                                 PressIconButton(::playPause, Modifier.align(Alignment.Center).size(56.dp).then(highlight(DialogueGuideStep.Play))) {
                                     Surface(Modifier.fillMaxSize(), shape = CircleShape,
@@ -215,7 +246,7 @@ import kotlinx.coroutines.launch
                                     }
                                 }
                                 SpeakerAvatar(demo.speakers[1], modes[1], false, Modifier.align(Alignment.CenterEnd).then(highlight(DialogueGuideStep.SecondSpeaker))) {
-                                    secondMode = modes[1].next().ordinal
+                                    updateSpeakerModes(modes[1].next()) { secondMode = modes[1].next().ordinal }
                                 }
                             }
                         }
