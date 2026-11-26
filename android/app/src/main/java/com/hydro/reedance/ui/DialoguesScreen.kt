@@ -141,9 +141,9 @@ import com.hydro.reedance.domain.PremiumEntitlement
         items(dialogueCategories.indices.reversed().take(2), key = { it }) { index ->
             val category = dialogueCategories[index]
             Surface(onClick = { open(index) }, shape = CircleShape, color = colors.surfaceContainerHigh) {
-                Row(Modifier.heightIn(min = 58.dp).padding(start = 6.dp, end = 15.dp), verticalAlignment = Alignment.CenterVertically,
+                Row(Modifier.padding(start = 6.dp, top = 6.dp, end = 15.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                    DialogueCover(category.artwork, Modifier.size(width = 55.dp, height = 38.dp).clip(CircleShape))
+                    DialogueCover(category.artwork, Modifier.size(width = 62.dp, height = 46.dp).clip(CircleShape))
                     Text(tr(category.fa, category.en), style = MaterialTheme.typography.titleSmall)
                     if(category.premium) AppIcon(UiIcons.CrownFilled, tr("پریمیوم", "Premium"), Modifier.size(14.dp))
                 }
