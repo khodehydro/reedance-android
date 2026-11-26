@@ -75,7 +75,7 @@ import kotlinx.coroutines.launch
     var replay by remember { mutableIntStateOf(0) }
     var firstMode by rememberDialoguePreference("speaker_0:${demo.id}", 0, SpeakerMode.entries.indices)
     var secondMode by rememberDialoguePreference("speaker_1:${demo.id}", 0, SpeakerMode.entries.indices)
-    var hideAll by rememberDialogueToggle("hide_all", false)
+    var manuallyHideMessages by rememberDialogueToggle("hide_all", false)
     var translationIndex by rememberDialoguePreference("translation", 0, DialogueTranslation.entries.indices)
     val translation = DialogueTranslation.entries[translationIndex]
     var listMode by rememberDialogueToggle("list_mode", true)
@@ -86,6 +86,8 @@ import kotlinx.coroutines.launch
     val activeTurn = singleTurn ?: current
     val turn = demo.turns.getOrNull(activeTurn)
     val modes = listOf(SpeakerMode.entries[firstMode], SpeakerMode.entries[secondMode])
+    val listeningOnly = modes.all { it == SpeakerMode.LISTEN }
+    val hideAll = manuallyHideMessages || listeningOnly
     val context = LocalContext.current
     val audio = turn?.audio
     // Keep the autoplay queue anchored while Media3 advances within it.
@@ -221,7 +223,7 @@ import kotlinx.coroutines.launch
                         if(audioFailed) Text(tr("فایل صوتی پخش نشد.", "Could not play the recording."), color = scheme.error)
                         Surface(Modifier.weight(1f).fillMaxWidth().then(highlight(DialogueGuideStep.Messages)), color = scheme.background, contentColor = scheme.onBackground) {
                             Box(Modifier.fillMaxSize().dialogueWallpaper(scheme.primary, paperIndex)) {
-                                DialogueMessages(demo, revealed, activeTurn.takeIf { playing && (audio == null || audioStarted) } ?: -1, modes, hideAll, listMode, fontIndex, translation, ::selectTurn)
+                                DialogueMessages(demo, revealed, activeTurn.takeIf { playing && (audio == null || audioStarted) } ?: -1, modes, hideAll, listeningOnly, listMode, fontIndex, translation, ::selectTurn)
                                 val reducedMotion = LocalReducedMotion.current
                                 androidx.compose.animation.AnimatedVisibility(visible = !startedDialogue && revealed == 0 && !hideAll,
                                     modifier = Modifier.align(Alignment.Center), enter = EnterTransition.None,
@@ -273,8 +275,16 @@ import kotlinx.coroutines.launch
                             }, selected = !listMode) {
                                 AppIcon(if(listMode) UiIcons.Lines else UiIcons.Notes, tr("لیست یا دو پیام آخر", "List or last two messages"), Modifier.size(19.dp))
                             }
-                            DialogueControl({ hideAll = !hideAll }, highlight(DialogueGuideStep.Hide), selected = hideAll) {
-                                AppIcon(if(hideAll) UiIcons.EyeClosed else UiIcons.Eye, tr("نمایش یا پنهان‌کردن پیام‌ها", "Show or hide messages"), Modifier.size(19.dp))
+                            val visibilityLabel = if(listeningOnly) tr("خروج از حالت صرفاً شنیداری", "Exit listening-only mode")
+                                else tr("نمایش یا پنهان‌کردن پیام‌ها", "Show or hide messages")
+                            DialogueControl({
+                                if(listeningOnly) {
+                                    firstMode = SpeakerMode.BOTH.ordinal
+                                    secondMode = SpeakerMode.BOTH.ordinal
+                                    manuallyHideMessages = false
+                                } else manuallyHideMessages = !manuallyHideMessages
+                            }, highlight(DialogueGuideStep.Hide), selected = hideAll) {
+                                AppIcon(if(hideAll) UiIcons.EyeClosed else UiIcons.Eye, visibilityLabel, Modifier.size(19.dp))
                             }
                             DialogueControl({ translationIndex = (translationIndex + 1) % DialogueTranslation.entries.size },
                                 highlight(DialogueGuideStep.Translation).semantics { stateDescription = translationLabel }, selected = translation != DialogueTranslation.ORIGINAL) {
@@ -317,7 +327,7 @@ import kotlinx.coroutines.launch
 
 private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
 
-@Composable private fun DialogueMessages(demo: DialogueDemo, revealed: Int, active: Int, modes: List<SpeakerMode>, hideAll: Boolean,
+@Composable private fun DialogueMessages(demo: DialogueDemo, revealed: Int, active: Int, modes: List<SpeakerMode>, hideAll: Boolean, listeningOnly: Boolean,
     listMode: Boolean, font: Int, translation: DialogueTranslation, playLine: (Int) -> Unit) {
     if(hideAll) {
         val activeSpeaker = demo.turns.getOrNull(active)?.speaker
@@ -325,7 +335,8 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 DialogueListeningWave(listening)
-                Text(tr("پیام‌ها پنهان‌اند", "Messages hidden"), style = MaterialTheme.typography.titleSmall)
+                Text(if(listeningOnly) tr("حالت صرفاً شنیداری", "Listening-only mode")
+                    else tr("پیام‌ها پنهان‌اند", "Messages hidden"), style = MaterialTheme.typography.titleSmall)
             }
         }
         return
