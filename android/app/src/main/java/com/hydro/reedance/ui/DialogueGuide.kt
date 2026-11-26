@@ -46,10 +46,12 @@ internal enum class DialogueGuideStep(val fa: String, val en: String, val detail
 }
 
 @Composable internal fun DialogueGuide(content: @Composable (showing: Boolean, highlight: (DialogueGuideStep) -> Modifier) -> Unit) {
-    // Session-only: reopening a conversation starts the guide again.
-    var index by rememberSaveable { mutableIntStateOf(0) }
+    var seen by rememberDialogueToggle("chat_guide_seen_v1", false)
     val steps = DialogueGuideStep.entries
+    var index by rememberSaveable { mutableIntStateOf(if(seen) steps.size else 0) }
     val step = steps.getOrNull(index)
+    // Remember the first display without interrupting the current walkthrough.
+    LaunchedEffect(Unit) { if(step != null) seen = true }
     val targets = remember { mutableStateMapOf<DialogueGuideStep, Rect>() }
     fun finish() { index = steps.size }
     BackHandler(enabled = step != null) { finish() }
