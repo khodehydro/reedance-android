@@ -97,9 +97,15 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
     var installed by remember(pack) { mutableStateOf<InstalledReeTalk?>(null) }
     var checking by remember(pack) { mutableStateOf(pack != null) }
     LaunchedEffect(pack) {
-        installed = if(pack == null) null else try { installer.installed(pack) }
-            catch(cancelled: CancellationException) { throw cancelled }
-            catch(_: Exception) { null }
+        installed = if(pack == null) null else {
+            try {
+                installer.installed(pack)
+            } catch(cancelled: CancellationException) {
+                throw cancelled
+            } catch(ignored: Exception) {
+                null
+            }
+        }
         checking = false
     }
     val fa = LocalFa.current
