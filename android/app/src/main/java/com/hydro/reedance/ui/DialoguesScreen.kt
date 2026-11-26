@@ -92,6 +92,9 @@ import com.hydro.reedance.domain.PremiumEntitlement
                         }
                         category != null -> {
                             Heading(tr("گفت‌وگوها", "Dialogues"))
+                            if(category.demos.isEmpty()) Panel {
+                                Text(tr("هنوز گفت‌وگویی برای این موضوع منتشر نشده است.", "No dialogues have been published for this topic yet."))
+                            }
                             category.demos.forEachIndexed { index, item ->
                                 DialogueArtworkCard(item.artwork, tr(item.titleFa, item.titleEn), tr("دمو", "Demo"), premium = category.premium || item.premium) {
                                     if(item.premium && !PremiumEntitlement.active.value) openPremium()
@@ -138,7 +141,7 @@ import com.hydro.reedance.domain.PremiumEntitlement
     if(dialogueCategories.isEmpty()) return
     val colors = MaterialTheme.colorScheme
     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        items(dialogueCategories.indices.reversed().take(2), key = { it }) { index ->
+        items(dialogueCategories.indices.toList(), key = { it }) { index ->
             val category = dialogueCategories[index]
             Surface(onClick = { open(index) }, shape = CircleShape, color = colors.surfaceContainerHigh) {
                 Row(Modifier.padding(start = 6.dp, top = 6.dp, end = 15.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically,

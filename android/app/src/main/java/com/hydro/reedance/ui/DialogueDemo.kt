@@ -36,7 +36,11 @@ internal val dialogueCategories = listOf(
         DialogueTurn(1, "Evet, sağda.", "بله، سمت راست است.", glosses = listOf("بله", "سمت راست")),
         DialogueTurn(0, "Yardımınız için teşekkür ederim.", "از کمکتان ممنونم.", glosses = listOf("کمکتان", "برای", "تشکر", "می‌کنم")),
         DialogueTurn(1, "Rica ederim.", "خواهش می‌کنم.", glosses = listOf("خواهش", "می‌کنم"))
-    ), stationLearning, R.drawable.dialogue_art_station, premium = true)), R.drawable.dialogue_art_travel, premium = true)
+    ), stationLearning, R.drawable.dialogue_art_station, premium = true)), R.drawable.dialogue_art_travel, premium = true),
+    DialogueCategory("Shopping", "خرید", emptyList(), R.drawable.dialogue_art_shopping),
+    DialogueCategory("Work", "محیط کار", emptyList(), R.drawable.dialogue_art_work),
+    DialogueCategory("Food & drink", "غذا و نوشیدنی", emptyList(), R.drawable.dialogue_art_food),
+    DialogueCategory("Asking directions", "پرسیدن مسیر", emptyList(), R.drawable.dialogue_art_directions)
 )
 
 internal enum class SpeakerMode(val audio: Boolean, val messages: Boolean) {
