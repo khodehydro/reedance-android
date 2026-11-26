@@ -170,8 +170,7 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
 }
 
 @Composable private fun ReeTalkTopicCard(title: String, coverUrl: String, premium: Boolean, detail: String, open: () -> Unit) {
-    Surface(onClick = open, modifier = Modifier.fillMaxWidth(), shape = GroupedCardShape,
-        color = MaterialTheme.colorScheme.surfaceContainer) {
+    Surface(onClick = open, modifier = Modifier.fillMaxWidth(), shape = GroupedCardShape) {
         Column {
             ReeTalkCatalogCover(coverUrl, Modifier.fillMaxWidth().aspectRatio(16f / 9f))
             Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
