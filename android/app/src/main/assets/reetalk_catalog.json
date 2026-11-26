@@ -1697,7 +1697,14 @@
       "contentVersionCode": 1,
       "pinnedDownloadUrl": "https://github.com/khodehydro/Drop/raw/refs/heads/main/1.rdpack",
       "titleFa": "سلام و آشنایی",
-      "coverUrl": "https://dl.reedance.ir/reetalk/en/01/0101.png"
+      "coverUrl": "https://dl.reedance.ir/reetalk/en/01/0101.png",
+      "learningStats": {
+        "turns": 8,
+        "words": 22,
+        "grammar": 5,
+        "phrases": 8,
+        "questions": 3
+      }
     },
     "en-t01-s02": {
       "titleEn": "Where Are You From?",
@@ -1708,7 +1715,14 @@
       "downloadBytes": 1094662,
       "downloadSha256": "16ecb0aa0978034bbfbbaa381eeb61e8015649872b6f01d903cb08b9dcd6f66c",
       "contentVersionCode": 2,
-      "studioQa": true
+      "studioQa": true,
+      "learningStats": {
+        "turns": 8,
+        "words": 37,
+        "grammar": 8,
+        "phrases": 8,
+        "questions": 5
+      }
     },
     "en-t01-s03": {
       "titleEn": "Class Introductions",
@@ -1719,7 +1733,14 @@
       "downloadBytes": 1326239,
       "downloadSha256": "54e75606d036f3d0f1d3ac84265317658b6c977d3b0d68f73f9392b6066c73c4",
       "contentVersionCode": 1,
-      "studioQa": true
+      "studioQa": true,
+      "learningStats": {
+        "turns": 8,
+        "words": 42,
+        "grammar": 7,
+        "phrases": 9,
+        "questions": 4
+      }
     },
     "en-t01-s04": {
       "titleEn": "Phone Number and Email",
@@ -1730,7 +1751,14 @@
       "downloadBytes": 1217514,
       "downloadSha256": "23d106475b7a068759d022b0644c3b22a6fc363b8ca62abdde374cff629f876c",
       "contentVersionCode": 1,
-      "studioQa": true
+      "studioQa": true,
+      "learningStats": {
+        "turns": 8,
+        "words": 47,
+        "grammar": 10,
+        "phrases": 11,
+        "questions": 5
+      }
     },
     "en-t01-s05": {
       "titleFa": "همسایه جدید",
@@ -1741,7 +1769,14 @@
       "downloadBytes": 1749929,
       "downloadSha256": "be1d99a9ea41ef51e88c343be1960d73247d73ee14f06db9b96624661a18327f",
       "contentVersionCode": 1,
-      "studioQa": true
+      "studioQa": true,
+      "learningStats": {
+        "turns": 10,
+        "words": 77,
+        "grammar": 7,
+        "phrases": 10,
+        "questions": 4
+      }
     },
     "en-t01-s06": {
       "titleFa": "معرفی یک دوست",
@@ -1752,7 +1787,14 @@
       "downloadBytes": 1640653,
       "downloadSha256": "99bc00f9f7879343ed4de1145581885171095ca35394c1e72720f3fb59b22d7a",
       "contentVersionCode": 1,
-      "studioQa": true
+      "studioQa": true,
+      "learningStats": {
+        "turns": 10,
+        "words": 74,
+        "grammar": 8,
+        "phrases": 9,
+        "questions": 5
+      }
     },
     "en-t01-s07": {
       "titleFa": "آشنایی در مهمانی",
@@ -1763,7 +1805,14 @@
       "downloadBytes": 1730567,
       "downloadSha256": "c087a6eddab3708c693d47b12df67362952f16e275ea238f1c72632b1d9ffd59",
       "contentVersionCode": 1,
-      "studioQa": true
+      "studioQa": true,
+      "learningStats": {
+        "turns": 10,
+        "words": 72,
+        "grammar": 7,
+        "phrases": 10,
+        "questions": 5
+      }
     },
     "en-t01-s08": {
       "titleFa": "شغل و سرگرمی",
@@ -1774,7 +1823,14 @@
       "downloadBytes": 1856835,
       "downloadSha256": "99c3e07add5fb195f10f6d8b577594c80b93af8bf05f0bdb8b3f45f0193b9476",
       "contentVersionCode": 1,
-      "studioQa": true
+      "studioQa": true,
+      "learningStats": {
+        "turns": 10,
+        "words": 74,
+        "grammar": 7,
+        "phrases": 8,
+        "questions": 5
+      }
     },
     "en-t01-s09": {
       "titleFa": "روز اول کار",
@@ -1785,7 +1841,14 @@
       "downloadBytes": 2202708,
       "downloadSha256": "156f0ade5c05e57bc0a7b39a72a0364fae879be82acb3f64417de43a144e0dec",
       "contentVersionCode": 1,
-      "studioQa": true
+      "studioQa": true,
+      "learningStats": {
+        "turns": 12,
+        "words": 93,
+        "grammar": 7,
+        "phrases": 11,
+        "questions": 6
+      }
     },
     "en-t01-s10": {
       "titleFa": "گفت‌وگو در قطار",
@@ -1796,7 +1859,14 @@
       "downloadBytes": 1990459,
       "downloadSha256": "d5dc30577a00f63fb885f4f0f565626b0c2b6e1519070331e4afce0b2b780f55",
       "contentVersionCode": 1,
-      "studioQa": true
+      "studioQa": true,
+      "learningStats": {
+        "turns": 12,
+        "words": 87,
+        "grammar": 8,
+        "phrases": 7,
+        "questions": 5
+      }
     },
     "en-t01-s11": {
       "titleFa": "پیشنهاد همکاری",
@@ -1807,7 +1877,14 @@
       "downloadBytes": 2388853,
       "downloadSha256": "0d0215f4d36a904f64e0e208955c1b93a8a47161c3dc20375d844796088a2888",
       "contentVersionCode": 1,
-      "studioQa": true
+      "studioQa": true,
+      "learningStats": {
+        "turns": 14,
+        "words": 104,
+        "grammar": 7,
+        "phrases": 11,
+        "questions": 6
+      }
     },
     "en-t01-s12": {
       "titleFa": "سخنران همایش",
@@ -1818,7 +1895,14 @@
       "downloadBytes": 3262462,
       "downloadSha256": "b453e859f370ee33e7e9c5b72e672886e03a137bbc2b1202b47119aaf7683bd0",
       "contentVersionCode": 1,
-      "studioQa": true
+      "studioQa": true,
+      "learningStats": {
+        "turns": 16,
+        "words": 126,
+        "grammar": 10,
+        "phrases": 13,
+        "questions": 7
+      }
     }
   },
   "topicMetadata": {
@@ -1826,5 +1910,6 @@
       "coverUrl": "https://dl.reedance.ir/reetalk/en/01/01.png"
     }
   },
-  "packageManifestSourceRevision": "ee0869ab2ed0237cd5cc30f9937144499c42b144"
+  "packageManifestSourceRevision": "ee0869ab2ed0237cd5cc30f9937144499c42b144",
+  "scenarioStatsSourceRevision": "ee0869ab2ed0237cd5cc30f9937144499c42b144"
 }

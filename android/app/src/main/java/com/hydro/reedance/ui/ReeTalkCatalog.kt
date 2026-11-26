@@ -35,7 +35,10 @@ import kotlinx.coroutines.withContext
 internal data class ReeTalkTopic(val id: String, val fa: String, val en: String,
     val coverUrl: String, val premium: Boolean, val scenarios: List<ReeTalkScenario>)
 internal data class ReeTalkScenario(val id: String, val fa: String, val en: String, val level: String,
-    val coverUrl: String, val pack: ReeTalkPackSpec?, val premium: Boolean, val downloadListed: Boolean)
+    val coverUrl: String, val pack: ReeTalkPackSpec?, val premium: Boolean, val downloadListed: Boolean,
+    val language: String, val stats: ReeTalkLearningStats)
+
+internal data class ReeTalkLearningStats(val words: Long, val grammar: Long, val phrases: Long, val turns: Long, val questions: Long)
 
 internal suspend fun loadReeTalkTopics(context: Context, language: String): List<ReeTalkTopic> = withContext(Dispatchers.IO) {
     val catalog = context.assets.open("reetalk_catalog.json").bufferedReader().use { JsonParser.parseReader(it).asJsonObject }
@@ -48,6 +51,7 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
             topic.a("scenarios").map { scenario ->
                 val id = "$language-${topic.s("code")}-${scenario.s("code")}"
                 val entry = metadata.obj(id)
+                val stats = entry.obj("learningStats")
                 val titleFa = entry.s("titleFa").ifBlank { scenario.s("titleFa") }
                 // A URL alone is not a verified pack. Keep the old pinned pilot available until
                 // the CDN object has its own verified size, hash and content version.
@@ -59,7 +63,9 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
                         if(version in 1..Int.MAX_VALUE.toLong() && bytes > 0 && sha.matches(Regex("[a-f0-9]{64}")))
                             ReeTalkPackSpec(id, topic.s("id"), language, url, bytes, sha, version.toInt(),
                                 studioQa = entry.s("studioQa") == "true") else null
-                    }, entry.s("access") == "paid", entry.s("downloadUrl").isNotBlank())
+                    }, entry.s("access") == "paid", entry.s("downloadUrl").isNotBlank(), language,
+                    ReeTalkLearningStats(stats.n("words", -1), stats.n("grammar", -1), stats.n("phrases", -1),
+                        stats.n("turns", -1), stats.n("questions", -1)))
             })
     }
 }
@@ -141,7 +147,7 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     when {
                         scenario != null -> item {
-                            ReeTalkDownloadDetails(scenario, category?.premium == true || scenario.premium, installer,
+                            ReeTalkDownloadDetails(scenario, category?.let { tr(it.fa, it.en) }.orEmpty(), category?.premium == true || scenario.premium, installer,
                                 openPremium, onInstalled = { installed = it })
                         }
                         category != null -> itemsIndexed(category.scenarios, key = { _, entry -> entry.id }) { index, entry ->
@@ -194,7 +200,7 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
     }
 }
 
-@Composable private fun ReeTalkDownloadDetails(scenario: ReeTalkScenario, premium: Boolean, installer: ReeTalkInstaller,
+@Composable private fun ReeTalkDownloadDetails(scenario: ReeTalkScenario, topic: String, premium: Boolean, installer: ReeTalkInstaller,
     openPremium: () -> Unit, onInstalled: (InstalledReeTalk) -> Unit) {
     val scope = rememberCoroutineScope()
     var job by remember { mutableStateOf<Job?>(null) }
@@ -205,21 +211,57 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
     val coverMorph by animateFloatAsState(if(busy) 1f else 0f, tween(if(LocalReducedMotion.current) 0 else 420),
         label = "reetalk-download-cover")
     val clipShape = androidx.compose.foundation.shape.RoundedCornerShape((20f + 72f * coverMorph).dp)
-    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    val stats = scenario.stats
+    val countItems = listOf(
+        Triple(UiIcons.WordsFilled, tr("لغت‌ها", "Words"), stats.words),
+        Triple(UiIcons.NotesFilled, tr("نکات گرامری", "Grammar notes"), stats.grammar),
+        Triple(UiIcons.PhrasesFilled, tr("عبارت‌ها و اصطلاحات", "Expressions and phrases"), stats.phrases),
+        Triple(UiIcons.Lines, tr("خطوط گفت‌وگو", "Dialogue lines"), stats.turns),
+        Triple(UiIcons.QuizFilled, tr("سؤال‌ها", "Questions"), stats.questions)
+    )
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(18.dp)) {
         Box(Modifier.size(228.dp), contentAlignment = Alignment.Center) {
             if(busy) CircularWaveProgress(fraction, Modifier.fillMaxSize())
             ReeTalkCatalogCover(scenario.coverUrl, Modifier.size(184.dp).clip(clipShape))
         }
-        SongTitle(tr(scenario.fa, scenario.en), premium, MaterialTheme.typography.headlineMedium)
-        if(scenario.level.isNotBlank()) Text(scenario.level, style = MaterialTheme.typography.labelLarge)
-        if(busy) {
-            val status = when(phase) {
-                "decrypt" -> tr("در حال آماده‌سازی گفت‌وگو", "Preparing dialogue")
-                "validate" -> tr("در حال بررسی پکیج", "Checking package")
-                else -> tr("در حال دانلود گفت‌وگو", "Downloading dialogue")
+        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            SongTitle(tr(scenario.fa, scenario.en), premium, MaterialTheme.typography.headlineMedium)
+            if(topic.isNotBlank()) Text(topic, style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            if(busy) {
+                val status = when(phase) {
+                    "decrypt" -> tr("در حال آماده‌سازی گفت‌وگو", "Preparing dialogue")
+                    "validate" -> tr("در حال بررسی پکیج", "Checking package")
+                    else -> tr("در حال دانلود گفت‌وگو", "Downloading dialogue")
+                }
+                Text(fraction?.let { "${(it * 100f).roundToInt()}% · $status" } ?: status,
+                    color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
             }
-            Text(fraction?.let { "${(it * 100f).roundToInt()}% · $status" } ?: status,
-                color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            DownloadMetaChip(tr("زبان", "Language"), languageDisplayName(scenario.language), Modifier.weight(1f))
+            if(scenario.level.isNotBlank()) DownloadMetaChip(tr("سطح", "Level"), scenario.level, Modifier.weight(1f))
+        }
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(tr("محتوای آموزشی", "Included learning content"), Modifier.padding(horizontal = 12.dp),
+                style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Surface(Modifier.fillMaxWidth(), shape = GroupedCardShape, color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                Column {
+                    countItems.forEachIndexed { index, (icon, label, count) ->
+                        if(index > 0) DownloadContentDivider()
+                        DownloadContentRow(icon, label) {
+                            Text(if(count >= 0) count.toString() else "—", style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+            if(scenario.pack != null && !busy) Text(
+                tr("برای دانلود بهتر، VPN را خاموش کنید.", "For a smoother download, turn off your VPN."),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        if(busy) {
             PressOutlinedButton({ job?.cancel() }, Modifier.fillMaxWidth()) { Text(tr("لغو دانلود", "Cancel download")) }
         } else if(scenario.pack != null) {
             val spec = scenario.pack

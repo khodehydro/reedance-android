@@ -197,12 +197,12 @@ import kotlin.math.roundToInt
     }
 }
 
-@Composable private fun DownloadContentDivider() {
+@Composable internal fun DownloadContentDivider() {
     HorizontalDivider(Modifier.padding(start = 58.dp, end = 14.dp),
         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .55f))
 }
 
-@Composable private fun DownloadContentRow(icon: Int, label: String, value: @Composable () -> Unit) {
+@Composable internal fun DownloadContentRow(icon: Int, label: String, value: @Composable () -> Unit) {
     Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Surface(shape = NestedTileShape, color = MaterialTheme.colorScheme.primaryContainer,
@@ -214,7 +214,7 @@ import kotlin.math.roundToInt
     }
 }
 
-@Composable private fun DownloadMetaChip(label: String, value: String, modifier: Modifier = Modifier) {
+@Composable internal fun DownloadMetaChip(label: String, value: String, modifier: Modifier = Modifier) {
     Surface(modifier, shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
         Column(Modifier.padding(horizontal = 10.dp, vertical = 9.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -261,7 +261,7 @@ import kotlin.math.roundToInt
     }
 }
 
-@Composable private fun languageDisplayName(code: String) = when(code) {
+@Composable internal fun languageDisplayName(code: String) = when(code) {
     "es" -> tr("اسپانیایی", "Spanish")
     "ko" -> tr("کره‌ای", "Korean")
     "tr" -> tr("ترکی", "Turkish")
