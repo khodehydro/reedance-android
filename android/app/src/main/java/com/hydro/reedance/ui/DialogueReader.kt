@@ -34,6 +34,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -380,6 +382,28 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
     }
 }
 
+private fun speakerBubbleShape(left: Boolean): Shape = GenericShape { size, _ ->
+    // Mirror the outline physically, independently of the text or app direction.
+    val width = size.width
+    val height = size.height
+    val tail = minOf(7.dp.toPx(), width / 8)
+    val radius = minOf(14.dp.toPx(), (width - tail) / 2, height / 2)
+    fun x(value: Float) = if(left) value else width - value
+    moveTo(x(tail + radius), 0f)
+    lineTo(x(width - radius), 0f)
+    quadraticTo(x(width), 0f, x(width), radius)
+    lineTo(x(width), height - radius)
+    quadraticTo(x(width), height, x(width - radius), height)
+    lineTo(x(0f), height)
+    quadraticTo(x(tail), height - 2.dp.toPx(), x(tail), height - radius)
+    lineTo(x(tail), radius)
+    quadraticTo(x(tail), 0f, x(tail + radius), 0f)
+    close()
+}
+
+private val LeftSpeakerBubble = speakerBubbleShape(left = true)
+private val RightSpeakerBubble = speakerBubbleShape(left = false)
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable private fun DialogueBubble(turn: DialogueTurn, active: Boolean, font: Int, translation: DialogueTranslation,
     hidden: Boolean, showWave: Boolean, play: () -> Unit) {
@@ -390,10 +414,12 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
             val meaningSize = listOf(11, 12, 15)[font].sp
             val meaningLineHeight = listOf(15, 16, 21)[font].sp
             val bubbleSize = if(hidden) Modifier.widthIn(min = 48.dp) else Modifier.fillMaxWidth(.84f)
-            Surface(onClick = play, modifier = bubbleSize, shape = InsetControlShape,
+            Surface(onClick = play, modifier = bubbleSize, shape = if(turn.speaker == 0) LeftSpeakerBubble else RightSpeakerBubble,
                 color = when { active -> colors.primaryContainer; turn.speaker == 1 -> colors.secondaryContainer; else -> colors.surfaceContainer },
                 contentColor = when { active -> colors.onPrimaryContainer; turn.speaker == 1 -> colors.onSecondaryContainer; else -> colors.onSurface }) {
-                Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(Modifier.padding(start = if(turn.speaker == 0) 17.dp else 10.dp,
+                    end = if(turn.speaker == 1) 17.dp else 10.dp, top = 10.dp, bottom = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     if(hidden) {
                         Text("...", Modifier.align(Alignment.CenterHorizontally), fontSize = textSize)
                         return@Column
