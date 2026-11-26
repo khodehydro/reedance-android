@@ -7,7 +7,8 @@ import com.hydro.reedance.data.*
 internal data class DialogueLearning(val words: List<JsonObject>, val wordTable: JsonObject,
     val grammar: List<JsonObject>, val phrases: List<JsonObject>, val phraseTable: JsonObject,
     val questions: List<DialogueQuestion>)
-internal data class DialogueQuestion(val prompt: String, val options: List<String>, val correct: Int, val explanation: String)
+internal data class DialogueQuestion(val prompt: String, val options: List<String>, val correct: Int, val explanation: String,
+    val stage: String = "", val evidenceTurnIds: List<String> = emptyList())
 
 private fun JsonObject.localized(key: String, fa: String, en: String) {
     addProperty("${key}Fa", fa)
@@ -174,7 +175,8 @@ internal fun com.hydro.reedance.install.InstalledReeTalk.toReader(persian: Boole
     val questions = learning.a("questions").map { q ->
         val options = q.a("options")
         DialogueQuestion(q.obj("prompt").s(selectedLanguage), options.map { it.obj("text").s(selectedLanguage) },
-            options.indexOfFirst { it.s("id") == q.s("correctOptionId") }, q.obj("explanation").s(selectedLanguage))
+            options.indexOfFirst { it.s("id") == q.s("correctOptionId") }, q.obj("explanation").s(selectedLanguage),
+            q.s("stage"), q.strings("evidenceTurnIds"))
     }
     return DialogueDemo(d.obj("title").s("en"), d.obj("title").s("fa"), speakers.map {
         DialogueSpeaker(it.s("name"), if(it.s("gender") == "woman") DialogueGender.WOMAN else DialogueGender.MAN)

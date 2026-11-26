@@ -62,6 +62,8 @@ import kotlinx.coroutines.launch
     val pager = rememberPagerState { tabs.size }
     val scope = rememberCoroutineScope()
     var playing by remember { mutableStateOf(false) }
+    var evidence by remember { mutableStateOf<DialogueEvidence?>(null) }
+    var evidenceFailed by remember { mutableStateOf(false) }
     var singleTurn by remember { mutableStateOf<Int?>(null) }
     var current by rememberSaveable { mutableIntStateOf(0) }
     var startedDialogue by rememberSaveable { mutableStateOf(false) }
@@ -123,7 +125,20 @@ import kotlinx.coroutines.launch
             engine.playWhenReady = playing
         }
     }
-    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { playing = false; player?.pause() }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        playing = false
+        player?.pause()
+        evidence = null
+    }
+    val currentTab = pager.currentPage
+    LaunchedEffect(currentTab) {
+        if(currentTab == 4) { playing = false; player?.pause() }
+        else { evidence = null; evidenceFailed = false }
+    }
+    EvidencePlayback(evidence.takeIf { currentTab == 4 }, onEnd = { evidence = null }, onError = {
+        evidence = null
+        evidenceFailed = true
+    })
     LaunchedEffect(playing, activeTurn, speed, replay, audio) {
         if(!playing || turn == null) return@LaunchedEffect
         revealed = maxOf(revealed, activeTurn + 1)
@@ -227,7 +242,14 @@ import kotlinx.coroutines.launch
                             }
                         }
                     }
-                } else DialogueLearningTab(demo, page)
+                } else DialogueLearningTab(demo, page, evidence, evidenceFailed) { clip ->
+                    if(pager.currentPage == 4) {
+                        playing = false
+                        player?.pause()
+                        evidenceFailed = false
+                        evidence = if(evidence == clip) null else clip
+                    }
+                }
             }
         }
     }
@@ -414,7 +436,8 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
     }
 }
 
-@Composable private fun DialogueLearningTab(demo: DialogueDemo, tab: Int) {
+@Composable private fun DialogueLearningTab(demo: DialogueDemo, tab: Int,
+    playingEvidence: DialogueEvidence?, evidenceFailed: Boolean, playEvidence: (DialogueEvidence) -> Unit) {
     val learning = demo.learning
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         when(tab) {
@@ -433,16 +456,30 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
                     Panel { PhraseLearningContent(phrase); WrittenPronunciation(phrase) }
                 }
             }
-            4 -> itemsIndexed(learning.questions, key = { index, _ -> "question-$index" }) { _, question ->
-                DialogueQuestionCard(question)
+            4 -> {
+                if(evidenceFailed) item(key = "evidence-error") {
+                    Text(tr("صدای سؤال پخش نشد.", "Could not play the question audio."), color = MaterialTheme.colorScheme.error)
+                }
+                itemsIndexed(learning.questions, key = { index, _ -> "question-$index" }) { index, question ->
+                    val clip = remember(demo.turns, question, index) { dialogueEvidence(demo.turns, question.evidenceTurnIds, index) }
+                    DialogueQuestionCard(question, clip != null && clip == playingEvidence,
+                        clip?.let { target -> { playEvidence(target) } })
+                }
             }
         }
     }
 }
 
-@Composable private fun DialogueQuestionCard(question: DialogueQuestion) {
+@Composable private fun DialogueQuestionCard(question: DialogueQuestion, listening: Boolean, onEvidence: (() -> Unit)?) {
     var answer by rememberSaveable { mutableIntStateOf(-1) }
     Panel {
+        val stage = when(question.stage) {
+            "gist" -> tr("برداشت کلی", "Gist")
+            "detail" -> tr("جزئیات", "Detail")
+            "review" -> tr("مرور", "Review")
+            else -> null
+        }
+        if(stage != null) Text(stage, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
         PersianText(question.prompt, style = MaterialTheme.typography.titleLarge)
         question.options.forEachIndexed { index, text ->
             val marker = if(answer >= 0 && index == question.correct) "✓ " else if(index == answer) "✕ " else ""
@@ -453,6 +490,11 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
         if(answer >= 0) {
             SettingsDivider()
             PersianText(question.explanation, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if(onEvidence != null) PressOutlinedButton(onEvidence, Modifier.fillMaxWidth(), shape = InsetControlShape) {
+                AppIcon(if(listening) UiIcons.PauseFilled else UiIcons.PlayFilled, null, Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(if(listening) tr("توقف صدا", "Stop audio") else tr("شنیدن نوبت‌های شاهد", "Hear the evidence turns"))
+            }
         }
     }
 }
