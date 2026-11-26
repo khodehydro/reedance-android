@@ -484,14 +484,32 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
         if(stage != null) PersianText(stage, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
         PersianText(question.prompt, style = MaterialTheme.typography.titleLarge)
         question.options.forEachIndexed { index, text ->
-            val marker = if(answer >= 0 && index == question.correct) "✓ " else if(index == answer) "✕ " else ""
-            PressOutlinedButton({ answer = index }, Modifier.fillMaxWidth(), enabled = answer < 0, shape = InsetControlShape) {
+            val correct = answer >= 0 && index == question.correct
+            val wrong = index == answer && !correct
+            val marker = if(correct) "✓" else if(wrong) "✕" else "○"
+            val background = when {
+                correct -> Color(0xFF176B3A)
+                wrong -> Color(0xFFA82232)
+                else -> MaterialTheme.colorScheme.surfaceContainerHigh
+            }
+            val foreground = if(correct || wrong) Color.White else MaterialTheme.colorScheme.onSurface
+            val state = when {
+                correct -> tr("پاسخ درست", "Correct answer")
+                wrong -> tr("پاسخ اشتباه", "Incorrect answer")
+                else -> null
+            }
+            val optionModifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                .then(if(state != null) Modifier.semantics { stateDescription = state } else Modifier)
+            PressOutlinedButton({ answer = index }, optionModifier, enabled = answer < 0,
+                shape = InsetControlShape, border = null,
+                colors = ButtonDefaults.outlinedButtonColors(containerColor = background, contentColor = foreground,
+                    disabledContainerColor = background, disabledContentColor = foreground)) {
                 val direction = if(learningCellRtl(text)) LayoutDirection.Rtl else LayoutDirection.Ltr
                 CompositionLocalProvider(LocalLayoutDirection provides direction) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        if(marker.isNotBlank()) Text(marker.trim())
-                        PersianText(text, Modifier.weight(1f))
+                        Text(marker, color = foreground)
+                        PersianText(text, Modifier.weight(1f), color = foreground)
                     }
                 }
             }
