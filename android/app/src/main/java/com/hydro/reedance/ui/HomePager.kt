@@ -6,6 +6,7 @@ import android.icu.util.ULocale
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.*
@@ -55,21 +56,23 @@ internal fun currentPersianMonth(now: Long = System.currentTimeMillis()): Persia
     val pager = rememberPagerState { pages.size }
     val colors = MaterialTheme.colorScheme
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        HorizontalPager(state = pager, modifier = Modifier.fillMaxWidth().heightIn(max = 500.dp).aspectRatio(.84f),
-            pageSpacing = 12.dp, key = { pages[it].first }) { page ->
-            val (index, artwork) = pages[page]
-            val category = dialogueCategories[index]
-            val title = tr(category.fa, category.en)
-            val label = if(category.premium) tr("$title، پریمیوم", "$title, Premium") else title
-            Surface(onClick = { openDialogues(index) }, modifier = Modifier.fillMaxSize().semantics { contentDescription = label },
-                shape = HeroShape, color = colors.surfaceContainer) {
-                Box {
-                    DialogueCover(artwork, Modifier.matchParentSize())
-                    Surface(Modifier.align(Alignment.BottomEnd).padding(14.dp).size(44.dp),
-                        shape = CircleShape, color = Color.Black.copy(alpha = .54f), contentColor = Color.White) {
-                        Box(contentAlignment = Alignment.Center) {
-                            if(category.premium) AppIcon(UiIcons.CrownFilled, null, Modifier.size(20.dp))
-                            else Text("+", style = MaterialTheme.typography.headlineSmall)
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val bannerHeight = (maxWidth / .84f).coerceAtMost(500.dp)
+            HorizontalPager(state = pager, modifier = Modifier.fillMaxWidth().height(bannerHeight),
+                pageSpacing = 12.dp, key = { pages[it].first }) { page ->
+                val (index, artwork) = pages[page]
+                val category = dialogueCategories[index]
+                val title = tr(category.fa, category.en)
+                val label = if(category.premium) tr("$title، پریمیوم", "$title, Premium") else title
+                Surface(onClick = { openDialogues(index) }, modifier = Modifier.fillMaxSize().semantics { contentDescription = label },
+                    shape = RoundedCornerShape(42.dp), color = colors.surfaceContainer) {
+                    Box {
+                        DialogueCover(artwork, Modifier.matchParentSize())
+                        if(category.premium) Surface(Modifier.align(Alignment.BottomEnd).padding(14.dp).size(44.dp),
+                            shape = CircleShape, color = Color.Black.copy(alpha = .54f), contentColor = Color.White) {
+                            Box(contentAlignment = Alignment.Center) {
+                                AppIcon(UiIcons.CrownFilled, null, Modifier.size(20.dp))
+                            }
                         }
                     }
                 }

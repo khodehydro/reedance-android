@@ -56,7 +56,7 @@ fun cover(id: String): Int? = when(id) {
 private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
     override fun sizeOf(key: Int, value: Bitmap) = value.allocationByteCount
 }
-@Composable fun CoverImage(id: String, description: String, modifier: Modifier = Modifier, shapeProgress: Float = 0f, coverUrl: String = "") {
+@Composable fun CoverImage(id: String, description: String, modifier: Modifier = Modifier, shapeProgress: Float = 0f, coverUrl: String = "", cornerRadius: Dp = GroupedCardRadius) {
     val resource = cover(id)
     val resources = LocalContext.current.resources
     val bitmap by produceState<Bitmap?>(resource?.let { coverCache.get(it) }, resource) {
@@ -71,7 +71,7 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
     // Draw-time clipping is independent of lazy animateItem/retained graphics layers.
     // Apply it to both placeholder and decoded image on every draw.
     Box(modifier.drawWithCache {
-        val baseRadius = minOf(GroupedCardRadius.toPx(), size.minDimension / 2f)
+        val baseRadius = minOf(cornerRadius.toPx(), size.minDimension / 2f)
         val circleRadius = minOf(size.width, size.height) / 2f
         val radius = baseRadius + (circleRadius - baseRadius) * shapeProgress.coerceIn(0f, 1f)
         val outline = Path().apply { addRoundRect(RoundRect(Rect(Offset.Zero, size), CornerRadius(radius))) }
@@ -106,7 +106,7 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 20.dp + LocalOverlayBottomInset.current), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         if(home) {
             item(key = "hero", span = { GridItemSpan(maxLineSpan) }) {
-                HomePager(openDialogues)
+                Box(Modifier.padding(top = 6.dp)) { HomePager(openDialogues) }
             }
             item(key = "dialogue-categories", span = { GridItemSpan(maxLineSpan) }) {
                 HomeDialogueCategories(openDialogues)
@@ -294,7 +294,8 @@ private fun songCoverId(song: JsonObject): String =
 @Composable private fun SongTile(song: JsonObject, modifier: Modifier, compact: Boolean = false, onClick: () -> Unit) {
     Column(modifier.clickable(onClick = onClick), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Box {
-            CoverImage(songCoverId(song), song.s("title"), Modifier.fillMaxWidth().aspectRatio(1f), coverUrl = song.s("coverUrl"))
+            CoverImage(songCoverId(song), song.s("title"), Modifier.fillMaxWidth().aspectRatio(1f), coverUrl = song.s("coverUrl"),
+                cornerRadius = if(compact) 32.dp else GroupedCardRadius)
         }
         SongTitle(song.s("title"), premium = song.s("access") == "paid")
         Text(song.s("artist"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

@@ -141,18 +141,18 @@ import com.hydro.reedance.domain.PremiumEntitlement
         items(dialogueCategories.indices.reversed().take(2), key = { it }) { index ->
             val category = dialogueCategories[index]
             Surface(onClick = { open(index) }, shape = CircleShape, color = colors.surfaceContainerHigh) {
-                Row(Modifier.heightIn(min = 48.dp).padding(start = 5.dp, end = 12.dp), verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    DialogueCover(category.artwork, Modifier.size(31.dp).clip(CircleShape))
-                    Text(tr(category.fa, category.en), style = MaterialTheme.typography.labelLarge)
+                Row(Modifier.heightIn(min = 58.dp).padding(start = 6.dp, end = 15.dp), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                    DialogueCover(category.artwork, Modifier.size(width = 55.dp, height = 38.dp).clip(CircleShape))
+                    Text(tr(category.fa, category.en), style = MaterialTheme.typography.titleSmall)
                     if(category.premium) AppIcon(UiIcons.CrownFilled, tr("پریمیوم", "Premium"), Modifier.size(14.dp))
                 }
             }
         }
         item(key = "more") {
             Surface(onClick = { open(-1) }, shape = CircleShape, color = colors.surfaceContainerHigh) {
-                Box(Modifier.heightIn(min = 48.dp).padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
-                    Text(tr("بیشتر", "More"), style = MaterialTheme.typography.labelLarge)
+                Box(Modifier.heightIn(min = 58.dp).padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
+                    Text(tr("بیشتر", "More"), style = MaterialTheme.typography.titleSmall)
                 }
             }
         }
