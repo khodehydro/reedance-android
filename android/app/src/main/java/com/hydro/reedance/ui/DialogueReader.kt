@@ -385,26 +385,30 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
 }
 
 private fun speakerBubbleShape(left: Boolean): Shape = object : Shape {
-    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline =
-        with(density) { Outline.Generic(Path().apply {
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
+        val tailPx = with(density) { 7.dp.toPx() }
+        val radiusPx = with(density) { 14.dp.toPx() }
+        val tipCurvePx = with(density) { 2.dp.toPx() }
+        val outline = Path().apply {
             // Mirror the outline physically, independently of the text or app direction.
             val width = size.width
             val height = size.height
-            val tail = minOf(7.dp.toPx(), width / 8)
-            val radius = minOf(14.dp.toPx(), (width - tail) / 2, height / 2)
+            val tail = minOf(tailPx, width / 8)
+            val radius = minOf(radiusPx, (width - tail) / 2, height / 2)
             fun x(value: Float) = if(left) value else width - value
             moveTo(x(tail + radius), 0f)
             lineTo(x(width - radius), 0f)
-            quadraticTo(x(width), 0f, x(width), radius)
+            quadraticBezierTo(x(width), 0f, x(width), radius)
             lineTo(x(width), height - radius)
-            quadraticTo(x(width), height, x(width - radius), height)
+            quadraticBezierTo(x(width), height, x(width - radius), height)
             lineTo(x(0f), height)
-            quadraticTo(x(tail), height - 2.dp.toPx(), x(tail), height - radius)
+            quadraticBezierTo(x(tail), height - tipCurvePx, x(tail), height - radius)
             lineTo(x(tail), radius)
-            quadraticTo(x(tail), 0f, x(tail + radius), 0f)
+            quadraticBezierTo(x(tail), 0f, x(tail + radius), 0f)
             close()
         }
-        }) }
+        return Outline.Generic(outline)
+    }
 }
 
 private val LeftSpeakerBubble = speakerBubbleShape(left = true)
