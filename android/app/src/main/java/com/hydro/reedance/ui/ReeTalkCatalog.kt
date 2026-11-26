@@ -62,7 +62,6 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
     openPremium: () -> Unit, pauseSong: () -> Unit, showDemoEntry: Boolean) {
     var categoryIndex by rememberSaveable { mutableIntStateOf(initialCategory) }
     var scenarioIndex by rememberSaveable { mutableIntStateOf(-1) }
-    var reading by rememberSaveable { mutableStateOf(false) }
     var showDemo by rememberSaveable { mutableStateOf(false) }
     val subscribed by PremiumEntitlement.active.collectAsStateWithLifecycle()
     val category = topics.getOrNull(categoryIndex)
@@ -71,7 +70,6 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
     val lockedScenario = scenario?.premium == true && !subscribed
     if(lockedCategory || lockedScenario) {
         LaunchedEffect(lockedCategory, lockedScenario) {
-            reading = false
             scenarioIndex = -1
             if(lockedCategory) categoryIndex = -1
             openPremium()
@@ -84,7 +82,6 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
     }
     fun back() {
         when {
-            reading -> reading = false
             scenarioIndex >= 0 -> scenarioIndex = -1
             categoryIndex >= 0 -> categoryIndex = -1
             else -> exit()
@@ -109,8 +106,8 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
         checking = false
     }
     val fa = LocalFa.current
-    val engineData = installed
-    val demo = remember(engineData, fa, reading) { if(reading) engineData?.toReader(fa) else null }
+    val demo = remember(installed, fa) { installed?.toReader(fa) }
+    LaunchedEffect(demo?.id) { if(demo != null) pauseSong() }
     var paperIndex by rememberDialoguePreference("paper", 0, DialoguePaper.entries.indices)
     var dim by rememberDialogueToggle("dim", false)
     DialoguePalette(enabled = demo != null, paperIndex = paperIndex, dim = dim) {
@@ -122,6 +119,7 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
                     PressIconButton(::back) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
                     Text(when {
                         demo != null -> tr(demo.titleFa, demo.titleEn)
+                        checking && scenario != null -> tr(scenario.fa, scenario.en)
                         scenario != null -> tr("دانلود گفت‌وگو", "Download dialogue")
                         category != null -> tr(category.fa, category.en)
                         else -> ReeTalkName
@@ -131,13 +129,15 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
             if(demo != null) key(demo.id) {
                 DialogueReader(demo, paperIndex, dim, onPaperChange = { paperIndex = (paperIndex + 1) % DialoguePaper.entries.size },
                     onDimChange = { dim = !dim })
+            } else if(checking) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             } else key(category?.id, scenario?.id) {
                 LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     when {
                         scenario != null -> item {
-                            ReeTalkDownloadDetails(scenario, category?.premium == true || scenario.premium, installer, installed, checking,
-                                openPremium, onInstalled = { installed = it }, openReader = { pauseSong(); reading = true })
+                            ReeTalkDownloadDetails(scenario, category?.premium == true || scenario.premium, installer,
+                                openPremium, onInstalled = { installed = it })
                         }
                         category != null -> itemsIndexed(category.scenarios, key = { _, entry -> entry.id }) { index, entry ->
                             ReeTalkCatalogCard(tr(entry.fa, entry.en), entry.coverUrl, entry.premium || category.premium,
@@ -177,8 +177,7 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
 }
 
 @Composable private fun ReeTalkDownloadDetails(scenario: ReeTalkScenario, premium: Boolean, installer: ReeTalkInstaller,
-    installed: InstalledReeTalk?, checking: Boolean, openPremium: () -> Unit,
-    onInstalled: (InstalledReeTalk) -> Unit, openReader: () -> Unit) {
+    openPremium: () -> Unit, onInstalled: (InstalledReeTalk) -> Unit) {
     val scope = rememberCoroutineScope()
     var job by remember { mutableStateOf<Job?>(null) }
     var phase by remember { mutableStateOf("") }
@@ -188,12 +187,10 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
     val coverMorph by animateFloatAsState(if(busy) 1f else 0f, tween(if(LocalReducedMotion.current) 0 else 420),
         label = "reetalk-download-cover")
     val clipShape = androidx.compose.foundation.shape.RoundedCornerShape((20f + 72f * coverMorph).dp)
-    val image = installedArtwork(installed?.cover?.path)
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Box(Modifier.size(228.dp), contentAlignment = Alignment.Center) {
             if(busy) CircularWaveProgress(fraction, Modifier.fillMaxSize())
-            if(image != null) Image(image, null, Modifier.size(184.dp).clip(clipShape), contentScale = ContentScale.Crop)
-            else ReeTalkCatalogCover(scenario.coverUrl, Modifier.size(184.dp).clip(clipShape))
+            ReeTalkCatalogCover(scenario.coverUrl, Modifier.size(184.dp).clip(clipShape))
         }
         SongTitle(tr(scenario.fa, scenario.en), premium, MaterialTheme.typography.headlineMedium)
         if(scenario.level.isNotBlank()) Text(scenario.level, style = MaterialTheme.typography.labelLarge)
@@ -206,12 +203,6 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
             Text(fraction?.let { "${(it * 100f).roundToInt()}% · $status" } ?: status,
                 color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
             PressOutlinedButton({ job?.cancel() }, Modifier.fillMaxWidth()) { Text(tr("لغو دانلود", "Cancel download")) }
-        } else if(checking) {
-            CircularProgressIndicator(Modifier.size(24.dp))
-        } else if(installed != null) {
-            Action(tr("باز کردن گفت‌وگو", "Open dialogue"), Modifier.fillMaxWidth()) {
-                if(premium && !PremiumEntitlement.active.value) openPremium() else openReader()
-            }
         } else if(scenario.pack != null) {
             val spec = scenario.pack
             Action(if(failed) tr("تلاش دوباره", "Try again") else tr("دانلود گفت‌وگو", "Download dialogue"), Modifier.fillMaxWidth()) {
