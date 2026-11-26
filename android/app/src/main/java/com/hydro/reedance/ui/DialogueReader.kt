@@ -138,88 +138,90 @@ import kotlinx.coroutines.launch
         if(singleTurn == null && current >= demo.turns.size) { current = 0; revealed = 0; elapsed = 0; replay++ }
         playing = true
     }
-    Column(Modifier.fillMaxSize()) {
-        Box(Modifier.padding(horizontal = 12.dp)) {
-            ExpandedPillTabs(tabs.map { PillOption(it) }, pager.currentPage) { target -> scope.launch { pager.animateScrollToPage(target) } }
-        }
-        HorizontalPager(pager, Modifier.weight(1f)) { page ->
-            if(page == 0) {
-                val scheme = MaterialTheme.colorScheme
-                Column(Modifier.fillMaxSize()) {
-                    if(demo.turns.none { it.audio != null }) Text(tr("دموی متنی · بدون فایل صوتی", "Text demo · no recorded audio"),
-                        Modifier.padding(horizontal = 16.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall)
-                    if(audioFailed) Text(tr("فایل صوتی پخش نشد.", "Could not play the recording."), color = scheme.error)
-                    Surface(Modifier.weight(1f).fillMaxWidth(), color = scheme.background, contentColor = scheme.onBackground) {
-                        Box(Modifier.fillMaxSize().dialogueWallpaper(scheme.primary, paperIndex)) {
-                            DialogueMessages(demo, revealed, activeTurn.takeIf { playing } ?: -1, modes, hideAll, listMode, fontIndex, translation, ::selectTurn)
-                            val reducedMotion = LocalReducedMotion.current
-                            androidx.compose.animation.AnimatedVisibility(visible = !startedDialogue && revealed == 0 && !hideAll,
-                                modifier = Modifier.align(Alignment.Center), enter = EnterTransition.None,
-                                exit = if(reducedMotion) ExitTransition.None else
-                                    slideOutVertically(tween(360)) { -it } + fadeOut(tween(300))) {
-                                DialogueCover(demo.artwork, Modifier.padding(horizontal = 28.dp).widthIn(max = 320.dp)
-                                    .fillMaxWidth().aspectRatio(5f / 3f).clip(GroupedCardShape))
-                            }
-                            if(!startedDialogue && revealed == 0) {
-                                DialoguePlayHint(Modifier.align(Alignment.BottomCenter).padding(horizontal = 16.dp, vertical = 2.dp))
-                            }
-                        }
-                    }
-                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                        Box(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
-                            SpeakerAvatar(demo.speakers[0], modes[0], true, Modifier.align(Alignment.CenterStart)) {
-                                firstMode = modes[0].next().ordinal
-                            }
-                            PressIconButton(::playPause, Modifier.align(Alignment.Center).size(56.dp)) {
-                                Surface(Modifier.fillMaxSize(), shape = CircleShape,
-                                    color = scheme.primary, contentColor = scheme.onPrimary) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        AppIcon(if(playing) UiIcons.PauseFilled else UiIcons.PlayFilled,
-                                            if(playing) tr("مکث", "Pause") else tr("پخش", "Play"), Modifier.size(24.dp))
-                                    }
+    DialogueGuide { guiding, highlight ->
+        Column(Modifier.fillMaxSize()) {
+            Box(Modifier.padding(horizontal = 12.dp).then(highlight(DialogueGuideStep.Tabs))) {
+                ExpandedPillTabs(tabs.map { PillOption(it) }, pager.currentPage) { target -> scope.launch { pager.animateScrollToPage(target) } }
+            }
+            HorizontalPager(pager, Modifier.weight(1f)) { page ->
+                if(page == 0) {
+                    val scheme = MaterialTheme.colorScheme
+                    Column(Modifier.fillMaxSize()) {
+                        if(demo.turns.none { it.audio != null }) Text(tr("دموی متنی · بدون فایل صوتی", "Text demo · no recorded audio"),
+                            Modifier.padding(horizontal = 16.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall)
+                        if(audioFailed) Text(tr("فایل صوتی پخش نشد.", "Could not play the recording."), color = scheme.error)
+                        Surface(Modifier.weight(1f).fillMaxWidth().then(highlight(DialogueGuideStep.Messages)), color = scheme.background, contentColor = scheme.onBackground) {
+                            Box(Modifier.fillMaxSize().dialogueWallpaper(scheme.primary, paperIndex)) {
+                                DialogueMessages(demo, revealed, activeTurn.takeIf { playing } ?: -1, modes, hideAll, listMode, fontIndex, translation, ::selectTurn)
+                                val reducedMotion = LocalReducedMotion.current
+                                androidx.compose.animation.AnimatedVisibility(visible = !startedDialogue && revealed == 0 && !hideAll,
+                                    modifier = Modifier.align(Alignment.Center), enter = EnterTransition.None,
+                                    exit = if(reducedMotion) ExitTransition.None else
+                                        slideOutVertically(tween(360)) { -it } + fadeOut(tween(300))) {
+                                    DialogueCover(demo.artwork, Modifier.padding(horizontal = 28.dp).widthIn(max = 320.dp)
+                                        .fillMaxWidth().aspectRatio(5f / 3f).clip(GroupedCardShape))
+                                }
+                                if(!guiding && !startedDialogue && revealed == 0) {
+                                    DialoguePlayHint(Modifier.align(Alignment.BottomCenter).padding(horizontal = 16.dp, vertical = 2.dp))
                                 }
                             }
-                            SpeakerAvatar(demo.speakers[1], modes[1], false, Modifier.align(Alignment.CenterEnd)) {
-                                secondMode = modes[1].next().ordinal
+                        }
+                        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                            Box(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
+                                SpeakerAvatar(demo.speakers[0], modes[0], true, Modifier.align(Alignment.CenterStart).then(highlight(DialogueGuideStep.FirstSpeaker))) {
+                                    firstMode = modes[0].next().ordinal
+                                }
+                                PressIconButton(::playPause, Modifier.align(Alignment.Center).size(56.dp).then(highlight(DialogueGuideStep.Play))) {
+                                    Surface(Modifier.fillMaxSize(), shape = CircleShape,
+                                        color = scheme.primary, contentColor = scheme.onPrimary) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            AppIcon(if(playing) UiIcons.PauseFilled else UiIcons.PlayFilled,
+                                                if(playing) tr("مکث", "Pause") else tr("پخش", "Play"), Modifier.size(24.dp))
+                                        }
+                                    }
+                                }
+                                SpeakerAvatar(demo.speakers[1], modes[1], false, Modifier.align(Alignment.CenterEnd).then(highlight(DialogueGuideStep.SecondSpeaker))) {
+                                    secondMode = modes[1].next().ordinal
+                                }
+                            }
+                        }
+                        val translationLabel = when(translation) {
+                            DialogueTranslation.ORIGINAL -> tr("متن اصلی", "Original")
+                            DialogueTranslation.SENTENCE -> tr("ترجمهٔ جمله", "Sentence translation")
+                            DialogueTranslation.WORD -> tr("کلمه‌به‌کلمه", "Word by word")
+                        }
+                        val listState = tr("لیست", "List")
+                        val pairState = tr("دو پیام آخر", "Last two messages")
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceEvenly) {
+                            val speedLabel = tr("سرعت پخش", "Playback speed")
+                            DialogueControl({ speedIndex = (speedIndex + 1) % 4 }, highlight(DialogueGuideStep.Speed).semantics {
+                                contentDescription = speedLabel
+                                stateDescription = "${speed}×"
+                            }, selected = speed != 1f) { Text("${speed}×", style = MaterialTheme.typography.labelMedium) }
+                            DialogueControl({ listMode = !listMode }, highlight(DialogueGuideStep.Layout).semantics {
+                                stateDescription = if(listMode) listState else pairState
+                            }, selected = !listMode) {
+                                AppIcon(if(listMode) UiIcons.Lines else UiIcons.Notes, tr("لیست یا دو پیام آخر", "List or last two messages"), Modifier.size(19.dp))
+                            }
+                            DialogueControl({ hideAll = !hideAll }, highlight(DialogueGuideStep.Hide), selected = hideAll) {
+                                AppIcon(if(hideAll) UiIcons.EyeClosed else UiIcons.Eye, tr("نمایش یا پنهان‌کردن پیام‌ها", "Show or hide messages"), Modifier.size(19.dp))
+                            }
+                            DialogueControl({ translationIndex = (translationIndex + 1) % DialogueTranslation.entries.size },
+                                highlight(DialogueGuideStep.Translation).semantics { stateDescription = translationLabel }, selected = translation != DialogueTranslation.ORIGINAL) {
+                                AppIcon(when(translation) {
+                                    DialogueTranslation.ORIGINAL -> UiIcons.Original
+                                    DialogueTranslation.SENTENCE -> UiIcons.Lines
+                                    DialogueTranslation.WORD -> UiIcons.WordMode
+                                }, tr("حالت ترجمهٔ چت", "Chat translation mode"), Modifier.size(19.dp))
+                            }
+                            DialogueControl({ appearance = true }, highlight(DialogueGuideStep.Appearance)) {
+                                AppIcon(UiIcons.Settings, tr("تنظیمات ظاهر چت", "Chat appearance settings"), Modifier.size(19.dp))
                             }
                         }
                     }
-                    val translationLabel = when(translation) {
-                        DialogueTranslation.ORIGINAL -> tr("متن اصلی", "Original")
-                        DialogueTranslation.SENTENCE -> tr("ترجمهٔ جمله", "Sentence translation")
-                        DialogueTranslation.WORD -> tr("کلمه‌به‌کلمه", "Word by word")
-                    }
-                    val listState = tr("لیست", "List")
-                    val pairState = tr("دو پیام آخر", "Last two messages")
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceEvenly) {
-                        val speedLabel = tr("سرعت پخش", "Playback speed")
-                        DialogueControl({ speedIndex = (speedIndex + 1) % 4 }, Modifier.semantics {
-                            contentDescription = speedLabel
-                            stateDescription = "${speed}×"
-                        }, selected = speed != 1f) { Text("${speed}×", style = MaterialTheme.typography.labelMedium) }
-                        DialogueControl({ listMode = !listMode }, Modifier.semantics {
-                            stateDescription = if(listMode) listState else pairState
-                        }, selected = !listMode) {
-                            AppIcon(if(listMode) UiIcons.Lines else UiIcons.Notes, tr("لیست یا دو پیام آخر", "List or last two messages"), Modifier.size(19.dp))
-                        }
-                        DialogueControl({ hideAll = !hideAll }, selected = hideAll) {
-                            AppIcon(if(hideAll) UiIcons.EyeClosed else UiIcons.Eye, tr("نمایش یا پنهان‌کردن پیام‌ها", "Show or hide messages"), Modifier.size(19.dp))
-                        }
-                        DialogueControl({ translationIndex = (translationIndex + 1) % DialogueTranslation.entries.size },
-                            Modifier.semantics { stateDescription = translationLabel }, selected = translation != DialogueTranslation.ORIGINAL) {
-                            AppIcon(when(translation) {
-                                DialogueTranslation.ORIGINAL -> UiIcons.Original
-                                DialogueTranslation.SENTENCE -> UiIcons.Lines
-                                DialogueTranslation.WORD -> UiIcons.WordMode
-                            }, tr("حالت ترجمهٔ چت", "Chat translation mode"), Modifier.size(19.dp))
-                        }
-                        DialogueControl({ appearance = true }) {
-                            AppIcon(UiIcons.Settings, tr("تنظیمات ظاهر چت", "Chat appearance settings"), Modifier.size(19.dp))
-                        }
-                    }
-                }
-            } else DialogueLearningTab(demo, page)
+                } else DialogueLearningTab(demo, page)
+            }
         }
     }
     if(appearance) AlertDialog(onDismissRequest = { appearance = false }, title = { Text(tr("ظاهر چت", "Chat appearance")) }, text = {
