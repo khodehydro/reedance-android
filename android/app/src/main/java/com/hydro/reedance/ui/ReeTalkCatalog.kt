@@ -153,7 +153,7 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
                         else -> {
                             if(topics.isEmpty()) item { Text(tr("هنوز موضوعی برای این زبان منتشر نشده است.", "No topics have been published for this language yet.")) }
                             itemsIndexed(topics, key = { _, topic -> topic.id }) { index, topic ->
-                                ReeTalkCatalogCard(tr(topic.fa, topic.en), topic.coverUrl, topic.premium,
+                                ReeTalkTopicCard(tr(topic.fa, topic.en), topic.coverUrl, topic.premium,
                                     tr("${topic.scenarios.size} سناریو", "${topic.scenarios.size} scenarios")) {
                                     if(topic.premium && !PremiumEntitlement.active.value) openPremium() else categoryIndex = index
                                 }
@@ -164,6 +164,20 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable private fun ReeTalkTopicCard(title: String, coverUrl: String, premium: Boolean, detail: String, open: () -> Unit) {
+    Surface(onClick = open, modifier = Modifier.fillMaxWidth(), shape = GroupedCardShape,
+        color = MaterialTheme.colorScheme.surfaceContainer) {
+        Column {
+            ReeTalkCatalogCover(coverUrl, Modifier.fillMaxWidth().aspectRatio(16f / 9f))
+            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                SongTitle(title, premium)
+                Text(detail, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
             }
         }
     }
