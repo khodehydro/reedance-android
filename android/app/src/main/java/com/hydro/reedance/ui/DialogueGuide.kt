@@ -10,7 +10,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Rect
@@ -22,13 +21,16 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
 
 internal enum class DialogueGuideStep(val fa: String, val en: String, val detailFa: String, val detailEn: String) {
     Play("پخش و مکث", "Play and pause", "برای شروع مکالمه این دکمه را بزن. دوباره بزن تا مکث کند.", "Tap to start the dialogue. Tap again to pause."),
@@ -67,7 +69,6 @@ internal enum class DialogueGuideStep(val fa: String, val en: String, val detail
     dismiss: () -> Unit, next: () -> Unit) {
     var region by remember { mutableStateOf<Rect?>(null) }
     val colors = MaterialTheme.colorScheme
-    val top = target != null && region?.let { target.center.y > it.center.y } == true
     Box(Modifier.fillMaxSize().onGloballyPositioned { region = it.boundsInRoot() }) {
         Canvas(Modifier.matchParentSize().pointerInput(Unit) {
             awaitPointerEventScope { while(true) awaitPointerEvent().changes.forEach { it.consume() } }
@@ -83,20 +84,46 @@ internal enum class DialogueGuideStep(val fa: String, val en: String, val detail
                 drawRoundRect(colors.primary, hole.topLeft, Size(hole.width, hole.height), CornerRadius(radius), style = Stroke(2.dp.toPx()))
             }
         }
-        Surface(Modifier.align(if(top) Alignment.TopCenter else Alignment.BottomCenter)
-            .padding(horizontal = 16.dp, vertical = 12.dp).widthIn(max = 440.dp).fillMaxWidth()
-            .semantics { liveRegion = LiveRegionMode.Polite },
-            shape = GroupedCardShape, color = colors.surfaceContainerHigh, contentColor = colors.onSurface) {
-            Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(tr("راهنمای ری‌تاک · ${index + 1} از $total", "ReeTalk guide · ${index + 1} of $total"),
-                    style = MaterialTheme.typography.labelMedium, color = colors.primary)
-                Text(tr(step.fa, step.en), style = MaterialTheme.typography.titleLarge)
-                Text(tr(step.detailFa, step.detailEn), style = MaterialTheme.typography.bodyMedium)
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    PressTextButton(dismiss) { Text(tr("رد کردن", "Skip")) }
-                    PressTextButton(next) { Text(if(index == total - 1) tr("تمام", "Done") else tr("بعدی", "Next")) }
+        Layout(modifier = Modifier.matchParentSize(), content = {
+            Surface(Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                shape = GroupedCardShape, color = colors.surfaceContainerHigh, contentColor = colors.onSurface) {
+                Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(tr("راهنمای ری‌تاک · ${index + 1} از $total", "ReeTalk guide · ${index + 1} of $total"),
+                        style = MaterialTheme.typography.labelMedium, color = colors.primary)
+                    Text(tr(step.fa, step.en), style = MaterialTheme.typography.titleLarge)
+                    Text(tr(step.detailFa, step.detailEn), style = MaterialTheme.typography.bodyMedium)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        PressTextButton(dismiss) { Text(tr("رد کردن", "Skip")) }
+                        PressTextButton(next) { Text(if(index == total - 1) tr("تمام", "Done") else tr("بعدی", "Next")) }
+                    }
                 }
             }
+        }) { measurables, constraints ->
+            val width = constraints.maxWidth
+            val height = constraints.maxHeight
+            val padding = minOf(12.dp.roundToPx(), width / 4, height / 4)
+            val gap = 12.dp.roundToPx()
+            val cardWidth = minOf(420.dp.roundToPx(), width - 2 * padding)
+            val card = measurables.single().measure(Constraints(
+                minWidth = cardWidth, maxWidth = cardWidth, maxHeight = height - 2 * padding))
+            val localTarget = region?.let { root -> target?.translate(-root.topLeft) }
+            val maxX = width - padding - card.width
+            val maxY = height - padding - card.height
+            val x = ((localTarget?.center?.x?.roundToInt() ?: width / 2) - card.width / 2).coerceIn(padding, maxX)
+            val y = if(localTarget == null) maxY else {
+                val above = localTarget.top.roundToInt() - gap - card.height
+                val below = localTarget.bottom.roundToInt() + gap
+                val preferAbove = localTarget.center.y > height / 2f
+                when {
+                    preferAbove && above in padding..maxY -> above
+                    below in padding..maxY -> below
+                    above in padding..maxY -> above
+                    // Large targets (like the message area) may leave no space on either side.
+                    localTarget.top > height - localTarget.bottom -> padding
+                    else -> maxY
+                }
+            }
+            layout(width, height) { card.place(x, y) }
         }
     }
 }
