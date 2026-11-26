@@ -1,6 +1,10 @@
 package com.hydro.reedance
 
 import com.google.gson.JsonObject
+import com.google.gson.JsonParser
+import com.hydro.reedance.install.InstalledReeTalk
+import com.hydro.reedance.ui.toReader
+import java.io.File
 import com.hydro.reedance.data.a
 import com.hydro.reedance.data.obj
 import com.hydro.reedance.data.s
@@ -10,6 +14,27 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class DialogueLearningTest {
+    @Test fun installedContentUsesPersianButKeepsOriginalDialogue() {
+        val document = JsonParser.parseString("""{
+            "speakers": [{"id":"a","name":"Sara"}],
+            "turns": [{"id":"t1","speakerId":"a","text":"Hello",
+                "translation":{"fa":"سلام","en":"Hello there"},
+                "tokens":[{"gloss":{"fa":"درود","en":"Greeting"}}]}],
+            "learning":{"questions":[{"prompt":{"fa":"چه گفت؟","en":"What did she say?"},
+                "options":[{"id":"a","text":{"fa":"سلام","en":"Hello"}}],
+                "correctOptionId":"a","explanation":{"fa":"سلام کرد","en":"She greeted him"}}]}
+        }""").asJsonObject
+        val demo = InstalledReeTalk(document, File("audio.wav"), File("cover.jpg")).toReader()
+        val turn = demo.turns.single()
+        assertEquals("Hello", turn.text)
+        assertEquals("سلام", turn.meaning)
+        assertEquals(listOf("درود"), turn.glosses)
+        val question = demo.learning.questions.single()
+        assertEquals("چه گفت؟", question.prompt)
+        assertEquals(listOf("سلام"), question.options)
+        assertEquals("سلام کرد", question.explanation)
+    }
+
     private fun checkTable(table: JsonObject) {
         val columns = table.getAsJsonArray("columns")
         assertTrue(columns.size() > 0)

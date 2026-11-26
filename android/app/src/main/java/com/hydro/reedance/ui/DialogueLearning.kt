@@ -119,7 +119,7 @@ internal val stationLearning = DialogueLearning(
 )
 
 /** Map validated package data into the existing chat and learning cards. */
-internal fun com.hydro.reedance.install.InstalledReeTalk.toReader(persian: Boolean): DialogueDemo {
+internal fun com.hydro.reedance.install.InstalledReeTalk.toReader(): DialogueDemo {
     val d = dialogue
     val speakers = d.a("speakers")
     fun JsonObject.translationOf(target: JsonObject, from: String, to: String = from) {
@@ -135,7 +135,7 @@ internal fun com.hydro.reedance.install.InstalledReeTalk.toReader(persian: Boole
         target.addProperty("faReading", pronunciation.s("faReading"))
         target.addProperty("ipa", pronunciation.s("ipa"))
     }
-    val selectedLanguage = if(persian) "fa" else "en"
+    val selectedLanguage = LearningLanguage.meaningKey
     val learning = d.obj("learning")
     val words = learning.a("words").map { entry -> JsonObject().apply {
         addProperty("lemma", entry.s("text"))
@@ -186,10 +186,10 @@ internal fun com.hydro.reedance.install.InstalledReeTalk.toReader(persian: Boole
             turn.a("tokens").map { it.obj("gloss").s(selectedLanguage) }, turn.s("id"), turn.n("startMs"), turn.n("endMs"))
     }, DialogueLearning(words,
         table("مرور واژه‌ها", "Vocabulary review", wordColumns, *words.map {
-            listOf(it.s("lemma"), it.s("ipa"), it.tr("translation", persian))
+            listOf(it.s("lemma"), it.s("ipa"), it.tr("translation", LearningLanguage.persian))
         }.toTypedArray()), grammar, phrases,
         table("مرور عبارت‌ها", "Phrase review", phraseColumns, *phrases.map {
-            listOf(it.s("text"), it.tr("translation", persian), it.tr("context", persian))
+            listOf(it.s("text"), it.tr("translation", LearningLanguage.persian), it.tr("context", LearningLanguage.persian))
         }.toTypedArray()), questions), com.hydro.reedance.R.drawable.dialogue_art_daily,
         id = d.s("dialogueId"), artworkPath = cover.path)
 }

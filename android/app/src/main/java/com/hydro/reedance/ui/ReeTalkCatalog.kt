@@ -105,8 +105,7 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
         }
         checking = false
     }
-    val fa = LocalFa.current
-    val demo = remember(installed, fa) { installed?.toReader(fa) }
+    val demo = remember(installed) { installed?.toReader() }
     LaunchedEffect(demo?.id) { if(demo != null) pauseSong() }
     var paperIndex by rememberDialoguePreference("paper", 0, DialoguePaper.entries.indices)
     var dim by rememberDialogueToggle("dim", false)
