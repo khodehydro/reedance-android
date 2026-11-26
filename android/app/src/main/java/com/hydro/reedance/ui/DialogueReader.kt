@@ -439,31 +439,33 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
 @Composable private fun DialogueLearningTab(demo: DialogueDemo, tab: Int,
     playingEvidence: DialogueEvidence?, evidenceFailed: Boolean, playEvidence: (DialogueEvidence) -> Unit) {
     val learning = demo.learning
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        when(tab) {
-            1 -> {
-                item(key = "word-table") { Panel { LearningTable(learning.wordTable, fitWhenPossible = true) } }
-                itemsIndexed(learning.words, key = { index, _ -> "word-$index" }) { _, word ->
-                    Panel { WordLearningContent(word) }
+    CompositionLocalProvider(LocalReeTalkTextAlignment provides true) {
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            when(tab) {
+                1 -> {
+                    item(key = "word-table") { Panel { LearningTable(learning.wordTable, fitWhenPossible = true) } }
+                    itemsIndexed(learning.words, key = { index, _ -> "word-$index" }) { _, word ->
+                        Panel { WordLearningContent(word) }
+                    }
                 }
-            }
-            2 -> itemsIndexed(learning.grammar, key = { index, _ -> "grammar-$index" }) { _, note ->
-                LearningNote(note, fitTablesWhenPossible = true)
-            }
-            3 -> {
-                item(key = "phrase-table") { Panel { LearningTable(learning.phraseTable, fitWhenPossible = true) } }
-                itemsIndexed(learning.phrases, key = { index, _ -> "phrase-$index" }) { _, phrase ->
-                    Panel { PhraseLearningContent(phrase); WrittenPronunciation(phrase) }
+                2 -> itemsIndexed(learning.grammar, key = { index, _ -> "grammar-$index" }) { _, note ->
+                    LearningNote(note, fitTablesWhenPossible = true)
                 }
-            }
-            4 -> {
-                if(evidenceFailed) item(key = "evidence-error") {
-                    Text(tr("صدای سؤال پخش نشد.", "Could not play the question audio."), color = MaterialTheme.colorScheme.error)
+                3 -> {
+                    item(key = "phrase-table") { Panel { LearningTable(learning.phraseTable, fitWhenPossible = true) } }
+                    itemsIndexed(learning.phrases, key = { index, _ -> "phrase-$index" }) { _, phrase ->
+                        Panel { PhraseLearningContent(phrase); WrittenPronunciation(phrase) }
+                    }
                 }
-                itemsIndexed(learning.questions, key = { index, _ -> "question-$index" }) { index, question ->
-                    val clip = remember(demo.turns, question, index) { dialogueEvidence(demo.turns, question.evidenceTurnIds, index) }
-                    DialogueQuestionCard(question, clip != null && clip == playingEvidence,
-                        clip?.let { target -> { playEvidence(target) } })
+                4 -> {
+                    if(evidenceFailed) item(key = "evidence-error") {
+                        Text(tr("صدای سؤال پخش نشد.", "Could not play the question audio."), color = MaterialTheme.colorScheme.error)
+                    }
+                    itemsIndexed(learning.questions, key = { index, _ -> "question-$index" }) { index, question ->
+                        val clip = remember(demo.turns, question, index) { dialogueEvidence(demo.turns, question.evidenceTurnIds, index) }
+                        DialogueQuestionCard(question, clip != null && clip == playingEvidence,
+                            clip?.let { target -> { playEvidence(target) } })
+                    }
                 }
             }
         }
@@ -479,12 +481,19 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
             "review" -> tr("مرور", "Review")
             else -> null
         }
-        if(stage != null) Text(stage, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+        if(stage != null) PersianText(stage, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
         PersianText(question.prompt, style = MaterialTheme.typography.titleLarge)
         question.options.forEachIndexed { index, text ->
             val marker = if(answer >= 0 && index == question.correct) "✓ " else if(index == answer) "✕ " else ""
             PressOutlinedButton({ answer = index }, Modifier.fillMaxWidth(), enabled = answer < 0, shape = InsetControlShape) {
-                PersianText(marker + text)
+                val direction = if(learningCellRtl(text)) LayoutDirection.Rtl else LayoutDirection.Ltr
+                CompositionLocalProvider(LocalLayoutDirection provides direction) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        if(marker.isNotBlank()) Text(marker.trim())
+                        PersianText(text, Modifier.weight(1f))
+                    }
+                }
             }
         }
         if(answer >= 0) {

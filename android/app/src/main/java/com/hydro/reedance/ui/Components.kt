@@ -41,6 +41,10 @@ import com.hydro.reedance.data.*
     if(subtitle.isNotEmpty()) Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
 } }
 @Composable fun Foreign(text: String, modifier: Modifier = Modifier, large: Boolean = false) {
+    if(LocalReeTalkTextAlignment.current) {
+        PersianText(text, modifier, style = if(large) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyLarge)
+        return
+    }
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Text(text, modifier.fillMaxWidth(), style = (if(large) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyLarge).copy(textDirection = TextDirection.Ltr, textAlign = androidx.compose.ui.text.style.TextAlign.Left))
     }
