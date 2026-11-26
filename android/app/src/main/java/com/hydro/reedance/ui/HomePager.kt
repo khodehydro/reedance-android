@@ -5,6 +5,7 @@ import android.icu.util.TimeZone
 import android.icu.util.ULocale
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.pager.HorizontalPager
@@ -18,7 +19,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import com.hydro.reedance.R
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import java.time.Instant
 import java.time.ZoneId
 
@@ -54,6 +60,21 @@ internal fun currentPersianMonth(now: Long = System.currentTimeMillis()): Persia
     }
     if(pages.isEmpty()) return
     val pager = rememberPagerState { pages.size }
+    val dragging by pager.interactionSource.collectIsDraggedAsState()
+    val active = LocalPageActive.current
+    val reducedMotion = LocalReducedMotion.current
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(pager, active, dragging, reducedMotion, lifecycle) {
+        if(!active || dragging || reducedMotion || pages.size < 2) return@LaunchedEffect
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while(isActive) {
+                delay(5_000)
+                if(!pager.isScrollInProgress) {
+                    pager.animateScrollToPage((pager.currentPage + 1) % pages.size)
+                }
+            }
+        }
+    }
     val colors = MaterialTheme.colorScheme
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         BoxWithConstraints(Modifier.fillMaxWidth()) {
