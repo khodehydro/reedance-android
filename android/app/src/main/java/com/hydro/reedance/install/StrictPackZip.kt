@@ -12,13 +12,13 @@ object StrictPackZip {
     private data class Entry(val name: String, val flags: Int, val method: Int, val crc: Long, val compressed: Long, val size: Long, val offset: Long)
     private fun RandomAccessFile.u16(): Int = readUnsignedByte() or (readUnsignedByte() shl 8)
     private fun RandomAccessFile.u32(): Long = u16().toLong() or (u16().toLong() shl 16)
-    suspend fun extract(zip: File, destination: File) {
+    suspend fun extract(zip: File, destination: File, reeTalk: Boolean = false) {
         require(zip.length() in 22..268435456L)
         RandomAccessFile(zip, "r").use { input ->
             input.seek(input.length() - 22)
             require(input.u32() == 0x06054b50L) { "ZIP comments/trailing bytes unsupported" }
             require(input.u16() == 0 && input.u16() == 0)
-            val count = input.u16(); require(count in 2..4 && input.u16() == count)
+            val count = input.u16(); require((if(reeTalk) count == 3 else count in 2..4) && input.u16() == count)
             val centralSize = input.u32(); val centralOffset = input.u32()
             require(input.u16() == 0 && centralOffset + centralSize == input.length() - 22)
             input.seek(centralOffset)
@@ -37,19 +37,25 @@ object StrictPackZip {
                 require(nameBytes.all { b -> b.toInt() in 32..126 })
                 val name = nameBytes.toString(Charsets.US_ASCII)
                 val limit = when(name) {
-                    "lesson.json" -> 4L * 1024 * 1024
+                    "lesson.json", "dialogue.json" -> {
+                        require(name == if(reeTalk) "dialogue.json" else "lesson.json")
+                        4L * 1024 * 1024
+                    }
                     "audio.mp3", "audio.m4a", "audio.wav", "story.mp3", "story.m4a", "story.wav" -> 240L * 1024 * 1024
                     "cover.jpg", "cover.png", "cover.webp" -> 8L * 1024 * 1024
                     else -> error("Unexpected ZIP path")
                 }
                 require(size in 1..limit && compressed in 1..268435456L)
-                require(name == "lesson.json" || size <= compressed * 100)
+                require(name in setOf("lesson.json", "dialogue.json") || size <= compressed * 100)
                 Entry(name, flags, method, crc, compressed, size, offset)
             }
             require(input.filePointer == centralOffset + centralSize)
             require(entries.map { it.name }.toSet().size == count)
-            require(entries.count { it.name == "lesson.json" } == 1 && entries.count { it.name.startsWith("audio.") } == 1 && entries.count { it.name.startsWith("cover.") } <= 1 &&
-                entries.count { it.name.startsWith("story.") } <= 1)
+            val metadata = if(reeTalk) "dialogue.json" else "lesson.json"
+            require(entries.count { it.name == metadata } == 1 && entries.count { it.name.startsWith("audio.") } == 1)
+            val covers = entries.count { it.name.startsWith("cover.") }
+            val stories = entries.count { it.name.startsWith("story.") }
+            require(if(reeTalk) covers == 1 && stories == 0 else covers <= 1 && stories <= 1)
             require(entries.sumOf { it.size } <= 252L * 1024 * 1024)
             var expectedOffset = 0L
             require(destination.mkdirs())

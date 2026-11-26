@@ -2,6 +2,7 @@ package com.hydro.reedance.ui
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import com.hydro.reedance.data.*
 
 internal data class DialogueLearning(val words: List<JsonObject>, val wordTable: JsonObject,
     val grammar: List<JsonObject>, val phrases: List<JsonObject>, val phraseTable: JsonObject,
@@ -115,3 +116,78 @@ internal val stationLearning = DialogueLearning(
     questions = listOf(DialogueQuestion("قطار چه ساعتی حرکت می‌کند؟", listOf("ساعت دو", "ساعت سه", "ساعت چهار"), 1, "Saat üçte یعنی ساعت سه."),
         DialogueQuestion("پسوند ‎-dan در perondan چه معنایی می‌دهد؟", listOf("در", "به", "از"), 2, "‎-dan پسوند مبدأ است؛ perondan یعنی «از سکو»."))
 )
+
+/** Map validated package data into the existing chat and learning cards. */
+internal fun com.hydro.reedance.install.InstalledReeTalk.toReader(persian: Boolean): DialogueDemo {
+    val d = dialogue
+    val speakers = d.a("speakers")
+    fun JsonObject.translationOf(target: JsonObject, from: String, to: String = from) {
+        val field = obj(from)
+        target.localized(to, field.s("fa"), field.s("en"))
+    }
+    fun JsonObject.exampleCard(): JsonObject {
+        val e = obj("example")
+        return example(e.s("text"), e.obj("translation").s("fa"), e.obj("translation").s("en"))
+    }
+    fun JsonObject.copyPronunciation(target: JsonObject) {
+        val pronunciation = obj("pronunciation")
+        target.addProperty("faReading", pronunciation.s("faReading"))
+        target.addProperty("ipa", pronunciation.s("ipa"))
+    }
+    val selectedLanguage = if(persian) "fa" else "en"
+    val learning = d.obj("learning")
+    val words = learning.a("words").map { entry -> JsonObject().apply {
+        addProperty("lemma", entry.s("text"))
+        entry.copyPronunciation(this)
+        entry.translationOf(this, "meaning", "translation")
+        add("example", entry.exampleCard())
+    } }
+    val phrases = learning.a("phrases").map { entry -> JsonObject().apply {
+        addProperty("text", entry.s("text"))
+        entry.copyPronunciation(this)
+        entry.translationOf(this, "meaning", "translation")
+        entry.translationOf(this, "context")
+        add("example", entry.exampleCard())
+    } }
+    val grammar = learning.a("grammar").map { entry -> JsonObject().apply {
+        localized("tag", "گرامر گفت‌وگو", "Dialogue grammar")
+        entry.translationOf(this, "title")
+        entry.translationOf(this, "explanation", "body")
+        entry.translationOf(this, "takeaway")
+        add("example", entry.exampleCard())
+        add("tables", JsonArray().apply {
+            entry.a("tables").forEach { source ->
+                add(JsonObject().apply {
+                    source.translationOf(this, "title")
+                    add("columns", source.getAsJsonArray("columns"))
+                    add("rows", JsonArray().apply {
+                        source.getAsJsonArray("rows").forEach { row -> add(JsonArray().apply {
+                            row.asJsonArray.forEach { cell ->
+                                if(cell.asJsonObject.has("text")) add(cell.asJsonObject.s("text")) else add(cell)
+                            }
+                        }) }
+                    })
+                })
+            }
+        })
+    } }
+    val questions = learning.a("questions").map { q ->
+        val options = q.a("options")
+        DialogueQuestion(q.obj("prompt").s(selectedLanguage), options.map { it.obj("text").s(selectedLanguage) },
+            options.indexOfFirst { it.s("id") == q.s("correctOptionId") }, q.obj("explanation").s(selectedLanguage))
+    }
+    return DialogueDemo(d.obj("title").s("en"), d.obj("title").s("fa"), speakers.map {
+        DialogueSpeaker(it.s("name"), if(it.s("gender") == "woman") DialogueGender.WOMAN else DialogueGender.MAN)
+    }, d.a("turns").map { turn ->
+        DialogueTurn(speakers.indexOfFirst { it.s("id") == turn.s("speakerId") }, turn.s("text"),
+            turn.obj("translation").s(selectedLanguage), audio,
+            turn.a("tokens").map { it.obj("gloss").s(selectedLanguage) }, turn.s("id"), turn.n("startMs"), turn.n("endMs"))
+    }, DialogueLearning(words,
+        table("مرور واژه‌ها", "Vocabulary review", wordColumns, *words.map {
+            listOf(it.s("lemma"), it.s("ipa"), it.tr("translation", persian))
+        }.toTypedArray()), grammar, phrases,
+        table("مرور عبارت‌ها", "Phrase review", phraseColumns, *phrases.map {
+            listOf(it.s("text"), it.tr("translation", persian), it.tr("context", persian))
+        }.toTypedArray()), questions), com.hydro.reedance.R.drawable.dialogue_art_daily,
+        id = d.s("dialogueId"), artworkPath = cover.path)
+}

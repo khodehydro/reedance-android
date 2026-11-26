@@ -1691,7 +1691,10 @@
     "en-t01-s01": {
       "titleEn": "Sara and Amir say hello",
       "level": "A1",
-      "downloadUrl": "https://github.com/khodehydro/Drop/raw/refs/heads/main/1.rdpack"
+      "downloadUrl": "https://github.com/khodehydro/Drop/raw/refs/heads/main/1.rdpack",
+      "downloadBytes": 1073482,
+      "downloadSha256": "5dc97c4a17b7703f0cd9233dc6743c9fdd1aaf169f27721bf732ba8f7f8e1120",
+      "contentVersionCode": 1
     },
     "en-t01-s02": {
       "titleEn": "Where are you from?",

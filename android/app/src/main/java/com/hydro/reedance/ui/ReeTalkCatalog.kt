@@ -1,10 +1,6 @@
 package com.hydro.reedance.ui
 
-import android.content.ActivityNotFoundException
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -24,13 +20,22 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.gson.JsonParser
 import com.hydro.reedance.data.*
 import com.hydro.reedance.domain.PremiumEntitlement
+import com.hydro.reedance.install.InstalledReeTalk
+import com.hydro.reedance.install.ReeTalkInstaller
+import com.hydro.reedance.install.ReeTalkPackSpec
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 internal data class ReeTalkTopic(val id: String, val fa: String, val en: String,
     val coverUrl: String, val premium: Boolean, val scenarios: List<ReeTalkScenario>)
 internal data class ReeTalkScenario(val id: String, val fa: String, val en: String, val level: String,
-    val coverUrl: String, val downloadUrl: String, val premium: Boolean)
+    val coverUrl: String, val pack: ReeTalkPackSpec?, val premium: Boolean)
 
 internal suspend fun loadReeTalkTopics(context: Context, language: String): List<ReeTalkTopic> = withContext(Dispatchers.IO) {
     val catalog = context.assets.open("reetalk_catalog.json").bufferedReader().use { JsonParser.parseReader(it).asJsonObject }
@@ -42,7 +47,13 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
                 val id = "$language-${topic.s("code")}-${scenario.s("code")}"
                 val entry = metadata.obj(id)
                 ReeTalkScenario(id, scenario.s("titleFa"), entry.s("titleEn").ifBlank { scenario.s("titleFa") },
-                    entry.s("level"), entry.s("coverUrl"), entry.s("downloadUrl"), entry.s("access") == "paid")
+                    entry.s("level"), entry.s("coverUrl"), entry.s("downloadUrl").takeIf { it.isNotBlank() }?.let { url ->
+                        val version = entry.n("contentVersionCode")
+                        val bytes = entry.n("downloadBytes")
+                        val sha = entry.s("downloadSha256")
+                        if(version in 1..Int.MAX_VALUE.toLong() && bytes > 0 && sha.matches(Regex("[a-f0-9]{64}")))
+                            ReeTalkPackSpec(id, topic.s("id"), language, url, bytes, sha, version.toInt()) else null
+                    }, entry.s("access") == "paid")
             })
     }
 }
@@ -51,6 +62,7 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
     openPremium: () -> Unit, pauseSong: () -> Unit, showDemoEntry: Boolean) {
     var categoryIndex by rememberSaveable { mutableIntStateOf(initialCategory) }
     var scenarioIndex by rememberSaveable { mutableIntStateOf(-1) }
+    var reading by rememberSaveable { mutableStateOf(false) }
     var showDemo by rememberSaveable { mutableStateOf(false) }
     val subscribed by PremiumEntitlement.active.collectAsStateWithLifecycle()
     val category = topics.getOrNull(categoryIndex)
@@ -59,6 +71,7 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
     val lockedScenario = scenario?.premium == true && !subscribed
     if(lockedCategory || lockedScenario) {
         LaunchedEffect(lockedCategory, lockedScenario) {
+            reading = false
             scenarioIndex = -1
             if(lockedCategory) categoryIndex = -1
             openPremium()
@@ -71,13 +84,30 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
     }
     fun back() {
         when {
+            reading -> reading = false
             scenarioIndex >= 0 -> scenarioIndex = -1
             categoryIndex >= 0 -> categoryIndex = -1
             else -> exit()
         }
     }
     BackHandler { back() }
-    DialoguePalette(enabled = false, paperIndex = 0, dim = false) {
+    val context = LocalContext.current.applicationContext
+    val installer = remember(context) { ReeTalkInstaller(context) }
+    val pack = scenario?.pack
+    var installed by remember(pack) { mutableStateOf<InstalledReeTalk?>(null) }
+    var checking by remember(pack) { mutableStateOf(pack != null) }
+    LaunchedEffect(pack) {
+        installed = if(pack == null) null else try { installer.installed(pack) }
+            catch(cancelled: CancellationException) { throw cancelled }
+            catch(_: Exception) { null }
+        checking = false
+    }
+    val fa = LocalFa.current
+    val engineData = installed
+    val demo = remember(engineData, fa, reading) { if(reading) engineData?.toReader(fa) else null }
+    var paperIndex by rememberDialoguePreference("paper", 0, DialoguePaper.entries.indices)
+    var dim by rememberDialogueToggle("dim", false)
+    DialoguePalette(enabled = demo != null, paperIndex = paperIndex, dim = dim) {
         Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.only(
             WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom))) {
             HeaderSurface {
@@ -85,22 +115,27 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
                     .padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                     PressIconButton(::back) { AppIcon(UiIcons.Back, tr("بازگشت", "Back")) }
                     Text(when {
+                        demo != null -> tr(demo.titleFa, demo.titleEn)
                         scenario != null -> tr("دانلود گفت‌وگو", "Download dialogue")
                         category != null -> tr(category.fa, category.en)
                         else -> ReeTalkName
                     }, style = MaterialTheme.typography.titleLarge)
                 }
             }
-            key(category?.id, scenario?.id) {
+            if(demo != null) key(demo.id) {
+                DialogueReader(demo, paperIndex, dim, onPaperChange = { paperIndex = (paperIndex + 1) % DialoguePaper.entries.size },
+                    onDimChange = { dim = !dim })
+            } else key(category?.id, scenario?.id) {
                 LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     when {
                         scenario != null -> item {
-                            ReeTalkDownloadDetails(scenario, category?.premium == true || scenario.premium, openPremium)
+                            ReeTalkDownloadDetails(scenario, category?.premium == true || scenario.premium, installer, installed, checking,
+                                openPremium, onInstalled = { installed = it }, openReader = { pauseSong(); reading = true })
                         }
                         category != null -> itemsIndexed(category.scenarios, key = { _, entry -> entry.id }) { index, entry ->
                             ReeTalkCatalogCard(tr(entry.fa, entry.en), entry.coverUrl, entry.premium || category.premium,
-                                entry.level.ifBlank { if(entry.downloadUrl.isBlank()) tr("به‌زودی", "Coming soon") else "" }) {
+                                entry.level.ifBlank { if(entry.pack == null) tr("به‌زودی", "Coming soon") else "" }) {
                                 if((entry.premium || category.premium) && !PremiumEntitlement.active.value) openPremium() else scenarioIndex = index
                             }
                         }
@@ -135,22 +170,64 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
     }
 }
 
-@Composable private fun ReeTalkDownloadDetails(scenario: ReeTalkScenario, premium: Boolean, openPremium: () -> Unit) {
-    val context = LocalContext.current
-    val failed = tr("لینک دانلود باز نشد.", "Could not open the download link.")
-    Panel {
-        ReeTalkCatalogCover(scenario.coverUrl, Modifier.fillMaxWidth().aspectRatio(5f / 3f).clip(InsetControlShape))
-        SongTitle(tr(scenario.fa, scenario.en), premium, MaterialTheme.typography.headlineSmall)
+@Composable private fun ReeTalkDownloadDetails(scenario: ReeTalkScenario, premium: Boolean, installer: ReeTalkInstaller,
+    installed: InstalledReeTalk?, checking: Boolean, openPremium: () -> Unit,
+    onInstalled: (InstalledReeTalk) -> Unit, openReader: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    var job by remember { mutableStateOf<Job?>(null) }
+    var phase by remember { mutableStateOf("") }
+    var fraction by remember { mutableStateOf<Float?>(null) }
+    var failed by remember { mutableStateOf(false) }
+    val busy = job != null
+    val coverMorph by animateFloatAsState(if(busy) 1f else 0f, tween(if(LocalReducedMotion.current) 0 else 420),
+        label = "reetalk-download-cover")
+    val clipShape = androidx.compose.foundation.shape.RoundedCornerShape((20f + 72f * coverMorph).dp)
+    val image = installedArtwork(installed?.cover?.path)
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Box(Modifier.size(228.dp), contentAlignment = Alignment.Center) {
+            if(busy) CircularWaveProgress(fraction, Modifier.fillMaxSize())
+            if(image != null) Image(image, null, Modifier.size(184.dp).clip(clipShape), contentScale = ContentScale.Crop)
+            else ReeTalkCatalogCover(scenario.coverUrl, Modifier.size(184.dp).clip(clipShape))
+        }
+        SongTitle(tr(scenario.fa, scenario.en), premium, MaterialTheme.typography.headlineMedium)
         if(scenario.level.isNotBlank()) Text(scenario.level, style = MaterialTheme.typography.labelLarge)
-        if(scenario.downloadUrl.isNotBlank()) {
-            Text(tr("لینک، فایل را خارج از برنامه باز می‌کند. نصب بستهٔ ری‌تاک هنوز در اپ فعال نیست.",
-                "This link opens the file outside the app. In-app installation is not available yet."))
-            Action(tr("دانلود پکیج", "Download package"), Modifier.fillMaxWidth()) {
-                if(premium && !PremiumEntitlement.active.value) openPremium()
-                else try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(scenario.downloadUrl))) }
-                catch(_: ActivityNotFoundException) { Toast.makeText(context, failed, Toast.LENGTH_SHORT).show() }
+        if(busy) {
+            val status = when(phase) {
+                "decrypt" -> tr("در حال آماده‌سازی گفت‌وگو", "Preparing dialogue")
+                "validate" -> tr("در حال بررسی پکیج", "Checking package")
+                else -> tr("در حال دانلود گفت‌وگو", "Downloading dialogue")
             }
-        } else Text(tr("لینک دانلود هنوز اضافه نشده است.", "The download link has not been published yet."))
+            Text(fraction?.let { "${(it * 100f).roundToInt()}% · $status" } ?: status,
+                color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
+            PressOutlinedButton({ job?.cancel() }, Modifier.fillMaxWidth()) { Text(tr("لغو دانلود", "Cancel download")) }
+        } else if(checking) {
+            CircularProgressIndicator(Modifier.size(24.dp))
+        } else if(installed != null) {
+            Action(tr("باز کردن گفت‌وگو", "Open dialogue"), Modifier.fillMaxWidth()) {
+                if(premium && !PremiumEntitlement.active.value) openPremium() else openReader()
+            }
+        } else if(scenario.pack != null) {
+            val spec = scenario.pack
+            Action(if(failed) tr("تلاش دوباره", "Try again") else tr("دانلود گفت‌وگو", "Download dialogue"), Modifier.fillMaxWidth()) {
+                if(premium && !PremiumEntitlement.active.value) openPremium() else if(job == null) {
+                    failed = false
+                    fraction = null
+                    phase = "download"
+                    job = scope.launch {
+                        try {
+                            onInstalled(installer.install(spec, allowed = { !premium || PremiumEntitlement.active.value }) { step, bytes, total ->
+                                phase = step
+                                fraction = if(step == "download" && total > 0) (bytes.toFloat() / total).coerceIn(0f, 1f) else null
+                            })
+                        } catch(cancelled: CancellationException) { throw cancelled }
+                        catch(_: Exception) { failed = true }
+                        finally { job = null }
+                    }
+                }
+            }
+            if(failed) Text(tr("دانلود یا بررسی پکیج ناموفق بود. اتصال اینترنت و نسخهٔ برنامه را بررسی کنید.",
+                "Could not download or verify the package. Check your connection and app version."), color = MaterialTheme.colorScheme.error)
+        } else Text(tr("پکیج دانلود هنوز منتشر نشده است.", "The downloadable package has not been published yet."))
     }
 }
 

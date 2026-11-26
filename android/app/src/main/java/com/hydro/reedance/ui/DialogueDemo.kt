@@ -4,12 +4,14 @@ import androidx.annotation.DrawableRes
 import com.hydro.reedance.R
 import java.io.File
 
-internal data class DialogueTurn(val speaker: Int, val text: String, val meaning: String, val audio: File? = null, val glosses: List<String> = emptyList())
+internal data class DialogueTurn(val speaker: Int, val text: String, val meaning: String, val audio: File? = null, val glosses: List<String> = emptyList(),
+    val id: String = "", val startMs: Long? = null, val endMs: Long? = null)
 internal enum class DialogueGender { WOMAN, MAN }
 internal data class DialogueSpeaker(val name: String, val gender: DialogueGender)
 
 internal data class DialogueDemo(val titleEn: String, val titleFa: String, val speakers: List<DialogueSpeaker>,
-    val turns: List<DialogueTurn>, val learning: DialogueLearning, @DrawableRes val artwork: Int, val premium: Boolean = false)
+    val turns: List<DialogueTurn>, val learning: DialogueLearning, @DrawableRes val artwork: Int, val premium: Boolean = false,
+    val id: String = titleEn, val artworkPath: String? = null)
 internal data class DialogueCategory(val en: String, val fa: String, val demos: List<DialogueDemo>, @DrawableRes val artwork: Int, val premium: Boolean = false)
 
 internal val dialogueCategories = listOf(

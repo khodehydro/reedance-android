@@ -15,6 +15,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -35,6 +36,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -66,8 +68,8 @@ import kotlinx.coroutines.launch
     var revealed by rememberSaveable { mutableIntStateOf(0) }
     var elapsed by remember { mutableIntStateOf(0) }
     var replay by remember { mutableIntStateOf(0) }
-    var firstMode by rememberDialoguePreference("speaker_0:${demo.titleEn}", 0, SpeakerMode.entries.indices)
-    var secondMode by rememberDialoguePreference("speaker_1:${demo.titleEn}", 0, SpeakerMode.entries.indices)
+    var firstMode by rememberDialoguePreference("speaker_0:${demo.id}", 0, SpeakerMode.entries.indices)
+    var secondMode by rememberDialoguePreference("speaker_1:${demo.id}", 0, SpeakerMode.entries.indices)
     var hideAll by rememberDialogueToggle("hide_all", false)
     var translationIndex by rememberDialoguePreference("translation", 0, DialogueTranslation.entries.indices)
     val translation = DialogueTranslation.entries[translationIndex]
@@ -80,7 +82,7 @@ import kotlinx.coroutines.launch
     val turn = demo.turns.getOrNull(activeTurn)
     val modes = listOf(SpeakerMode.entries[firstMode], SpeakerMode.entries[secondMode])
     val context = LocalContext.current
-    val audio = turn?.audio?.takeIf { it.isFile }
+    val audio = turn?.audio
     var player by remember { mutableStateOf<ExoPlayer?>(null) }
     var audioFailed by remember(activeTurn, replay) { mutableStateOf(false) }
     val finished = rememberUpdatedState {
@@ -103,7 +105,12 @@ import kotlinx.coroutines.launch
                 override fun onPlayerError(error: PlaybackException) { fail.value() }
             }
             engine.addListener(listener)
-            engine.setMediaItem(MediaItem.fromUri(Uri.fromFile(audio)))
+            val media = MediaItem.Builder().setUri(Uri.fromFile(audio))
+            val start = turn?.startMs
+            val end = turn?.endMs
+            if(start != null && end != null) media.setClippingConfiguration(
+                MediaItem.ClippingConfiguration.Builder().setStartPositionMs(start).setEndPositionMs(end).build())
+            engine.setMediaItem(media.build())
             engine.prepare()
             player = engine
             onDispose { engine.removeListener(listener); engine.release(); player = null }
@@ -158,7 +165,7 @@ import kotlinx.coroutines.launch
                                     modifier = Modifier.align(Alignment.Center), enter = EnterTransition.None,
                                     exit = if(reducedMotion) ExitTransition.None else
                                         slideOutVertically(tween(360)) { -it } + fadeOut(tween(300))) {
-                                    DialogueCover(demo.artwork, Modifier.padding(horizontal = 28.dp).widthIn(max = 320.dp)
+                                    DialogueReaderCover(demo, Modifier.padding(horizontal = 28.dp).widthIn(max = 320.dp)
                                         .fillMaxWidth().aspectRatio(5f / 3f).clip(GroupedCardShape))
                                 }
                                 if(!guiding && !startedDialogue && revealed == 0) {
@@ -233,6 +240,12 @@ import kotlinx.coroutines.launch
     }, confirmButton = { PressTextButton({ appearance = false }) { Text(tr("بستن", "Close")) } })
 }
 
+@Composable private fun DialogueReaderCover(demo: DialogueDemo, modifier: Modifier) {
+    val image = installedArtwork(demo.artworkPath)
+    if(image != null) Image(image, null, modifier, contentScale = ContentScale.Crop)
+    else DialogueCover(demo.artwork, modifier)
+}
+
 private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
 
 @Composable private fun DialogueMessages(demo: DialogueDemo, revealed: Int, active: Int, modes: List<SpeakerMode>, hideAll: Boolean,
@@ -260,7 +273,7 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
     }
     LazyColumn(Modifier.fillMaxSize(), state = scroll, contentPadding = PaddingValues(12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp, if(listMode) Alignment.Bottom else Alignment.CenterVertically)) {
-        items(messages, key = { it.index }) { item ->
+        items(messages, key = { it.value.id.ifBlank { it.index.toString() } }) { item ->
             val entering = remember { MutableTransitionState(reduced || item.index != revealed - 1 || item.index != active) }
             SideEffect { entering.targetState = true }
             Box(if(reduced) Modifier else Modifier.animateItem(fadeInSpec = null)) {

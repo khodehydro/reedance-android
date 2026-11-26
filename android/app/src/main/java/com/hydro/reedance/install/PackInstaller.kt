@@ -40,7 +40,7 @@ class PackInstaller(private val context: Context) {
         context.assets.open("pack_distribution_default.json").use { PackVerifier.strictJson(it.readBytes(), 65536) }
     }
     // Studio publishes the matching signing seed. Trust this profile for QA only.
-    private fun studioDebugConfig(): JsonObject? {
+    internal fun studioDebugConfig(): JsonObject? {
         if(!BuildConfig.DEBUG) return null
         return context.assets.open("studio_embedded_pack.json").use { PackVerifier.strictJson(it.readBytes(), 4096) }
     }
@@ -51,7 +51,7 @@ class PackInstaller(private val context: Context) {
         } catch(_: java.io.FileNotFoundException) { return null }
         return if(index.has(song)) index.obj(song) else null
     }
-    private suspend fun download(url: String, file: File, limit: Long, hosts: Set<String>, allowHttp: Boolean = false,
+    internal suspend fun download(url: String, file: File, limit: Long, hosts: Set<String>, allowHttp: Boolean = false,
         progress: suspend (Long, Long) -> Unit) {
         val initial = url.toHttpUrl()
         var current = initial
@@ -92,14 +92,14 @@ class PackInstaller(private val context: Context) {
         }
         error("Too many redirects")
     }
-    private suspend fun hash(file: File): String {
+    internal suspend fun hash(file: File): String {
         val hash = MessageDigest.getInstance("SHA-256")
         file.inputStream().use { input -> val buffer = ByteArray(65536)
             while(true) { currentCoroutineContext().ensureActive(); val n = input.read(buffer); if(n < 0) break; hash.update(buffer, 0, n) }
         }
         return hash.digest().joinToString("") { "%02x".format(it.toInt() and 255) }
     }
-    private suspend fun decrypt(pack: File, zip: File, payload: JsonObject, studioDebugKey: ByteArray? = null) {
+    internal suspend fun decrypt(pack: File, zip: File, payload: JsonObject, studioDebugKey: ByteArray? = null) {
         RandomAccessFile(pack, "r").use { input ->
             require(ByteArray(8).also { input.readFully(it) }.contentEquals("RDPACK1\u0000".toByteArray()))
             val length = input.readUnsignedByte(); require(length in 1..32)

@@ -223,7 +223,7 @@ import kotlin.math.roundToInt
     }
 }
 
-@Composable private fun CircularWaveProgress(progress: Float?, modifier: Modifier = Modifier) {
+@Composable internal fun CircularWaveProgress(progress: Float?, modifier: Modifier = Modifier) {
     if(!LocalPageActive.current) return
     val motion = rememberInfiniteTransition(label = "download-ring-wave")
     val phase by motion.animateFloat(
