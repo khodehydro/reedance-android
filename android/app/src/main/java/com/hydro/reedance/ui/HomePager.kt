@@ -24,6 +24,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import com.hydro.reedance.R
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import java.time.Instant
 import java.time.ZoneId
@@ -64,6 +65,17 @@ internal fun currentPersianMonth(now: Long = System.currentTimeMillis()): Persia
     val active = LocalPageActive.current
     val reducedMotion = LocalReducedMotion.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(pager, active, lifecycle) {
+        if(!active) return@LaunchedEffect
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            // Leaving Home can cancel an animation after it has moved the pager but
+            // before it reaches a page boundary. Restore a full page on return.
+            snapshotFlow { pager.isScrollInProgress }.first { scrolling -> !scrolling }
+            if(pager.currentPageOffsetFraction != 0f) {
+                pager.scrollToPage(pager.currentPage)
+            }
+        }
+    }
     LaunchedEffect(pager, active, dragging, reducedMotion, lifecycle) {
         if(!active || dragging || reducedMotion || pages.size < 2) return@LaunchedEffect
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
