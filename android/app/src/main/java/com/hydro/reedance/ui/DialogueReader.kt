@@ -1,6 +1,5 @@
 package com.hydro.reedance.ui
 
-import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -47,7 +46,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
-import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
@@ -86,6 +84,7 @@ import kotlinx.coroutines.launch
     val context = LocalContext.current
     val audio = turn?.audio
     var player by remember { mutableStateOf<ExoPlayer?>(null) }
+    var audioStarted by remember(activeTurn, replay) { mutableStateOf(false) }
     var audioFailed by remember(activeTurn, replay) { mutableStateOf(false) }
     val finished = rememberUpdatedState {
         elapsed = 0
@@ -98,31 +97,44 @@ import kotlinx.coroutines.launch
         }
     }
     val fail = rememberUpdatedState { audioFailed = true; playing = false }
-    DisposableEffect(audio, activeTurn, replay) {
-        if(audio == null) onDispose { }
-        else {
-            val engine = ExoPlayer.Builder(context).build()
+    DisposableEffect(context, demo.id) {
+        val engine = ExoPlayer.Builder(context).build()
+        player = engine
+        onDispose { engine.release(); player = null }
+    }
+    DisposableEffect(player, audio, activeTurn, replay) {
+        val engine = player
+        if(engine == null || audio == null) {
+            engine?.stop()
+            onDispose { }
+        } else {
             val listener = object : Player.Listener {
-                override fun onPlaybackStateChanged(state: Int) { if(state == Player.STATE_ENDED) finished.value() }
+                override fun onIsPlayingChanged(isPlaying: Boolean) {
+                    audioStarted = isPlaying
+                    if(isPlaying) revealed = maxOf(revealed, activeTurn + 1)
+                }
+                override fun onPlaybackStateChanged(state: Int) {
+                    if(state == Player.STATE_ENDED) finished.value()
+                }
                 override fun onPlayerError(error: PlaybackException) { fail.value() }
             }
+            engine.pause()
+            engine.setMediaItem(dialogueMediaItem(audio, turn?.startMs, turn?.endMs))
             engine.addListener(listener)
-            val media = MediaItem.Builder().setUri(Uri.fromFile(audio))
-            val start = turn?.startMs
-            val end = turn?.endMs
-            if(start != null && end != null) media.setClippingConfiguration(
-                MediaItem.ClippingConfiguration.Builder().setStartPositionMs(start).setEndPositionMs(end).build())
-            engine.setMediaItem(media.build())
             engine.prepare()
-            player = engine
-            onDispose { engine.removeListener(listener); engine.release(); player = null }
+            onDispose {
+                if(player === engine) {
+                    engine.removeListener(listener)
+                    engine.pause()
+                }
+            }
         }
     }
-    LaunchedEffect(player, playing, speed, turn, modes) {
+    LaunchedEffect(player, playing, speed, activeTurn, replay, turn, modes) {
         player?.let { engine ->
             engine.volume = if(turn != null && modes[turn.speaker].audio) 1f else 0f
             engine.setPlaybackSpeed(speed)
-            engine.playWhenReady = playing
+            engine.playWhenReady = playing && audio != null
         }
     }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
@@ -141,8 +153,8 @@ import kotlinx.coroutines.launch
     })
     LaunchedEffect(playing, activeTurn, speed, replay, audio) {
         if(!playing || turn == null) return@LaunchedEffect
-        revealed = maxOf(revealed, activeTurn + 1)
         if(audio == null) {
+            revealed = maxOf(revealed, activeTurn + 1)
             val duration = (turn.text.length * 55).coerceIn(1400, 3600)
             while(elapsed < duration) { delay(75); elapsed += (75 * speed).toInt() }
             finished.value()
@@ -174,7 +186,7 @@ import kotlinx.coroutines.launch
                         if(audioFailed) Text(tr("فایل صوتی پخش نشد.", "Could not play the recording."), color = scheme.error)
                         Surface(Modifier.weight(1f).fillMaxWidth().then(highlight(DialogueGuideStep.Messages)), color = scheme.background, contentColor = scheme.onBackground) {
                             Box(Modifier.fillMaxSize().dialogueWallpaper(scheme.primary, paperIndex)) {
-                                DialogueMessages(demo, revealed, activeTurn.takeIf { playing } ?: -1, modes, hideAll, listMode, fontIndex, translation, ::selectTurn)
+                                DialogueMessages(demo, revealed, activeTurn.takeIf { playing && (audio == null || audioStarted) } ?: -1, modes, hideAll, listMode, fontIndex, translation, ::selectTurn)
                                 val reducedMotion = LocalReducedMotion.current
                                 androidx.compose.animation.AnimatedVisibility(visible = !startedDialogue && revealed == 0 && !hideAll,
                                     modifier = Modifier.align(Alignment.Center), enter = EnterTransition.None,

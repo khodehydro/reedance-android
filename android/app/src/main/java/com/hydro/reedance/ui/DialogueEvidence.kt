@@ -28,6 +28,16 @@ internal fun dialogueEvidence(turns: List<DialogueTurn>, ids: List<String>, ques
         selected.maxOf { checkNotNull(it.endMs) })
 }
 
+/** Clip in the media timeline, never with a wall-clock timer or a padded seek. */
+internal fun dialogueMediaItem(audio: File, startMs: Long?, endMs: Long?): MediaItem {
+    val item = MediaItem.Builder().setUri(Uri.fromFile(audio))
+    if(startMs != null && endMs != null) {
+        item.setClippingConfiguration(MediaItem.ClippingConfiguration.Builder()
+            .setStartPositionMs(startMs).setEndPositionMs(endMs).build())
+    }
+    return item.build()
+}
+
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable internal fun EvidencePlayback(clip: DialogueEvidence?, onEnd: () -> Unit, onError: () -> Unit) {
     val context = LocalContext.current
@@ -42,9 +52,7 @@ internal fun dialogueEvidence(turns: List<DialogueTurn>, ids: List<String>, ques
                 override fun onPlayerError(error: PlaybackException) { failed.value() }
             }
             player.addListener(listener)
-            player.setMediaItem(MediaItem.Builder().setUri(Uri.fromFile(clip.audio))
-                .setClippingConfiguration(MediaItem.ClippingConfiguration.Builder()
-                    .setStartPositionMs(clip.startMs).setEndPositionMs(clip.endMs).build()).build())
+            player.setMediaItem(dialogueMediaItem(clip.audio, clip.startMs, clip.endMs))
             player.playWhenReady = true
             player.prepare()
             onDispose { player.removeListener(listener); player.release() }
