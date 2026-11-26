@@ -73,11 +73,16 @@ import com.hydro.reedance.domain.PremiumEntitlement
     var profileReturnPage by rememberSaveable { mutableStateOf("home") }
     var studyReturnPage by rememberSaveable { mutableStateOf(StudyHubRoute) }
     var initialDialogueCategory by rememberSaveable { mutableIntStateOf(-1) }
+    var dialogueVisit by rememberSaveable { mutableIntStateOf(0) }
     val currentPage by rememberUpdatedState(page)
     val snackbar = remember { SnackbarHostState() }
     val message by model.message.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val settings by model.settings.collectAsStateWithLifecycle()
+    val reeTalkTopics by produceState<List<ReeTalkTopic>?>(null, context, settings.targetLanguage) {
+        value = null
+        value = loadReeTalkTopics(context.applicationContext, settings.targetLanguage)
+    }
     var exploreArtistKey by rememberSaveable(settings.targetLanguage) { mutableStateOf<String?>(null) }
     val lightSystemBars = MaterialTheme.colorScheme.background.luminance() > .5f
     SideEffect {
@@ -114,7 +119,8 @@ import com.hydro.reedance.domain.PremiumEntitlement
             mountedSongPages.removeAll { it.first == to && it.second != songId }
             if(route !in mountedSongPages) mountedSongPages += route
         }
-        if(to != DialoguesRoute) initialDialogueCategory = -1
+        if(to == DialoguesRoute && page != DialoguesRoute && page != "premium") dialogueVisit++
+        if(to != DialoguesRoute && to != "premium") initialDialogueCategory = -1
         page = to
     }
     LaunchedEffect(model) {
@@ -131,7 +137,7 @@ import com.hydro.reedance.domain.PremiumEntitlement
     val navigateLatest = rememberUpdatedState<(String) -> Unit>({ destination -> navigate(destination) })
     val navigateAction = remember { { destination: String -> navigateLatest.value(destination) } }
     val openDialogues: (Int) -> Unit = { index ->
-        if(dialogueCategories.getOrNull(index)?.premium == true && !PremiumEntitlement.active.value) {
+        if(reeTalkTopics?.getOrNull(index)?.premium == true && !PremiumEntitlement.active.value) {
             premiumReturnPage = "home"
             navigateAction("premium")
         } else {
@@ -253,6 +259,9 @@ import com.hydro.reedance.domain.PremiumEntitlement
                                             setExploreArtist = { exploreArtistKey = it },
                                             initialDialogueCategory = initialDialogueCategory,
                                             openDialogues = openDialogues,
+                                            reeTalkTopics = reeTalkTopics,
+                                            dialogueVisit = dialogueVisit,
+                                            targetLanguage = settings.targetLanguage,
                                             closeDialogues = { navigateAction(studyReturnPage) }
                                         )
                                     }
@@ -287,6 +296,9 @@ import com.hydro.reedance.domain.PremiumEntitlement
                                             setExploreArtist = { exploreArtistKey = it },
                                             initialDialogueCategory = initialDialogueCategory,
                                             openDialogues = openDialogues,
+                                            reeTalkTopics = reeTalkTopics,
+                                            dialogueVisit = dialogueVisit,
+                                            targetLanguage = settings.targetLanguage,
                                             closeDialogues = { navigateAction(studyReturnPage) }
                                         )
                                     }
@@ -326,10 +338,13 @@ internal fun Modifier.visiblePageLayout(active: Boolean): Modifier = if(active) 
     setExploreArtist: (String?) -> Unit,
     initialDialogueCategory: Int,
     openDialogues: (Int) -> Unit,
+    reeTalkTopics: List<ReeTalkTopic>?,
+    dialogueVisit: Int,
+    targetLanguage: String,
     closeDialogues: () -> Unit
 ) {
     when(page) {
-        "home", "explore" -> CatalogScreen(model, page == "home", openSong, starter, { navigate("library") }, exploreArtistKey, setExploreArtist, explorePager, openDialogues) { navigate("explore") }
+        "home", "explore" -> CatalogScreen(model, page == "home", openSong, starter, { navigate("library") }, exploreArtistKey, setExploreArtist, explorePager, openDialogues, reeTalkTopics.orEmpty()) { navigate("explore") }
         "song-download" -> SongDownloadScreen(model, songId, { navigate(songReturnPage) }) { navigate("song-playback") }
         "song-playback" -> SongPlaybackScreen(
             model, songId, songTab, setSongTab, { navigate(songReturnPage) }, { navigate("song-download") },
@@ -337,9 +352,11 @@ internal fun Modifier.visiblePageLayout(active: Boolean): Modifier = if(active) 
         ) { setPremiumReturnPage("song-playback"); navigate("premium") }
         StudyHubRoute -> StudyHubScreen(navigate)
         StoriesRoute -> StoriesScreen(model, openStory)
-        DialoguesRoute -> if(LocalPageActive.current) DialoguesScreen(model::pause, initialDialogueCategory, closeDialogues) {
-            setPremiumReturnPage(DialoguesRoute)
-            navigate("premium")
+        DialoguesRoute -> if(LocalPageActive.current && reeTalkTopics != null) key(targetLanguage, dialogueVisit) {
+            ReeTalkCatalogScreen(reeTalkTopics, initialDialogueCategory, closeDialogues, openPremium = {
+                setPremiumReturnPage(DialoguesRoute)
+                navigate("premium")
+            }, pauseSong = model::pause, showDemoEntry = targetLanguage == "tr")
         }
         "game" -> GameScreen(model) { setPremiumReturnPage("game"); navigate("premium") }
         "quiz" -> QuizScreen(model, { navigate("song-playback") }, { navigate("review") })

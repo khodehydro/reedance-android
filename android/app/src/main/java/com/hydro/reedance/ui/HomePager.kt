@@ -48,12 +48,12 @@ internal fun currentPersianMonth(now: Long = System.currentTimeMillis()): Persia
     return PersianMonth(year, month, today, offset, days)
 }
 
-@Composable internal fun HomePager(openDialogues: (Int) -> Unit) {
-    val pages = remember {
-        dialogueCategories.mapIndexedNotNull { index, category ->
-            val artwork = when(category.artwork) {
-                R.drawable.dialogue_art_daily -> R.drawable.reetalk_home_cafe
-                R.drawable.dialogue_art_travel -> R.drawable.reetalk_home_travel
+@Composable internal fun HomePager(topics: List<ReeTalkTopic>, openDialogues: (Int) -> Unit) {
+    val pages = remember(topics) {
+        topics.mapIndexedNotNull { index, category ->
+            val artwork = when(category.id) {
+                "introductions" -> R.drawable.reetalk_home_cafe
+                "travel-airports" -> R.drawable.reetalk_home_travel
                 else -> null
             }
             artwork?.let { index to it }
@@ -94,13 +94,13 @@ internal fun currentPersianMonth(now: Long = System.currentTimeMillis()): Persia
             HorizontalPager(state = pager, modifier = Modifier.fillMaxWidth().height(bannerHeight),
                 pageSpacing = 12.dp, key = { pages[it].first }) { page ->
                 val (index, artwork) = pages[page]
-                val category = dialogueCategories[index]
+                val category = topics[index]
                 val title = tr(category.fa, category.en)
                 val label = if(category.premium) tr("$title، پریمیوم", "$title, Premium") else title
                 Surface(onClick = { openDialogues(index) }, modifier = Modifier.fillMaxSize().semantics { contentDescription = label },
                     shape = RoundedCornerShape(42.dp), color = colors.surfaceContainer) {
                     Box {
-                        DialogueCover(artwork, Modifier.matchParentSize())
+                        ReeTalkCatalogCover(category.coverUrl, Modifier.matchParentSize(), fallback = artwork)
                         if(category.premium) Surface(Modifier.align(Alignment.BottomEnd).padding(14.dp).size(44.dp),
                             shape = CircleShape, color = Color.Black.copy(alpha = .54f), contentColor = Color.White) {
                             Box(contentAlignment = Alignment.Center) {

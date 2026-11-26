@@ -81,13 +81,13 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
         (online?.takeIf { it.first == coverUrl }?.second ?: bitmap)?.let { Image(it.asImageBitmap(), description, Modifier.matchParentSize(), contentScale = ContentScale.Crop) }
     }
 }
-@Composable fun CatalogScreen(model: AppModel, home: Boolean, openSong: (String) -> Unit, starter: () -> Unit, openLibrary: () -> Unit,
-    artistKey: String?, onArtist: (String?) -> Unit, explorePager: PagerState, openDialogues: (Int) -> Unit, explore: () -> Unit) {
-    if(home) CatalogFeed(model, true, openSong, starter, openLibrary, explore, openDialogues)
+@Composable internal fun CatalogScreen(model: AppModel, home: Boolean, openSong: (String) -> Unit, starter: () -> Unit, openLibrary: () -> Unit,
+    artistKey: String?, onArtist: (String?) -> Unit, explorePager: PagerState, openDialogues: (Int) -> Unit, reeTalkTopics: List<ReeTalkTopic>, explore: () -> Unit) {
+    if(home) CatalogFeed(model, true, openSong, starter, openLibrary, explore, openDialogues, reeTalkTopics)
     else ExploreCatalogScreen(model, openSong, artistKey, onArtist, explorePager)
 }
 
-@Composable private fun CatalogFeed(model: AppModel, home: Boolean, openSong: (String) -> Unit, starter: () -> Unit, openLibrary: () -> Unit, explore: () -> Unit, openDialogues: (Int) -> Unit) {
+@Composable private fun CatalogFeed(model: AppModel, home: Boolean, openSong: (String) -> Unit, starter: () -> Unit, openLibrary: () -> Unit, explore: () -> Unit, openDialogues: (Int) -> Unit, reeTalkTopics: List<ReeTalkTopic>) {
     val catalog by model.catalog.collectAsStateWithLifecycle()
     val settings by model.settings.collectAsStateWithLifecycle()
     val targetLanguage = settings.targetLanguage
@@ -105,12 +105,12 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
     }.let { if(home) latestSongs(it) else it } }
     LazyVerticalGrid(columns = GridCells.Fixed(2), state = grid, modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 20.dp + LocalOverlayBottomInset.current), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        if(home) {
+        if(home && reeTalkTopics.isNotEmpty()) {
             item(key = "hero", span = { GridItemSpan(maxLineSpan) }) {
-                Box(Modifier.padding(top = 6.dp)) { HomePager(openDialogues) }
+                Box(Modifier.padding(top = 6.dp)) { HomePager(reeTalkTopics, openDialogues) }
             }
             item(key = "dialogue-categories", span = { GridItemSpan(maxLineSpan) }) {
-                HomeDialogueCategories(openDialogues)
+                HomeDialogueCategories(reeTalkTopics, openDialogues)
             }
         }
         if(!home) item(key = "heading", span = { GridItemSpan(maxLineSpan) }) {

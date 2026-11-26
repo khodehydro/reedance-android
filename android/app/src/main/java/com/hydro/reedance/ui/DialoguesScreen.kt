@@ -137,16 +137,16 @@ import com.hydro.reedance.domain.PremiumEntitlement
     Image(painterResource(artwork), contentDescription = null, modifier = modifier, contentScale = ContentScale.Crop)
 }
 
-@Composable internal fun HomeDialogueCategories(open: (Int) -> Unit) {
-    if(dialogueCategories.isEmpty()) return
+@Composable internal fun HomeDialogueCategories(topics: List<ReeTalkTopic>, open: (Int) -> Unit) {
+    if(topics.isEmpty()) return
     val colors = MaterialTheme.colorScheme
     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        items(dialogueCategories.indices.toList(), key = { it }) { index ->
-            val category = dialogueCategories[index]
+        items(topics.indices.toList(), key = { topics[it].id }) { index ->
+            val category = topics[index]
             Surface(onClick = { open(index) }, shape = CircleShape, color = colors.surfaceContainerHigh) {
                 Row(Modifier.padding(start = 6.dp, top = 6.dp, end = 15.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                    DialogueCover(category.artwork, Modifier.size(width = 62.dp, height = 46.dp).clip(CircleShape))
+                    ReeTalkCatalogCover(category.coverUrl, Modifier.size(width = 62.dp, height = 46.dp).clip(CircleShape))
                     Text(tr(category.fa, category.en), style = MaterialTheme.typography.titleSmall)
                     if(category.premium) AppIcon(UiIcons.CrownFilled, tr("پریمیوم", "Premium"), Modifier.size(14.dp))
                 }

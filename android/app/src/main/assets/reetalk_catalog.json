@@ -1,0 +1,1709 @@
+{
+  "sourceRevision": "bff640074b668b249104c85c4d8576d4661b2ecf",
+  "languages": [
+    "en",
+    "es",
+    "tr"
+  ],
+  "topics": [
+    {
+      "id": "introductions",
+      "code": "t01",
+      "titleFa": "معرفی و آشنایی",
+      "titleEn": "Introductions",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "اولین سلام سارا و امیر"
+        },
+        {
+          "code": "s02",
+          "titleFa": "علی اهل کجاست؟"
+        },
+        {
+          "code": "s03",
+          "titleFa": "روز اول کلاس مریم"
+        },
+        {
+          "code": "s04",
+          "titleFa": "شماره‌ات را بده، نیما!"
+        },
+        {
+          "code": "s05",
+          "titleFa": "همسایه تازه‌وارد طبقه سوم"
+        },
+        {
+          "code": "s06",
+          "titleFa": "رضا، این لیلاست"
+        },
+        {
+          "code": "s07",
+          "titleFa": "غریبه‌ها در مهمانی نگار"
+        },
+        {
+          "code": "s08",
+          "titleFa": "پویا چه‌کاره است؟"
+        },
+        {
+          "code": "s09",
+          "titleFa": "روز اول آرش در شرکت"
+        },
+        {
+          "code": "s10",
+          "titleFa": "همسفر قطار شیراز"
+        },
+        {
+          "code": "s11",
+          "titleFa": "کارت ویزیت الهام"
+        },
+        {
+          "code": "s12",
+          "titleFa": "معرفی دکتر کامرانی در اجلاس"
+        }
+      ]
+    },
+    {
+      "id": "family-friends",
+      "code": "t02",
+      "titleFa": "خانواده و دوستان",
+      "titleEn": "Family and friends",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "خانواده پرجمعیت حمید"
+        },
+        {
+          "code": "s02",
+          "titleFa": "آلبوم عکس مینا"
+        },
+        {
+          "code": "s03",
+          "titleFa": "چند تا خواهر داری؟"
+        },
+        {
+          "code": "s04",
+          "titleFa": "دوست صمیمی سینا"
+        },
+        {
+          "code": "s05",
+          "titleFa": "قرار جمعه با بچه‌ها"
+        },
+        {
+          "code": "s06",
+          "titleFa": "تولدت مبارک، عمه جان!"
+        },
+        {
+          "code": "s07",
+          "titleFa": "مدرسه پسر رویا"
+        },
+        {
+          "code": "s08",
+          "titleFa": "خاطره باغ پدربزرگ"
+        },
+        {
+          "code": "s09",
+          "titleFa": "دعوای برادرهای امیر"
+        },
+        {
+          "code": "s10",
+          "titleFa": "آشتی نازنین و پریا"
+        },
+        {
+          "code": "s11",
+          "titleFa": "پدر سخت‌گیر، پسر امروزی"
+        },
+        {
+          "code": "s12",
+          "titleFa": "خانواده دیروز، خانواده امروز"
+        }
+      ]
+    },
+    {
+      "id": "daily-life",
+      "code": "t03",
+      "titleFa": "زندگی روزمره و عادت‌ها",
+      "titleEn": "Daily life and habits",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "صبح‌های زود رضا"
+        },
+        {
+          "code": "s02",
+          "titleFa": "ساعت چند است؟"
+        },
+        {
+          "code": "s03",
+          "titleFa": "کارهای خانه مریم"
+        },
+        {
+          "code": "s04",
+          "titleFa": "جمعه، روز استراحت"
+        },
+        {
+          "code": "s05",
+          "titleFa": "شنبه تا جمعه نیما"
+        },
+        {
+          "code": "s06",
+          "titleFa": "نوبت ظرف‌شستن کیست؟"
+        },
+        {
+          "code": "s07",
+          "titleFa": "شب‌بیداری‌های سارا"
+        },
+        {
+          "code": "s08",
+          "titleFa": "برنامه هفته بعد"
+        },
+        {
+          "code": "s09",
+          "titleFa": "خداحافظ سیگار، آرش!"
+        },
+        {
+          "code": "s10",
+          "titleFa": "الهام همیشه عجله دارد"
+        },
+        {
+          "code": "s11",
+          "titleFa": "راز روزهای پربار"
+        },
+        {
+          "code": "s12",
+          "titleFa": "زندگی برای کار یا کار برای زندگی؟"
+        }
+      ]
+    },
+    {
+      "id": "housing",
+      "code": "t04",
+      "titleFa": "خانه و اجاره",
+      "titleEn": "Housing and renting",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "خانه کوچک لیلا"
+        },
+        {
+          "code": "s02",
+          "titleFa": "پلاک ۱۲، طبقه دوم"
+        },
+        {
+          "code": "s03",
+          "titleFa": "بازدید از آپارتمان نو"
+        },
+        {
+          "code": "s04",
+          "titleFa": "مبل برای خانه جدید"
+        },
+        {
+          "code": "s05",
+          "titleFa": "شیر آب چکه می‌کند"
+        },
+        {
+          "code": "s06",
+          "titleFa": "چانه‌زنی سر اجاره"
+        },
+        {
+          "code": "s07",
+          "titleFa": "لوله‌کش کی می‌آید؟"
+        },
+        {
+          "code": "s08",
+          "titleFa": "همسایه پرسروصدا"
+        },
+        {
+          "code": "s09",
+          "titleFa": "بند ۷ قرارداد"
+        },
+        {
+          "code": "s10",
+          "titleFa": "ودیعه‌ام را پس بده!"
+        },
+        {
+          "code": "s11",
+          "titleFa": "اسباب‌کشی حمید"
+        },
+        {
+          "code": "s12",
+          "titleFa": "وام خانه اول"
+        }
+      ]
+    },
+    {
+      "id": "food-restaurants",
+      "code": "t05",
+      "titleFa": "غذا و رستوران",
+      "titleEn": "Food and restaurants",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "یک قهوه، لطفاً"
+        },
+        {
+          "code": "s02",
+          "titleFa": "ناهار ساده سینا"
+        },
+        {
+          "code": "s03",
+          "titleFa": "صورت‌حساب، لطفاً"
+        },
+        {
+          "code": "s04",
+          "titleFa": "میز برای چهار نفر"
+        },
+        {
+          "code": "s05",
+          "titleFa": "این غذا چه دارد؟"
+        },
+        {
+          "code": "s06",
+          "titleFa": "پیتزای بیرون‌بر"
+        },
+        {
+          "code": "s07",
+          "titleFa": "نگار و حساسیت به بادام"
+        },
+        {
+          "code": "s08",
+          "titleFa": "من این را سفارش ندادم!"
+        },
+        {
+          "code": "s09",
+          "titleFa": "شام کجا برویم؟"
+        },
+        {
+          "code": "s10",
+          "titleFa": "آن استیک واقعاً خوب بود؟"
+        },
+        {
+          "code": "s11",
+          "titleFa": "منوی جشن نامزدی"
+        },
+        {
+          "code": "s12",
+          "titleFa": "گفتگو با سرآشپز"
+        }
+      ]
+    },
+    {
+      "id": "groceries",
+      "code": "t06",
+      "titleFa": "خرید روزانه و سوپرمارکت",
+      "titleEn": "Groceries and supermarkets",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "سیب کیلویی چند؟"
+        },
+        {
+          "code": "s02",
+          "titleFa": "شیر کجاست؟"
+        },
+        {
+          "code": "s03",
+          "titleFa": "در صف صندوق"
+        },
+        {
+          "code": "s04",
+          "titleFa": "نان تازه صبح"
+        },
+        {
+          "code": "s05",
+          "titleFa": "نیم کیلو گوشت چرخ‌کرده"
+        },
+        {
+          "code": "s06",
+          "titleFa": "کیسه می‌خواهید؟"
+        },
+        {
+          "code": "s07",
+          "titleFa": "فهرست خرید هم‌خانه‌ها"
+        },
+        {
+          "code": "s08",
+          "titleFa": "صبح جمعه در بازار"
+        },
+        {
+          "code": "s09",
+          "titleFa": "ماست تاریخ‌گذشته"
+        },
+        {
+          "code": "s10",
+          "titleFa": "ارگانیک ارزشش را دارد؟"
+        },
+        {
+          "code": "s11",
+          "titleFa": "سفارش اینترنتی که نرسید"
+        },
+        {
+          "code": "s12",
+          "titleFa": "غذاهایی که دور می‌ریزیم"
+        }
+      ]
+    },
+    {
+      "id": "clothes-shopping",
+      "code": "t07",
+      "titleFa": "خرید لباس",
+      "titleEn": "Clothes shopping",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "این پیراهن چند است؟"
+        },
+        {
+          "code": "s02",
+          "titleFa": "سایز مدیوم دارید؟"
+        },
+        {
+          "code": "s03",
+          "titleFa": "مریم در اتاق پرو"
+        },
+        {
+          "code": "s04",
+          "titleFa": "کفش شماره ۴۲"
+        },
+        {
+          "code": "s05",
+          "titleFa": "حراج آخر فصل"
+        },
+        {
+          "code": "s06",
+          "titleFa": "هدیه‌ای برای رویا"
+        },
+        {
+          "code": "s07",
+          "titleFa": "شلوار تنگ است"
+        },
+        {
+          "code": "s08",
+          "titleFa": "پولم را پس می‌خواهم"
+        },
+        {
+          "code": "s09",
+          "titleFa": "برای عروسی چه بپوشم؟"
+        },
+        {
+          "code": "s10",
+          "titleFa": "سفارشی که گم شد"
+        },
+        {
+          "code": "s11",
+          "titleFa": "پارچه‌ای که آب رفت"
+        },
+        {
+          "code": "s12",
+          "titleFa": "قیمت واقعی لباس ارزان"
+        }
+      ]
+    },
+    {
+      "id": "money-banking",
+      "code": "t08",
+      "titleFa": "پول و بانک",
+      "titleEn": "Money and banking",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "دلار به یورو"
+        },
+        {
+          "code": "s02",
+          "titleFa": "اولین حساب بانکی پریا"
+        },
+        {
+          "code": "s03",
+          "titleFa": "خودپرداز کارتم را خورد"
+        },
+        {
+          "code": "s04",
+          "titleFa": "کارمزد این حساب چقدر است؟"
+        },
+        {
+          "code": "s05",
+          "titleFa": "کارتم گم شده!"
+        },
+        {
+          "code": "s06",
+          "titleFa": "پول برای مادر"
+        },
+        {
+          "code": "s07",
+          "titleFa": "حساب‌وکتاب آخر ماه"
+        },
+        {
+          "code": "s08",
+          "titleFa": "وام برای ماشین"
+        },
+        {
+          "code": "s09",
+          "titleFa": "این خرید مال من نیست!"
+        },
+        {
+          "code": "s10",
+          "titleFa": "پس‌اندازم را چه کنم؟"
+        },
+        {
+          "code": "s11",
+          "titleFa": "نقشه بازنشستگی بهرام"
+        },
+        {
+          "code": "s12",
+          "titleFa": "تورم و جیب مردم"
+        }
+      ]
+    },
+    {
+      "id": "urban-transport",
+      "code": "t09",
+      "titleFa": "حمل‌ونقل شهری",
+      "titleEn": "Urban transport",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "یک بلیت تا مرکز شهر"
+        },
+        {
+          "code": "s02",
+          "titleFa": "آقا، فرودگاه!"
+        },
+        {
+          "code": "s03",
+          "titleFa": "قطار بعدی کی است؟"
+        },
+        {
+          "code": "s04",
+          "titleFa": "کارت ماهانه مترو"
+        },
+        {
+          "code": "s05",
+          "titleFa": "کجا خط عوض کنم؟"
+        },
+        {
+          "code": "s06",
+          "titleFa": "دوچرخه‌سواری در شهر"
+        },
+        {
+          "code": "s07",
+          "titleFa": "اتوبوس نیامد"
+        },
+        {
+          "code": "s08",
+          "titleFa": "کیفم در تاکسی ماند"
+        },
+        {
+          "code": "s09",
+          "titleFa": "ماشین کرایه‌ای آرش"
+        },
+        {
+          "code": "s10",
+          "titleFa": "بلیتت کجاست؟"
+        },
+        {
+          "code": "s11",
+          "titleFa": "تصادف سر چهارراه"
+        },
+        {
+          "code": "s12",
+          "titleFa": "ترافیک بی‌پایان"
+        }
+      ]
+    },
+    {
+      "id": "travel-airports",
+      "code": "t10",
+      "titleFa": "سفر و فرودگاه",
+      "titleEn": "Travel and airports",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "پاسپورت، لطفاً"
+        },
+        {
+          "code": "s02",
+          "titleFa": "گیت ۱۴ کجاست؟"
+        },
+        {
+          "code": "s03",
+          "titleFa": "چمدان سنگین سارا"
+        },
+        {
+          "code": "s04",
+          "titleFa": "بلیت ارزان استانبول"
+        },
+        {
+          "code": "s05",
+          "titleFa": "چای یا قهوه؟"
+        },
+        {
+          "code": "s06",
+          "titleFa": "چمدانم کجاست؟"
+        },
+        {
+          "code": "s07",
+          "titleFa": "پرواز تأخیر دارد"
+        },
+        {
+          "code": "s08",
+          "titleFa": "چیزی برای اظهار دارید؟"
+        },
+        {
+          "code": "s09",
+          "titleFa": "پروازم لغو شد!"
+        },
+        {
+          "code": "s10",
+          "titleFa": "جاماندن در فرانکفورت"
+        },
+        {
+          "code": "s11",
+          "titleFa": "مصاحبه ویزای کامران"
+        },
+        {
+          "code": "s12",
+          "titleFa": "سه شهر در یک هفته"
+        }
+      ]
+    },
+    {
+      "id": "hotels",
+      "code": "t11",
+      "titleFa": "هتل و اقامت",
+      "titleEn": "Hotels and accommodation",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "رزرو به نام رضایی"
+        },
+        {
+          "code": "s02",
+          "titleFa": "صبحانه ساعت چند؟"
+        },
+        {
+          "code": "s03",
+          "titleFa": "یک اتاق دوتخته"
+        },
+        {
+          "code": "s04",
+          "titleFa": "حوله اضافه برای اتاق ۲۰۵"
+        },
+        {
+          "code": "s05",
+          "titleFa": "تسویه‌حساب صبح"
+        },
+        {
+          "code": "s06",
+          "titleFa": "استخر هتل باز است؟"
+        },
+        {
+          "code": "s07",
+          "titleFa": "اتاقی که تمیز نبود"
+        },
+        {
+          "code": "s08",
+          "titleFa": "اتاقی رو به دریا"
+        },
+        {
+          "code": "s09",
+          "titleFa": "امروز کجا برویم؟"
+        },
+        {
+          "code": "s10",
+          "titleFa": "دو بار پول کم شد!"
+        },
+        {
+          "code": "s11",
+          "titleFa": "میزبانی که جواب نمی‌داد"
+        },
+        {
+          "code": "s12",
+          "titleFa": "همایش در هتل"
+        }
+      ]
+    },
+    {
+      "id": "directions",
+      "code": "t12",
+      "titleFa": "آدرس و مسیریابی",
+      "titleEn": "Asking directions",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "مترو کجاست؟"
+        },
+        {
+          "code": "s02",
+          "titleFa": "نزدیک‌ترین بانک"
+        },
+        {
+          "code": "s03",
+          "titleFa": "مستقیم، بعد چپ"
+        },
+        {
+          "code": "s04",
+          "titleFa": "سرویس بهداشتی کجاست؟"
+        },
+        {
+          "code": "s05",
+          "titleFa": "گردشگر و نقشه"
+        },
+        {
+          "code": "s06",
+          "titleFa": "با کدام اتوبوس بروم؟"
+        },
+        {
+          "code": "s07",
+          "titleFa": "گم شدن در شهر قدیمی"
+        },
+        {
+          "code": "s08",
+          "titleFa": "آدرس خانه ما"
+        },
+        {
+          "code": "s09",
+          "titleFa": "مسیریاب از کار افتاد"
+        },
+        {
+          "code": "s10",
+          "titleFa": "راه خانه‌باغ"
+        },
+        {
+          "code": "s11",
+          "titleFa": "پیکی که راه را گم کرد"
+        },
+        {
+          "code": "s12",
+          "titleFa": "قدم‌زدن در محله قدیمی"
+        }
+      ]
+    },
+    {
+      "id": "health",
+      "code": "t13",
+      "titleFa": "سلامت و پزشک",
+      "titleEn": "Health and doctors",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "سرم درد می‌کند"
+        },
+        {
+          "code": "s02",
+          "titleFa": "نوبت برای فردا"
+        },
+        {
+          "code": "s03",
+          "titleFa": "سرماخوردگی نیما"
+        },
+        {
+          "code": "s04",
+          "titleFa": "دندان‌درد امیر"
+        },
+        {
+          "code": "s05",
+          "titleFa": "فرم بیمار جدید"
+        },
+        {
+          "code": "s06",
+          "titleFa": "معاینه سالانه"
+        },
+        {
+          "code": "s07",
+          "titleFa": "شبی در اورژانس"
+        },
+        {
+          "code": "s08",
+          "titleFa": "گواهی برای محل کار"
+        },
+        {
+          "code": "s09",
+          "titleFa": "جواب آزمایش الهام"
+        },
+        {
+          "code": "s10",
+          "titleFa": "استرس امتحان"
+        },
+        {
+          "code": "s11",
+          "titleFa": "بیمه این را می‌پردازد؟"
+        },
+        {
+          "code": "s12",
+          "titleFa": "جراحی یا دارو؟"
+        }
+      ]
+    },
+    {
+      "id": "pharmacy",
+      "code": "t14",
+      "titleFa": "داروخانه و مراقبت شخصی",
+      "titleEn": "Pharmacies and personal care",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "یک بسته مسکن"
+        },
+        {
+          "code": "s02",
+          "titleFa": "چسب زخم برای پریا"
+        },
+        {
+          "code": "s03",
+          "titleFa": "داروخانه شبانه‌روزی"
+        },
+        {
+          "code": "s04",
+          "titleFa": "نسخه دکتر"
+        },
+        {
+          "code": "s05",
+          "titleFa": "روزی سه بار، بعد از غذا"
+        },
+        {
+          "code": "s06",
+          "titleFa": "قرص سرماخوردگی"
+        },
+        {
+          "code": "s07",
+          "titleFa": "شامپو و مسواک"
+        },
+        {
+          "code": "s08",
+          "titleFa": "این دارو خواب‌آور است؟"
+        },
+        {
+          "code": "s09",
+          "titleFa": "داروی جایگزین"
+        },
+        {
+          "code": "s10",
+          "titleFa": "بهار و عطسه‌های مینا"
+        },
+        {
+          "code": "s11",
+          "titleFa": "این دو دارو با هم؟"
+        },
+        {
+          "code": "s12",
+          "titleFa": "گیاه یا قرص؟"
+        }
+      ]
+    },
+    {
+      "id": "weather",
+      "code": "t15",
+      "titleFa": "آب‌وهوا و فصل‌ها",
+      "titleEn": "Weather and seasons",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "امروز هوا چطور است؟"
+        },
+        {
+          "code": "s02",
+          "titleFa": "فصل محبوب سارا"
+        },
+        {
+          "code": "s03",
+          "titleFa": "چه هوای گرمی!"
+        },
+        {
+          "code": "s04",
+          "titleFa": "چتر یادت نرود"
+        },
+        {
+          "code": "s05",
+          "titleFa": "فردا برف می‌آید؟"
+        },
+        {
+          "code": "s06",
+          "titleFa": "اینجا همیشه باران است"
+        },
+        {
+          "code": "s07",
+          "titleFa": "پیک‌نیک بارانی"
+        },
+        {
+          "code": "s08",
+          "titleFa": "طوفان دیشب"
+        },
+        {
+          "code": "s09",
+          "titleFa": "بهترین وقت سفر"
+        },
+        {
+          "code": "s10",
+          "titleFa": "زمستان و دلگرفتگی"
+        },
+        {
+          "code": "s11",
+          "titleFa": "مدرسه‌ها فردا تعطیل‌اند"
+        },
+        {
+          "code": "s12",
+          "titleFa": "فصلی که عجیب شد"
+        }
+      ]
+    },
+    {
+      "id": "free-time",
+      "code": "t16",
+      "titleFa": "اوقات فراغت و سرگرمی",
+      "titleEn": "Free time and entertainment",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "سرگرمی‌های نازنین"
+        },
+        {
+          "code": "s02",
+          "titleFa": "سینما می‌آیی؟"
+        },
+        {
+          "code": "s03",
+          "titleFa": "دو بلیت کنسرت"
+        },
+        {
+          "code": "s04",
+          "titleFa": "آخر هفته چه کنیم؟"
+        },
+        {
+          "code": "s05",
+          "titleFa": "کلاس گیتار سینا"
+        },
+        {
+          "code": "s06",
+          "titleFa": "یک روز در موزه"
+        },
+        {
+          "code": "s07",
+          "titleFa": "فیلم دیشب چه بود؟"
+        },
+        {
+          "code": "s08",
+          "titleFa": "این کتاب را بخوان"
+        },
+        {
+          "code": "s09",
+          "titleFa": "کمپینگ کنار دریاچه"
+        },
+        {
+          "code": "s10",
+          "titleFa": "سریالی که همه دیدند"
+        },
+        {
+          "code": "s11",
+          "titleFa": "شب‌های گیمینگ پویا"
+        },
+        {
+          "code": "s12",
+          "titleFa": "این هم هنر است؟"
+        }
+      ]
+    },
+    {
+      "id": "sports",
+      "code": "t17",
+      "titleFa": "ورزش و تناسب اندام",
+      "titleEn": "Sports and fitness",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "ورزش محبوب علی"
+        },
+        {
+          "code": "s02",
+          "titleFa": "فوتبال جمعه صبح"
+        },
+        {
+          "code": "s03",
+          "titleFa": "عضویت در باشگاه"
+        },
+        {
+          "code": "s04",
+          "titleFa": "زمین تنیس ساعت ۶"
+        },
+        {
+          "code": "s05",
+          "titleFa": "بازی دیشب را دیدی؟"
+        },
+        {
+          "code": "s06",
+          "titleFa": "برنامه تمرینی مربی"
+        },
+        {
+          "code": "s07",
+          "titleFa": "زانوی آسیب‌دیده رضا"
+        },
+        {
+          "code": "s08",
+          "titleFa": "شب فینال"
+        },
+        {
+          "code": "s09",
+          "titleFa": "پروتئین یا رژیم؟"
+        },
+        {
+          "code": "s10",
+          "titleFa": "اولین ماراتن لیلا"
+        },
+        {
+          "code": "s11",
+          "titleFa": "عضویتم را لغو کنید"
+        },
+        {
+          "code": "s12",
+          "titleFa": "قهرمانی با دوپینگ"
+        }
+      ]
+    },
+    {
+      "id": "calls",
+      "code": "t18",
+      "titleFa": "تلفن و قرار گذاشتن",
+      "titleEn": "Calls and appointments",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "الو، بفرمایید"
+        },
+        {
+          "code": "s02",
+          "titleFa": "مریم خانه است؟"
+        },
+        {
+          "code": "s03",
+          "titleFa": "پیغامی برای حمید"
+        },
+        {
+          "code": "s04",
+          "titleFa": "فردا ساعت پنج؟"
+        },
+        {
+          "code": "s05",
+          "titleFa": "قرار را عقب بیندازیم"
+        },
+        {
+          "code": "s06",
+          "titleFa": "ببخشید، اشتباه گرفتم"
+        },
+        {
+          "code": "s07",
+          "titleFa": "امشب نمی‌توانم بیایم"
+        },
+        {
+          "code": "s08",
+          "titleFa": "نوبت آرایشگاه"
+        },
+        {
+          "code": "s09",
+          "titleFa": "برای پشتیبانی، عدد ۳"
+        },
+        {
+          "code": "s10",
+          "titleFa": "جلسه سه‌نفره"
+        },
+        {
+          "code": "s11",
+          "titleFa": "صدایت قطع‌ووصل می‌شود"
+        },
+        {
+          "code": "s12",
+          "titleFa": "مهلت پروژه را تمدید کنیم؟"
+        }
+      ]
+    },
+    {
+      "id": "jobs",
+      "code": "t19",
+      "titleFa": "کار و مصاحبه شغلی",
+      "titleEn": "Jobs and interviews",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "شغل من"
+        },
+        {
+          "code": "s02",
+          "titleFa": "آگهی استخدام"
+        },
+        {
+          "code": "s03",
+          "titleFa": "کار پاره‌وقت در کافه"
+        },
+        {
+          "code": "s04",
+          "titleFa": "مصاحبه در کافه"
+        },
+        {
+          "code": "s05",
+          "titleFa": "رزومه ترانه"
+        },
+        {
+          "code": "s06",
+          "titleFa": "روز اول در فروشگاه"
+        },
+        {
+          "code": "s07",
+          "titleFa": "مصاحبه بزرگ آرش"
+        },
+        {
+          "code": "s08",
+          "titleFa": "حقوق بیشتر"
+        },
+        {
+          "code": "s09",
+          "titleFa": "مرخصی برای عروسی"
+        },
+        {
+          "code": "s10",
+          "titleFa": "استعفای کامران"
+        },
+        {
+          "code": "s11",
+          "titleFa": "مصاحبه برای مدیرعاملی"
+        },
+        {
+          "code": "s12",
+          "titleFa": "ارزیابی پایان سال"
+        }
+      ]
+    },
+    {
+      "id": "workplace",
+      "code": "t20",
+      "titleFa": "محیط کار و اداره",
+      "titleEn": "Around the office",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "پرینتر کجاست؟"
+        },
+        {
+          "code": "s02",
+          "titleFa": "کمکم کن، رضا"
+        },
+        {
+          "code": "s03",
+          "titleFa": "ناهار امروز با من"
+        },
+        {
+          "code": "s04",
+          "titleFa": "کامپیوترم روشن نمی‌شود"
+        },
+        {
+          "code": "s05",
+          "titleFa": "شیفتت را عوض می‌کنی؟"
+        },
+        {
+          "code": "s06",
+          "titleFa": "گزارش هفتگی به مدیر"
+        },
+        {
+          "code": "s07",
+          "titleFa": "ایده جدید سارا"
+        },
+        {
+          "code": "s08",
+          "titleFa": "دلخوری در دفتر"
+        },
+        {
+          "code": "s09",
+          "titleFa": "بازخورد پروژه"
+        },
+        {
+          "code": "s10",
+          "titleFa": "آموزش کارمند جدید"
+        },
+        {
+          "code": "s11",
+          "titleFa": "قرارداد با شریک آلمانی"
+        },
+        {
+          "code": "s12",
+          "titleFa": "مشتری عصبانی"
+        }
+      ]
+    },
+    {
+      "id": "education",
+      "code": "t21",
+      "titleFa": "تحصیل و دانشگاه",
+      "titleEn": "Education and university",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "رشته من"
+        },
+        {
+          "code": "s02",
+          "titleFa": "ثبت‌نام کلاس زبان"
+        },
+        {
+          "code": "s03",
+          "titleFa": "برنامه کلاس‌ها"
+        },
+        {
+          "code": "s04",
+          "titleFa": "کارت کتابخانه"
+        },
+        {
+          "code": "s05",
+          "titleFa": "تکلیف استاد"
+        },
+        {
+          "code": "s06",
+          "titleFa": "پروژه گروهی"
+        },
+        {
+          "code": "s07",
+          "titleFa": "پزشکی یا مهندسی؟"
+        },
+        {
+          "code": "s08",
+          "titleFa": "یک هفته مهلت بیشتر"
+        },
+        {
+          "code": "s09",
+          "titleFa": "بورسیه نگار"
+        },
+        {
+          "code": "s10",
+          "titleFa": "نمره‌ام اشتباه است"
+        },
+        {
+          "code": "s11",
+          "titleFa": "جلسه دفاع"
+        },
+        {
+          "code": "s12",
+          "titleFa": "بحث در سمینار"
+        }
+      ]
+    },
+    {
+      "id": "public-services",
+      "code": "t22",
+      "titleFa": "خدمات اداری و دولتی",
+      "titleEn": "Public and government services",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "شماره ۴۵، باجه ۳"
+        },
+        {
+          "code": "s02",
+          "titleFa": "ثبت آدرس جدید"
+        },
+        {
+          "code": "s03",
+          "titleFa": "مدارک کارت شناسایی"
+        },
+        {
+          "code": "s04",
+          "titleFa": "این فرم را چطور پر کنم؟"
+        },
+        {
+          "code": "s05",
+          "titleFa": "تمدید اقامت امیر"
+        },
+        {
+          "code": "s06",
+          "titleFa": "بیمه درمانی"
+        },
+        {
+          "code": "s07",
+          "titleFa": "گواهینامه خارجی"
+        },
+        {
+          "code": "s08",
+          "titleFa": "پرونده‌ای که گم شد"
+        },
+        {
+          "code": "s09",
+          "titleFa": "مالیات اول سال"
+        },
+        {
+          "code": "s10",
+          "titleFa": "جریمه ناعادلانه"
+        },
+        {
+          "code": "s11",
+          "titleFa": "وقت مشاوره با وکیل"
+        },
+        {
+          "code": "s12",
+          "titleFa": "جلسه شورای محله"
+        }
+      ]
+    },
+    {
+      "id": "mail",
+      "code": "t23",
+      "titleFa": "پست و ارسال بسته",
+      "titleEn": "Mail and parcels",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "یک تمبر، لطفاً"
+        },
+        {
+          "code": "s02",
+          "titleFa": "کارت پستال برای مادربزرگ"
+        },
+        {
+          "code": "s03",
+          "titleFa": "بسته‌ای برای تهران"
+        },
+        {
+          "code": "s04",
+          "titleFa": "برگه زرد پشت در"
+        },
+        {
+          "code": "s05",
+          "titleFa": "پست سفارشی"
+        },
+        {
+          "code": "s06",
+          "titleFa": "بسته پیش همسایه است"
+        },
+        {
+          "code": "s07",
+          "titleFa": "بسته‌ام کجاست؟"
+        },
+        {
+          "code": "s08",
+          "titleFa": "فرم گمرک"
+        },
+        {
+          "code": "s09",
+          "titleFa": "جعبه له‌شده"
+        },
+        {
+          "code": "s10",
+          "titleFa": "غرامت از پست"
+        },
+        {
+          "code": "s11",
+          "titleFa": "فردا خانه نیستم"
+        },
+        {
+          "code": "s12",
+          "titleFa": "محموله کانتینری"
+        }
+      ]
+    },
+    {
+      "id": "technology",
+      "code": "t24",
+      "titleFa": "تکنولوژی و اینترنت",
+      "titleEn": "Technology and the internet",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "رمز وای‌فای چیست؟"
+        },
+        {
+          "code": "s02",
+          "titleFa": "سیم‌کارت جدید"
+        },
+        {
+          "code": "s03",
+          "titleFa": "گوشی نوی مینا"
+        },
+        {
+          "code": "s04",
+          "titleFa": "لپ‌تاپ خراب"
+        },
+        {
+          "code": "s05",
+          "titleFa": "پدربزرگ و اپلیکیشن"
+        },
+        {
+          "code": "s06",
+          "titleFa": "اینترنت قطع است"
+        },
+        {
+          "code": "s07",
+          "titleFa": "حسابم هک شد"
+        },
+        {
+          "code": "s08",
+          "titleFa": "کدام گوشی بهتر است؟"
+        },
+        {
+          "code": "s09",
+          "titleFa": "اعتیاد به اینستاگرام"
+        },
+        {
+          "code": "s10",
+          "titleFa": "اطلاعات ما کجا می‌رود؟"
+        },
+        {
+          "code": "s11",
+          "titleFa": "هوش مصنوعی و شغل ما"
+        },
+        {
+          "code": "s12",
+          "titleFa": "ارائه به سرمایه‌گذار"
+        }
+      ]
+    },
+    {
+      "id": "media",
+      "code": "t25",
+      "titleFa": "رسانه و اخبار",
+      "titleEn": "Media and news",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "برنامه محبوب تلویزیون"
+        },
+        {
+          "code": "s02",
+          "titleFa": "خبر امروز صبح"
+        },
+        {
+          "code": "s03",
+          "titleFa": "پادکست محبوب پویا"
+        },
+        {
+          "code": "s04",
+          "titleFa": "خبر محله"
+        },
+        {
+          "code": "s05",
+          "titleFa": "این خبر واقعی است؟"
+        },
+        {
+          "code": "s06",
+          "titleFa": "مصاحبه رادیویی در خیابان"
+        },
+        {
+          "code": "s07",
+          "titleFa": "روزنامه یا اینستاگرام؟"
+        },
+        {
+          "code": "s08",
+          "titleFa": "مستندی درباره اقیانوس"
+        },
+        {
+          "code": "s09",
+          "titleFa": "بازار در خبرها"
+        },
+        {
+          "code": "s10",
+          "titleFa": "روزنامه‌نگار و وجدان"
+        },
+        {
+          "code": "s11",
+          "titleFa": "یک رویداد، دو روایت"
+        },
+        {
+          "code": "s12",
+          "titleFa": "مرز آزادی بیان"
+        }
+      ]
+    },
+    {
+      "id": "relationships",
+      "code": "t26",
+      "titleFa": "احساسات و روابط",
+      "titleEn": "Feelings and relationships",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "امروز حالت چطور است؟"
+        },
+        {
+          "code": "s02",
+          "titleFa": "غصه نخور، لیلا"
+        },
+        {
+          "code": "s03",
+          "titleFa": "تبریک برای قبولی"
+        },
+        {
+          "code": "s04",
+          "titleFa": "اولین قرار سینا و ترانه"
+        },
+        {
+          "code": "s05",
+          "titleFa": "تولدی که فراموش شد"
+        },
+        {
+          "code": "s06",
+          "titleFa": "دلتنگ خانه"
+        },
+        {
+          "code": "s07",
+          "titleFa": "چرا این‌طور رفتار کردی؟"
+        },
+        {
+          "code": "s08",
+          "titleFa": "کارهای خانه با کیست؟"
+        },
+        {
+          "code": "s09",
+          "titleFa": "خداحافظی آخر"
+        },
+        {
+          "code": "s10",
+          "titleFa": "در کنار شیرین"
+        },
+        {
+          "code": "s11",
+          "titleFa": "آینده ما دو نفر"
+        },
+        {
+          "code": "s12",
+          "titleFa": "میان دو دوست"
+        }
+      ]
+    },
+    {
+      "id": "celebrations",
+      "code": "t27",
+      "titleFa": "جشن‌ها، فرهنگ و آداب",
+      "titleEn": "Celebrations, culture and customs",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "تولدت مبارک!"
+        },
+        {
+          "code": "s02",
+          "titleFa": "سال نو مبارک!"
+        },
+        {
+          "code": "s03",
+          "titleFa": "دعوت به تولد پریا"
+        },
+        {
+          "code": "s04",
+          "titleFa": "هدیه چه بخریم؟"
+        },
+        {
+          "code": "s05",
+          "titleFa": "نوروز چیست؟"
+        },
+        {
+          "code": "s06",
+          "titleFa": "شام در خانه همکار خارجی"
+        },
+        {
+          "code": "s07",
+          "titleFa": "عروسی رویا"
+        },
+        {
+          "code": "s08",
+          "titleFa": "سوءتفاهم سر میز"
+        },
+        {
+          "code": "s09",
+          "titleFa": "دو کشور، دو رسم"
+        },
+        {
+          "code": "s10",
+          "titleFa": "آرزوی خوشبختی برای زوج"
+        },
+        {
+          "code": "s11",
+          "titleFa": "سنت‌های همسایه"
+        },
+        {
+          "code": "s12",
+          "titleFa": "جهانی شدن و هویت"
+        }
+      ]
+    },
+    {
+      "id": "environment",
+      "code": "t28",
+      "titleFa": "طبیعت و محیط زیست",
+      "titleEn": "Nature and the environment",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "حیوان محبوب تو"
+        },
+        {
+          "code": "s02",
+          "titleFa": "پلاستیک یا کاغذ؟"
+        },
+        {
+          "code": "s03",
+          "titleFa": "پیاده‌روی در جنگل"
+        },
+        {
+          "code": "s04",
+          "titleFa": "چراغ را خاموش کن!"
+        },
+        {
+          "code": "s05",
+          "titleFa": "پاکسازی ساحل"
+        },
+        {
+          "code": "s06",
+          "titleFa": "با دوچرخه به کار"
+        },
+        {
+          "code": "s07",
+          "titleFa": "پنل خورشیدی روی بام"
+        },
+        {
+          "code": "s08",
+          "titleFa": "هوای آلوده امروز"
+        },
+        {
+          "code": "s09",
+          "titleFa": "گیاه‌خواری برای زمین"
+        },
+        {
+          "code": "s10",
+          "titleFa": "قانون جدید اقلیمی"
+        },
+        {
+          "code": "s11",
+          "titleFa": "گفتگو با فعال محیط زیست"
+        },
+        {
+          "code": "s12",
+          "titleFa": "اتم یا خورشید؟"
+        }
+      ]
+    },
+    {
+      "id": "complaints",
+      "code": "t29",
+      "titleFa": "شکایت و حل مشکل",
+      "titleEn": "Complaints and problem solving",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "آسانسور باز خراب شد"
+        },
+        {
+          "code": "s02",
+          "titleFa": "ماشینت جلوی در است"
+        },
+        {
+          "code": "s03",
+          "titleFa": "قبض عجیب برق"
+        },
+        {
+          "code": "s04",
+          "titleFa": "گارانتی یخچال"
+        },
+        {
+          "code": "s05",
+          "titleFa": "مبلی که نرسید"
+        },
+        {
+          "code": "s06",
+          "titleFa": "شارژ ساختمان زیاد است"
+        },
+        {
+          "code": "s07",
+          "titleFa": "فسخ قرارداد موبایل"
+        },
+        {
+          "code": "s08",
+          "titleFa": "شکایت از کارمند بی‌ادب"
+        },
+        {
+          "code": "s09",
+          "titleFa": "هزینه اضافی تعمیرکار"
+        },
+        {
+          "code": "s10",
+          "titleFa": "گوشی دست‌دوم معیوب"
+        },
+        {
+          "code": "s11",
+          "titleFa": "جلسه پرتنش ساختمان"
+        },
+        {
+          "code": "s12",
+          "titleFa": "پرونده در سازمان مصرف‌کننده"
+        }
+      ]
+    },
+    {
+      "id": "emergencies",
+      "code": "t30",
+      "titleFa": "شرایط اضطراری و ایمنی",
+      "titleEn": "Emergencies and safety",
+      "scenarios": [
+        {
+          "code": "s01",
+          "titleFa": "کمک! پلیس!"
+        },
+        {
+          "code": "s02",
+          "titleFa": "آدرس، لطفاً!"
+        },
+        {
+          "code": "s03",
+          "titleFa": "پسرم گم شده!"
+        },
+        {
+          "code": "s04",
+          "titleFa": "کیف پولم را گم کردم"
+        },
+        {
+          "code": "s05",
+          "titleFa": "زنگ آتش‌سوزی"
+        },
+        {
+          "code": "s06",
+          "titleFa": "دزد به خانه زد"
+        },
+        {
+          "code": "s07",
+          "titleFa": "پیرمردی در ایستگاه افتاد"
+        },
+        {
+          "code": "s08",
+          "titleFa": "کلید داخل ماند"
+        },
+        {
+          "code": "s09",
+          "titleFa": "شاهد تصادف"
+        },
+        {
+          "code": "s10",
+          "titleFa": "پاسپورت گم‌شده بهرام"
+        },
+        {
+          "code": "s11",
+          "titleFa": "بوی گاز در راه‌پله"
+        },
+        {
+          "code": "s12",
+          "titleFa": "خانه‌ای که آب برد"
+        }
+      ]
+    }
+  ],
+  "scenarioMetadata": {
+    "en-t01-s01": {
+      "titleEn": "Sara and Amir say hello",
+      "level": "A1",
+      "downloadUrl": "https://github.com/khodehydro/Drop/raw/refs/heads/main/1.rdpack"
+    },
+    "en-t01-s02": {
+      "titleEn": "Where are you from?",
+      "level": "A1"
+    },
+    "en-t01-s03": {
+      "titleEn": "Maryam’s first day in class",
+      "level": "A1"
+    },
+    "en-t01-s04": {
+      "titleEn": "Exchanging contact details",
+      "level": "A1"
+    }
+  }
+}
