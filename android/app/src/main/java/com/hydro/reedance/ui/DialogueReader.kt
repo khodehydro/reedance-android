@@ -35,7 +35,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.foundation.shape.GenericShape
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -382,23 +384,27 @@ private enum class DialogueTranslation { ORIGINAL, SENTENCE, WORD }
     }
 }
 
-private fun speakerBubbleShape(left: Boolean): Shape = GenericShape { size, _ ->
-    // Mirror the outline physically, independently of the text or app direction.
-    val width = size.width
-    val height = size.height
-    val tail = minOf(7.dp.toPx(), width / 8)
-    val radius = minOf(14.dp.toPx(), (width - tail) / 2, height / 2)
-    fun x(value: Float) = if(left) value else width - value
-    moveTo(x(tail + radius), 0f)
-    lineTo(x(width - radius), 0f)
-    quadraticTo(x(width), 0f, x(width), radius)
-    lineTo(x(width), height - radius)
-    quadraticTo(x(width), height, x(width - radius), height)
-    lineTo(x(0f), height)
-    quadraticTo(x(tail), height - 2.dp.toPx(), x(tail), height - radius)
-    lineTo(x(tail), radius)
-    quadraticTo(x(tail), 0f, x(tail + radius), 0f)
-    close()
+private fun speakerBubbleShape(left: Boolean): Shape = object : Shape {
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline =
+        with(density) { Outline.Generic(Path().apply {
+            // Mirror the outline physically, independently of the text or app direction.
+            val width = size.width
+            val height = size.height
+            val tail = minOf(7.dp.toPx(), width / 8)
+            val radius = minOf(14.dp.toPx(), (width - tail) / 2, height / 2)
+            fun x(value: Float) = if(left) value else width - value
+            moveTo(x(tail + radius), 0f)
+            lineTo(x(width - radius), 0f)
+            quadraticTo(x(width), 0f, x(width), radius)
+            lineTo(x(width), height - radius)
+            quadraticTo(x(width), height, x(width - radius), height)
+            lineTo(x(0f), height)
+            quadraticTo(x(tail), height - 2.dp.toPx(), x(tail), height - radius)
+            lineTo(x(tail), radius)
+            quadraticTo(x(tail), 0f, x(tail + radius), 0f)
+            close()
+        }
+        }) }
 }
 
 private val LeftSpeakerBubble = speakerBubbleShape(left = true)
