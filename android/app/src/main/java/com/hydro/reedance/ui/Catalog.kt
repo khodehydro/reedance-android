@@ -106,13 +106,13 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 20.dp + LocalOverlayBottomInset.current), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         if(home) {
             item(key = "hero", span = { GridItemSpan(maxLineSpan) }) {
-                HomePager(model, explore)
+                HomePager(openDialogues)
             }
             item(key = "dialogue-categories", span = { GridItemSpan(maxLineSpan) }) {
                 HomeDialogueCategories(openDialogues)
             }
         }
-        item(key = "heading", span = { GridItemSpan(maxLineSpan) }) {
+        if(!home) item(key = "heading", span = { GridItemSpan(maxLineSpan) }) {
             Heading(if(home) tr("آخرین آهنگ‌ها", "Latest songs") else tr("کشف موسیقی", "Discover music"), tr("موسیقی را بشنو، کلمه‌ها را کشف کن.", "Good music. Words that stay with you."))
         }
         if(!home) item(key = "filters", span = { GridItemSpan(maxLineSpan) }) {
@@ -129,7 +129,7 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
                 fadeInSpec = tween(if(reduced) 0 else 180),
                 placementSpec = tween(if(reduced) 0 else 220),
                 fadeOutSpec = tween(if(reduced) 0 else 140)
-            )) { openSong(song.s("id")) }
+            ), compact = home) { openSong(song.s("id")) }
         }
         if(filtered.isEmpty()) item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
             Panel { Text(if(home) tr("هنوز آهنگی برای این زبان منتشر نشده است.", "No songs published for this language yet.") else tr("آهنگی پیدا نشد؛ فیلترها را تغییر بده.", "No songs found. Try another filter.")) }
@@ -291,13 +291,13 @@ private val artistSpace = Regex("\\s+")
 private fun songCoverId(song: JsonObject): String =
     if(song.s("distributionRef") == "gulum-ii") "pending-gulum-ii" else song.s("id")
 
-@Composable private fun SongTile(song: JsonObject, modifier: Modifier, onClick: () -> Unit) {
+@Composable private fun SongTile(song: JsonObject, modifier: Modifier, compact: Boolean = false, onClick: () -> Unit) {
     Column(modifier.clickable(onClick = onClick), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Box {
             CoverImage(songCoverId(song), song.s("title"), Modifier.fillMaxWidth().aspectRatio(1f), coverUrl = song.s("coverUrl"))
         }
         SongTitle(song.s("title"), premium = song.s("access") == "paid")
         Text(song.s("artist"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text("${when(song.s("language")) { "tr" -> "🇹🇷"; "es" -> "🇪🇸"; "ko" -> "🇰🇷"; else -> "🇬🇧" }}  ${song.s("level")}  ·  ${song.s("duration")}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+        if(!compact) Text("${when(song.s("language")) { "tr" -> "🇹🇷"; "es" -> "🇪🇸"; "ko" -> "🇰🇷"; else -> "🇬🇧" }}  ${song.s("level")}  ·  ${song.s("duration")}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
     }
 }

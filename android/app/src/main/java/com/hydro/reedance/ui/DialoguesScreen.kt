@@ -137,31 +137,22 @@ import com.hydro.reedance.domain.PremiumEntitlement
 @Composable internal fun HomeDialogueCategories(open: (Int) -> Unit) {
     if(dialogueCategories.isEmpty()) return
     val colors = MaterialTheme.colorScheme
-    Surface(Modifier.fillMaxWidth(), shape = GroupedCardShape,
-        color = colors.secondaryContainer, contentColor = colors.onSecondaryContainer) {
-        Column(Modifier.padding(vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(ReeTalkName, style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                    Text(tr("تمرین مکالمه", "Conversation practice"), style = MaterialTheme.typography.bodySmall)
-                }
-                Surface(onClick = { open(-1) }, shape = CircleShape,
-                    color = colors.surface, contentColor = colors.onSurface) {
-                    Box(Modifier.heightIn(min = 48.dp).padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
-                        Text(tr("دیدن همه", "See all"), style = MaterialTheme.typography.labelLarge)
-                    }
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        items(dialogueCategories.indices.reversed().take(2), key = { it }) { index ->
+            val category = dialogueCategories[index]
+            Surface(onClick = { open(index) }, shape = CircleShape, color = colors.surfaceContainerHigh) {
+                Row(Modifier.heightIn(min = 48.dp).padding(start = 5.dp, end = 12.dp), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                    DialogueCover(category.artwork, Modifier.size(31.dp).clip(CircleShape))
+                    Text(tr(category.fa, category.en), style = MaterialTheme.typography.labelLarge)
+                    if(category.premium) AppIcon(UiIcons.CrownFilled, tr("پریمیوم", "Premium"), Modifier.size(14.dp))
                 }
             }
-            LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                // Demo catalog entries are listed in publication order (oldest first).
-                items(dialogueCategories.indices.reversed().take(2), key = { it }) { index ->
-                    val category = dialogueCategories[index]
-                    val count = category.demos.size
-                    DialogueArtworkCard(category.artwork, tr(category.fa, category.en),
-                        tr("$count گفت‌وگو", if(count == 1) "1 dialogue" else "$count dialogues"),
-                        modifier = Modifier.width(210.dp), premium = category.premium) { open(index) }
+        }
+        item(key = "more") {
+            Surface(onClick = { open(-1) }, shape = CircleShape, color = colors.surfaceContainerHigh) {
+                Box(Modifier.heightIn(min = 48.dp).padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
+                    Text(tr("بیشتر", "More"), style = MaterialTheme.typography.labelLarge)
                 }
             }
         }
