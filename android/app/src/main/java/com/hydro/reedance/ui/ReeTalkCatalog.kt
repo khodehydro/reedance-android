@@ -35,7 +35,7 @@ import kotlinx.coroutines.withContext
 internal data class ReeTalkTopic(val id: String, val fa: String, val en: String,
     val coverUrl: String, val premium: Boolean, val scenarios: List<ReeTalkScenario>)
 internal data class ReeTalkScenario(val id: String, val fa: String, val en: String, val level: String,
-    val coverUrl: String, val pack: ReeTalkPackSpec?, val premium: Boolean)
+    val coverUrl: String, val pack: ReeTalkPackSpec?, val premium: Boolean, val downloadListed: Boolean)
 
 internal suspend fun loadReeTalkTopics(context: Context, language: String): List<ReeTalkTopic> = withContext(Dispatchers.IO) {
     val catalog = context.assets.open("reetalk_catalog.json").bufferedReader().use { JsonParser.parseReader(it).asJsonObject }
@@ -58,7 +58,7 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
                         val sha = entry.s("downloadSha256")
                         if(version in 1..Int.MAX_VALUE.toLong() && bytes > 0 && sha.matches(Regex("[a-f0-9]{64}")))
                             ReeTalkPackSpec(id, topic.s("id"), language, url, bytes, sha, version.toInt()) else null
-                    }, entry.s("access") == "paid")
+                    }, entry.s("access") == "paid", entry.s("downloadUrl").isNotBlank())
             })
     }
 }
@@ -232,17 +232,21 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
             }
             if(failed) Text(tr("دانلود یا بررسی پکیج ناموفق بود. اتصال اینترنت و نسخهٔ برنامه را بررسی کنید.",
                 "Could not download or verify the package. Check your connection and app version."), color = MaterialTheme.colorScheme.error)
+        } else if(scenario.downloadListed) {
+            Text(tr("لینک پکیج ثبت شده، اما دانلود هنوز تأیید نشده است.",
+                "The package link is listed, but the download has not been verified yet."))
         } else Text(tr("پکیج دانلود هنوز منتشر نشده است.", "The downloadable package has not been published yet."))
     }
 }
 
 @Composable internal fun ReeTalkCatalogCover(url: String, modifier: Modifier, fallback: Int? = null) {
-    val image by produceState<android.graphics.Bitmap?>(null, url) {
-        value = if(url.isBlank()) null else remoteCover(url)
+    val context = LocalContext.current.applicationContext
+    val image by produceState<Pair<String, android.graphics.Bitmap>?>(null, url) {
+        value = remoteCover(context, url)?.let { url to it }
     }
     Surface(modifier, color = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer) {
         Box(contentAlignment = Alignment.Center) {
-            val bitmap = image
+            val bitmap = image?.takeIf { it.first == url }?.second
             if(bitmap != null) Image(bitmap.asImageBitmap(), null, Modifier.matchParentSize(), contentScale = ContentScale.Crop)
             else if(fallback != null) DialogueCover(fallback, Modifier.matchParentSize())
             else AppIcon(UiIcons.Phrases, null, Modifier.size(24.dp))

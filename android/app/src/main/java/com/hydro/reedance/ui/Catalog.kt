@@ -59,7 +59,8 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
 }
 @Composable fun CoverImage(id: String, description: String, modifier: Modifier = Modifier, shapeProgress: Float = 0f, coverUrl: String = "", cornerRadius: Dp = GroupedCardRadius) {
     val resource = cover(id)
-    val resources = LocalContext.current.resources
+    val context = LocalContext.current.applicationContext
+    val resources = context.resources
     val bitmap by produceState<Bitmap?>(resource?.let { coverCache.get(it) }, resource) {
         value = resource?.let { coverCache.get(it) } ?: if(resource == null) null else withContext(Dispatchers.IO) {
             coverCache.get(resource) ?: BitmapFactory.decodeResource(resources, resource,
@@ -67,7 +68,7 @@ private val coverCache = object : LruCache<Int, Bitmap>(6 * 1024 * 1024) {
         }
     }
     val online by produceState<Pair<String, Bitmap>?>(null, coverUrl) {
-        value = remoteCover(coverUrl)?.let { coverUrl to it }
+        value = remoteCover(context, coverUrl)?.let { coverUrl to it }
     }
     // Draw-time clipping is independent of lazy animateItem/retained graphics layers.
     // Apply it to both placeholder and decoded image on every draw.
