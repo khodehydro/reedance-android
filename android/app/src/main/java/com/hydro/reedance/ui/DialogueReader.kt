@@ -180,7 +180,7 @@ import kotlinx.coroutines.launch
         evidence = null
         evidenceFailed = false
     }
-    EvidencePlayback(evidence.takeIf { clip -> pageActive && (clip.key.startsWith("$currentTab:") ||
+    EvidencePlayback(evidence?.takeIf { clip -> pageActive && (clip.key.startsWith("$currentTab:") ||
         (currentTab == 4 && clip.key.startsWith("question:"))) }, onEnd = { evidence = null }, onError = {
         evidence = null
         evidenceFailed = true
