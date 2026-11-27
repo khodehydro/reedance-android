@@ -70,6 +70,7 @@ import kotlinx.coroutines.launch
     var evidence by remember { mutableStateOf<DialogueEvidence?>(null) }
     var evidenceFailed by remember { mutableStateOf(false) }
     var singleTurn by remember { mutableStateOf<Int?>(null) }
+    var autoplayResumeMs by remember { mutableStateOf<Long?>(null) }
     var current by rememberSaveable { mutableIntStateOf(0) }
     var startedDialogue by rememberSaveable { mutableStateOf(false) }
     var revealed by rememberSaveable { mutableIntStateOf(0) }
@@ -101,11 +102,11 @@ import kotlinx.coroutines.launch
     var audioStarted by remember(loadTurn, replay) { mutableStateOf(false) }
     var audioFailed by remember(activeTurn, replay) { mutableStateOf(false) }
     val finished = rememberUpdatedState {
-        elapsed = 0
         if(singleTurn != null) {
             playing = false
             singleTurn = null
         } else {
+            elapsed = 0
             queueStart = -1
             current++
             if(current !in demo.turns.indices) playing = false
@@ -145,7 +146,9 @@ import kotlinx.coroutines.launch
                 override fun onPlayerError(error: PlaybackException) { fail.value() }
             }
             engine.pause()
-            engine.setMediaItems(queuedTurns.map { dialogueMediaItem(loadAudio, it.startMs, it.endMs) })
+            val resumeMs = if(singleTurn == null) autoplayResumeMs ?: 0L else 0L
+            engine.setMediaItems(queuedTurns.map { dialogueMediaItem(loadAudio, it.startMs, it.endMs) }, 0, resumeMs)
+            if(singleTurn == null) autoplayResumeMs = null
             engine.addListener(listener)
             engine.prepare()
             onDispose {
@@ -182,23 +185,42 @@ import kotlinx.coroutines.launch
         if(audio == null) {
             revealed = maxOf(revealed, activeTurn + 1)
             val duration = (turn.text.length * 55).coerceIn(1400, 3600)
-            while(elapsed < duration) { delay(75); elapsed += (75 * speed).toInt() }
+            val preview = singleTurn != null
+            var position = if(preview) 0 else elapsed
+            while(position < duration) {
+                delay(75)
+                position += (75 * speed).toInt()
+                if(!preview) elapsed = position
+            }
             finished.value()
         }
     }
     fun selectTurn(index: Int) {
-        queueStart = -1
+        if(singleTurn == null && startedDialogue && current in demo.turns.indices && autoplayResumeMs == null) {
+            // The player position is relative to the current clipped item, not the source file.
+            autoplayResumeMs = if(audio != null) player?.currentPosition?.coerceAtLeast(0L) else null
+        }
+        player?.pause()
+        // The suspended queue must restart from the current turn, not from its original head.
+        if(queueStart >= 0) queueStart = current
         singleTurn = index
-        elapsed = 0
         replay++
         playing = true
     }
     fun playPause() {
-        if(playing) { playing = false; return }
+        val interruptingPreview = singleTurn != null
+        if(playing && !interruptingPreview) { playing = false; player?.pause(); return }
+        if(interruptingPreview) {
+            player?.pause()
+            singleTurn = null
+            replay++
+        }
         val starting = !startedDialogue || current >= demo.turns.size
         startedDialogue = true
-        if(singleTurn == null && current >= demo.turns.size) { current = 0; revealed = 0; elapsed = 0; replay++ }
-        if(starting && singleTurn == null && queueStart < 0 && demo.turns.getOrNull(current)?.audio != null && modes.all { it.audio }) {
+        if(current >= demo.turns.size) {
+            current = 0; revealed = 0; elapsed = 0; queueStart = -1; autoplayResumeMs = null; replay++
+        }
+        if(starting && queueStart < 0 && demo.turns.getOrNull(current)?.audio != null && modes.all { it.audio }) {
             queueStart = current
         }
         playing = true
@@ -248,8 +270,8 @@ import kotlinx.coroutines.launch
                                     Surface(Modifier.fillMaxSize(), shape = CircleShape,
                                         color = scheme.primary, contentColor = scheme.onPrimary) {
                                         Box(contentAlignment = Alignment.Center) {
-                                            AppIcon(if(playing) UiIcons.PauseFilled else UiIcons.PlayFilled,
-                                                if(playing) tr("مکث", "Pause") else tr("پخش", "Play"), Modifier.size(24.dp))
+                                            AppIcon(if(playing && singleTurn == null) UiIcons.PauseFilled else UiIcons.PlayFilled,
+                                                if(playing && singleTurn == null) tr("مکث", "Pause") else tr("پخش", "Play"), Modifier.size(24.dp))
                                         }
                                     }
                                 }
