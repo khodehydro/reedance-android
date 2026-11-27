@@ -98,6 +98,10 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
     val subscribed by PremiumEntitlement.active.collectAsStateWithLifecycle()
     var subscriptionInfo by remember { mutableStateOf(false) }
     if(subscriptionInfo) ClipSubscriptionInfo(model) { subscriptionInfo = false }
+    fun audioAccess(entry: GymQuestion): LessonAccess {
+        val paid = catalog.any { it.s("id") == entry.key.songId && it.s("access") == "paid" } || entry.source.s("access") == "paid"
+        return LessonAccess(paid, subscribed)
+    }
     val questionCount = entries.size
     var index by remember { mutableIntStateOf(0) }
     var answer by remember(index) { mutableStateOf<List<String>>(emptyList()) }
@@ -152,6 +156,9 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
                     else if(q.s("type") == "choice") PersianText(formattedAnswer(q, correctAnswer(q), fa))
                     else Foreign(formattedAnswer(q, correctAnswer(q), fa))
                     q.tr("explanation", fa).takeIf { it.isNotBlank() }?.let { PersianText(it) }
+                    if(entry.listening == null) {
+                        SongCardAudio(model, entry.source, q, "questions", audioAccess(entry), { subscriptionInfo = true })
+                    }
                 }
             }
             item(key = "finish") { Column(verticalArrangement = Arrangement.spacedBy(20.dp)) { finish() } }
@@ -204,8 +211,7 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
                         }
                         PersianText(q.tr("prompt", fa), style = MaterialTheme.typography.headlineSmall)
                     }
-                    val paid = catalog.any { it.s("id") == entry.key.songId && it.s("access") == "paid" } || entry.source.s("access") == "paid"
-                    val access = LessonAccess(paid, subscribed)
+                    val access = audioAccess(entry)
                     if (clip != null && index == questionIndex && checked == null && !busy) {
                         key(entry.key) { ListeningAudio(model, entry, access) { subscriptionInfo = true } }
                     }
