@@ -1723,8 +1723,7 @@
         "grammar": 8,
         "phrases": 8,
         "questions": 5
-      },
-      "minimumTurnsPerSpeaker": 4
+      }
     },
     "en-t01-s03": {
       "titleEn": "Class Introductions",
@@ -1742,8 +1741,7 @@
         "grammar": 7,
         "phrases": 9,
         "questions": 4
-      },
-      "minimumTurnsPerSpeaker": 4
+      }
     },
     "en-t01-s04": {
       "titleEn": "Phone Number and Email",
@@ -1761,8 +1759,7 @@
         "grammar": 10,
         "phrases": 11,
         "questions": 5
-      },
-      "minimumTurnsPerSpeaker": 4
+      }
     },
     "en-t01-s05": {
       "titleFa": "همسایه جدید",

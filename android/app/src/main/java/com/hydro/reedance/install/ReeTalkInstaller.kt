@@ -15,8 +15,7 @@ import kotlin.math.abs
 
 /** Direct-link profile: authority is the size/hash pinned in the APK, not a publisher manifest. */
 internal data class ReeTalkPackSpec(val id: String, val categoryId: String, val language: String,
-    val url: String, val bytes: Long, val sha256: String, val version: Int, val studioQa: Boolean = false,
-    val minimumTurnsPerSpeaker: Int = 5)
+    val url: String, val bytes: Long, val sha256: String, val version: Int, val studioQa: Boolean = false)
 internal data class InstalledReeTalk(val dialogue: JsonObject, val audio: File, val cover: File)
 
 internal class ReeTalkInstaller(context: Context) {
@@ -79,7 +78,7 @@ internal class ReeTalkInstaller(context: Context) {
         val json = File(dir, "dialogue.json")
         require(json.isFile && json.length() in 1..(4L * 1024 * 1024))
         val d = PackVerifier.strictJson(json.readBytes(), 4 * 1024 * 1024)
-        validateReeTalk(d, spec, minimumTurnsPerSpeaker = spec.minimumTurnsPerSpeaker)
+        validateReeTalk(d, spec)
         val media = d.obj("media")
         val audio = File(dir, media.obj("audio").s("path"))
         val cover = File(dir, media.obj("cover").s("path"))
@@ -123,7 +122,7 @@ internal class ReeTalkInstaller(context: Context) {
     }
 }
 
-internal fun validateReeTalk(d: JsonObject, spec: ReeTalkPackSpec, minimumTurnsPerSpeaker: Int = 5) {
+internal fun validateReeTalk(d: JsonObject, spec: ReeTalkPackSpec) {
     require(d.s("contentType") == "reetalk" && d.n("schemaVersion") == 1L && d.n("contentVersionCode") == spec.version.toLong())
     require(d.s("dialogueId") == spec.id && d.s("categoryId") == spec.categoryId && d.s("targetLanguage") == spec.language)
     require(d.s("locale").startsWith("${spec.language}-") && d.s("level") in setOf("A1", "A2", "B1", "B2", "C1", "C2"))
@@ -137,8 +136,8 @@ internal fun validateReeTalk(d: JsonObject, spec: ReeTalkPackSpec, minimumTurnsP
     require(duration in 1..86400000)
     val turns = d.a("turns")
     val ids = turns.map { it.s("id") }.toSet()
-    require(turns.size <= 120 && ids.size == turns.size && ids.none { it.isBlank() })
-    require(speakerIds.all { id -> turns.count { it.s("speakerId") == id } >= minimumTurnsPerSpeaker })
+    require(turns.size in 8..120 && ids.size == turns.size && ids.none { it.isBlank() })
+    require(speakerIds.all { id -> turns.count { it.s("speakerId") == id } >= 4 })
     var end = 0L
     for(t in turns) {
         val start = t.n("startMs", -1)
@@ -153,41 +152,55 @@ internal fun validateReeTalk(d: JsonObject, spec: ReeTalkPackSpec, minimumTurnsP
     for(section in listOf("words", "grammar", "phrases", "questions")) {
         val items = learning.a(section)
         require(items.size in 1..500 && items.map { it.s("id") }.toSet().size == items.size && items.none { it.s("id").isBlank() })
-        for(item in items) when(section) {
-            "questions" -> {
-                localized(item.obj("prompt")); localized(item.obj("explanation"))
-                val options = item.a("options"); val optionIds = options.map { it.s("id") }.toSet()
-                require(item.s("type") == "multiple_choice" && item.s("stage") in setOf("gist", "detail", "review"))
-                require(options.size in 2..6 && optionIds.size == options.size && optionIds.none { it.isBlank() } && item.s("correctOptionId") in optionIds)
-                options.forEach { localized(it.obj("text")) }
-                val evidence = item.getAsJsonArray("evidenceTurnIds")
-                require(evidence.size() > 0 && evidence.all { it.asString in ids })
-            }
-            else -> {
-                val example = item.obj("example"); require(example.s("text").isNotBlank()); localized(example.obj("translation"))
-                if(section == "grammar") {
-                    for(key in listOf("title", "explanation", "takeaway")) localized(item.obj(key))
-                    val tables = item.a("tables"); require(tables.isNotEmpty())
-                    tables.forEach { table ->
-                        localized(table.obj("title"))
-                        val columns = table.a("columns"); columns.forEach(::localized)
-                        val rows = table.getAsJsonArray("rows")
-                        require(columns.size in 1..12 && rows.size() in 1..200)
-                        rows.forEach { row ->
-                            require(row.asJsonArray.size() == columns.size)
-                            row.asJsonArray.forEach { cell ->
-                                val obj = cell.asJsonObject
-                                if(obj.has("text")) require(obj.s("text").isNotBlank()) else localized(obj)
+        for(item in items) {
+            if(section != "questions") validateReeTalkEvidence(item, ids)
+            when(section) {
+                "questions" -> {
+                    localized(item.obj("prompt")); localized(item.obj("explanation"))
+                    val options = item.a("options"); val optionIds = options.map { it.s("id") }.toSet()
+                    require(item.s("type") == "multiple_choice" && item.s("stage") in setOf("gist", "detail", "review"))
+                    require(options.size in 2..6 && optionIds.size == options.size && optionIds.none { it.isBlank() } && item.s("correctOptionId") in optionIds)
+                    options.forEach { localized(it.obj("text")) }
+                    val evidence = item.getAsJsonArray("evidenceTurnIds")
+                    require(evidence.size() > 0 && evidence.all { it.asString in ids })
+                }
+                else -> {
+                    val example = item.obj("example"); require(example.s("text").isNotBlank()); localized(example.obj("translation"))
+                    if(section == "grammar") {
+                        for(key in listOf("title", "explanation", "takeaway")) localized(item.obj(key))
+                        val tables = item.a("tables"); require(tables.isNotEmpty())
+                        tables.forEach { table ->
+                            localized(table.obj("title"))
+                            val columns = table.a("columns"); columns.forEach(::localized)
+                            val rows = table.getAsJsonArray("rows")
+                            require(columns.size in 1..12 && rows.size() in 1..200)
+                            rows.forEach { row ->
+                                require(row.asJsonArray.size() == columns.size)
+                                row.asJsonArray.forEach { cell ->
+                                    val obj = cell.asJsonObject
+                                    if(obj.has("text")) require(obj.s("text").isNotBlank()) else localized(obj)
+                                }
                             }
                         }
+                    } else {
+                        require(item.s("text").isNotBlank()); localized(item.obj("meaning"))
+                        val pronunciation = item.obj("pronunciation")
+                        require(pronunciation.s("ipa").isNotBlank() && pronunciation.s("faReading").isNotBlank())
+                        if(section == "phrases") localized(item.obj("context"))
                     }
-                } else {
-                    require(item.s("text").isNotBlank()); localized(item.obj("meaning"))
-                    val pronunciation = item.obj("pronunciation")
-                    require(pronunciation.s("ipa").isNotBlank() && pronunciation.s("faReading").isNotBlank())
-                    if(section == "phrases") localized(item.obj("context"))
                 }
             }
         }
     }
+}
+
+internal fun validateReeTalkEvidence(item: JsonObject, turnIds: Set<String>) {
+    if(!item.has("evidenceTurnIds")) return
+    val evidence = item.get("evidenceTurnIds")
+    require(evidence != null && evidence.isJsonArray)
+    val ids = evidence.asJsonArray.map {
+        require(it.isJsonPrimitive && it.asJsonPrimitive.isString)
+        it.asString
+    }
+    require(ids.isNotEmpty() && ids.distinct().size == ids.size && ids.all { it in turnIds })
 }

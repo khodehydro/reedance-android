@@ -8,6 +8,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.google.gson.JsonObject
 import com.hydro.reedance.data.*
+import com.hydro.reedance.domain.LessonAccess
+import com.hydro.reedance.domain.PremiumEntitlement
 import kotlinx.coroutines.CancellationException
 
 internal fun matchesLibraryTab(row: Bookmark, type: String): Boolean =
@@ -18,7 +20,7 @@ internal fun libraryBookmarks(rows: List<Bookmark>, type: String): List<Bookmark
 
 /** Resolve only visible bookmark cards from their own source package, never the currently playing song. */
 @Composable internal fun LibraryBookmarkCard(model: AppModel, mark: Bookmark, catalogSong: JsonObject?, openSong: (String) -> Unit,
-    preloaded: Boolean = false, preloadedContent: LibraryItemContent? = null) {
+    preloaded: Boolean = false, preloadedContent: LibraryItemContent? = null, audioEnabled: Boolean = true) {
     val initial = remember(mark, preloaded, preloadedContent) { if(preloaded) preloadedContent else model.cachedLibraryItem(mark) }
     var loading by remember(mark, preloaded) { mutableStateOf(!preloaded && initial == null && mark.itemType != "song") }
     val data by produceState<LibraryItemContent?>(initial, mark, preloaded, preloadedContent) {
@@ -34,6 +36,16 @@ internal fun libraryBookmarks(rows: List<Bookmark>, type: String): List<Bookmark
     }
     val item = data?.item
     val source = catalogSong?.s("title") ?: data?.title ?: mark.songId
+    val subscribed by PremiumEntitlement.active.collectAsState()
+    val access = LessonAccess(catalogSong?.s("access") == "paid" || data?.lesson?.s("access") == "paid", subscribed)
+    var subscriptionInfo by remember(mark) { mutableStateOf(false) }
+    if(subscriptionInfo) ClipSubscriptionInfo(model) { subscriptionInfo = false }
+    val audio: @Composable () -> Unit = {
+        val lesson = data?.lesson
+        if(item != null && lesson?.s("songId") == mark.songId) {
+            SongCardAudio(model, checkNotNull(lesson), item, mark.itemType, access, { subscriptionInfo = true }, audioEnabled)
+        }
+    }
     val remove: @Composable () -> Unit = {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             if(mark.itemType != "song") Text(source, Modifier.weight(1f), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -42,7 +54,7 @@ internal fun libraryBookmarks(rows: List<Bookmark>, type: String): List<Bookmark
         }
     }
     if(mark.itemType == "grammar" && item != null) {
-        LearningNote(item, fitTablesWhenPossible = true, save = remove)
+        LearningNote(item, fitTablesWhenPossible = true, audio = audio, save = remove)
     } else Panel {
         when {
             mark.itemType == "song" -> {
@@ -70,6 +82,7 @@ internal fun libraryBookmarks(rows: List<Bookmark>, type: String): List<Bookmark
             mark.itemType == "vocabulary" -> WordLearningContent(item)
             mark.itemType in listOf("idioms", "sentences") -> PhraseLearningContent(item)
         }
+        audio()
         remove()
     }
 }

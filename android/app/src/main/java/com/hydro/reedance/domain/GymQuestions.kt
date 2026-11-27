@@ -10,23 +10,30 @@ internal data class GymQuestion(val question: JsonObject, val source: JsonObject
 }
 
 /** Preserve the package's exact question and grading order. Never guess a Persian translation. */
-internal fun preparePracticeQuestions(source: JsonObject): List<GymQuestion> = source.a("questions").mapNotNull { question ->
-    if (!usablePracticeQuestion(question)) return@mapNotNull null
-    val meaning = if (question.s("type") == "order") {
-        orderSentenceMeaningFa(question, source).takeIf { it.isNotBlank() } ?: return@mapNotNull null
-    } else null
-    GymQuestion(question, source, meaning)
-}.distinctBy { it.key }
+internal fun preparePracticeQuestions(source: JsonObject): List<GymQuestion> {
+    val foreignLines = source.foreignLyricIds()
+    val foreignWords = source.foreignOnlyLexemes()
+    return source.a("questions").mapNotNull { question ->
+        if(question.s("lineId") in foreignLines || question.strings("relatedLexemeIds").any { it in foreignWords } ||
+            question.a("pairs").any { it.s("lexemeId") in foreignWords }) return@mapNotNull null
+        if(!usablePracticeQuestion(question)) return@mapNotNull null
+        val meaning = if(question.s("type") == "order") {
+            orderSentenceMeaningFa(question, source).takeIf { it.isNotBlank() } ?: return@mapNotNull null
+        } else null
+        GymQuestion(question, source, meaning)
+    }.distinctBy { it.key }
+}
 
 internal fun orderSentenceMeaningFa(question: JsonObject, lesson: JsonObject): String {
     question.s("translationFa").trim().takeIf { it.isNotEmpty() }?.let { return it }
     val sentence = orderText(question.a("chunks").joinToString(" ") { it.s("text") })
     if (sentence.isBlank()) return ""
-    val lyrics = lesson.a("lyrics")
+    val lyrics = lesson.a("lyrics").filterNot(lesson::isForeignLyric)
     val lineId = question.s("lineId")
     val linked = lyrics.firstOrNull { lineId.isNotBlank() && it.s("id") == lineId }
-    val candidates = listOfNotNull(linked) + lyrics + lesson.a("sentences") + lesson.a("idioms") +
-        lesson.a("vocabulary").map { it.obj("example") }
+    val foreign = lesson.foreignLyricIds()
+    val candidates = listOfNotNull(linked) + lyrics + (lesson.a("sentences") + lesson.a("idioms")).filterNot { it.s("lineId") in foreign } +
+        lesson.teachingVocabulary().map { it.obj("example") }
     return candidates.firstOrNull { orderText(it.s("text")) == sentence && it.s("translationFa").isNotBlank() }
         ?.s("translationFa")?.trim().orEmpty()
 }

@@ -57,6 +57,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.hydro.reedance.R
+import com.hydro.reedance.data.strings
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -172,11 +173,15 @@ import kotlinx.coroutines.launch
         evidence = null
     }
     val currentTab = pager.currentPage
-    LaunchedEffect(currentTab) {
-        if(currentTab == 4) { playing = false; player?.pause() }
-        else { evidence = null; evidenceFailed = false }
+    val pageActive = LocalPageActive.current
+    LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { evidence = null }
+    LaunchedEffect(currentTab, pageActive) {
+        if(currentTab == 4 || !pageActive) { playing = false; player?.pause() }
+        evidence = null
+        evidenceFailed = false
     }
-    EvidencePlayback(evidence.takeIf { currentTab == 4 }, onEnd = { evidence = null }, onError = {
+    EvidencePlayback(evidence.takeIf { clip -> pageActive && (clip.key.startsWith("$currentTab:") ||
+        (currentTab == 4 && clip.key.startsWith("question:"))) }, onEnd = { evidence = null }, onError = {
         evidence = null
         evidenceFailed = true
     })
@@ -330,7 +335,7 @@ import kotlinx.coroutines.launch
                         }
                     }
                 } else DialogueLearningTab(demo, page, evidence, evidenceFailed) { clip ->
-                    if(pager.currentPage == 4) {
+                    if(pageActive && pager.currentPage == page) {
                         playing = false
                         player?.pause()
                         evidenceFailed = false
@@ -564,20 +569,28 @@ private val RightSpeakerBubble = speakerBubbleShape(left = false)
     val learning = demo.learning
     CompositionLocalProvider(LocalReeTalkTextAlignment provides true) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            if(evidenceFailed && tab != 4) item(key = "card-audio-error") { ClipPlaybackError() }
             when(tab) {
                 1 -> {
                     item(key = "word-table") { Panel { LearningTable(learning.wordTable, fitWhenPossible = true) } }
-                    itemsIndexed(learning.words, key = { index, _ -> "word-$index" }) { _, word ->
-                        Panel { WordLearningContent(word) }
+                    itemsIndexed(learning.words, key = { index, _ -> "word-$index" }) { index, word ->
+                        Panel {
+                            WordLearningContent(word)
+                            DialogueCardAudio(demo, word, "$tab:$index", playingEvidence, playEvidence)
+                        }
                     }
                 }
-                2 -> itemsIndexed(learning.grammar, key = { index, _ -> "grammar-$index" }) { _, note ->
-                    LearningNote(note, fitTablesWhenPossible = true)
+                2 -> itemsIndexed(learning.grammar, key = { index, _ -> "grammar-$index" }) { index, note ->
+                    LearningNote(note, fitTablesWhenPossible = true,
+                        audio = { DialogueCardAudio(demo, note, "$tab:$index", playingEvidence, playEvidence) })
                 }
                 3 -> {
                     item(key = "phrase-table") { Panel { LearningTable(learning.phraseTable, fitWhenPossible = true) } }
-                    itemsIndexed(learning.phrases, key = { index, _ -> "phrase-$index" }) { _, phrase ->
-                        Panel { PhraseLearningContent(phrase); WrittenPronunciation(phrase) }
+                    itemsIndexed(learning.phrases, key = { index, _ -> "phrase-$index" }) { index, phrase ->
+                        Panel {
+                            PhraseLearningContent(phrase); WrittenPronunciation(phrase)
+                            DialogueCardAudio(demo, phrase, "$tab:$index", playingEvidence, playEvidence)
+                        }
                     }
                 }
                 4 -> {
@@ -593,6 +606,15 @@ private val RightSpeakerBubble = speakerBubbleShape(left = false)
             }
         }
     }
+}
+
+@Composable private fun DialogueCardAudio(demo: DialogueDemo, card: com.google.gson.JsonObject, key: String,
+    active: DialogueEvidence?, play: (DialogueEvidence) -> Unit) {
+    val clips = remember(demo.turns, card, key) {
+        dialogueCardClips(demo.turns, card.strings("evidenceTurnIds"), key)
+    }
+    if(clips.isEmpty()) return
+    ClipButtons(clips.size, clips.indexOfFirst { it == active }, tr("شنیدن در مکالمه", "Hear it in the conversation")) { play(clips[it]) }
 }
 
 @Composable private fun DialogueQuestionCard(question: DialogueQuestion, listening: Boolean, onEvidence: (() -> Unit)?) {

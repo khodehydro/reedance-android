@@ -2,16 +2,14 @@ package com.hydro.reedance.ui
 
 import android.net.Uri
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.platform.LocalContext
 import androidx.media3.common.MediaItem
-import androidx.media3.common.PlaybackException
-import androidx.media3.common.Player
-import androidx.media3.exoplayer.ExoPlayer
 import java.io.File
+import androidx.compose.runtime.key
+import com.hydro.reedance.domain.CardClip
+import com.hydro.reedance.domain.ClipUnit
+import com.hydro.reedance.domain.groupCardClips
 
-internal data class DialogueEvidence(val questionIndex: Int, val audio: File, val startMs: Long, val endMs: Long)
+internal data class DialogueEvidence(val key: String, val audio: File, val startMs: Long, val endMs: Long)
 
 /** Match Studio: play continuously from the earliest evidence start to the latest end. */
 internal fun dialogueEvidence(turns: List<DialogueTurn>, ids: List<String>, questionIndex: Int): DialogueEvidence? {
@@ -24,8 +22,20 @@ internal fun dialogueEvidence(turns: List<DialogueTurn>, ids: List<String>, ques
         val end = t.endMs
         t.audio != audio || start == null || end == null || start < 0 || end <= start
     }) return null
-    return DialogueEvidence(questionIndex, audio, selected.minOf { checkNotNull(it.startMs) },
+    return DialogueEvidence("question:$questionIndex", audio, selected.minOf { checkNotNull(it.startMs) },
         selected.maxOf { checkNotNull(it.endMs) })
+}
+
+/** Installed ReeTalk turns share one track; invalid/unavailable turns break a group. */
+internal fun dialogueCardClips(turns: List<DialogueTurn>, ids: List<String>, key: String): List<DialogueEvidence> {
+    val audio = turns.firstOrNull { it.id in ids && it.audio != null && it.startMs != null && it.endMs != null }?.audio
+        ?: return emptyList()
+    val units = turns.map {
+        if(it.audio == audio) ClipUnit(it.id, it.startMs, it.endMs) else ClipUnit(it.id, null, null)
+    }
+    return groupCardClips(units, ids).mapIndexed { index, clip ->
+        DialogueEvidence("$key:$index", audio, clip.startMs, clip.endMs)
+    }
 }
 
 /** Clip in the media timeline, never with a wall-clock timer or a padded seek. */
@@ -38,24 +48,8 @@ internal fun dialogueMediaItem(audio: File, startMs: Long?, endMs: Long?): Media
     return item.build()
 }
 
-@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable internal fun EvidencePlayback(clip: DialogueEvidence?, onEnd: () -> Unit, onError: () -> Unit) {
-    val context = LocalContext.current
-    val ended = rememberUpdatedState(onEnd)
-    val failed = rememberUpdatedState(onError)
-    DisposableEffect(clip, context) {
-        if(clip == null) onDispose { }
-        else {
-            val player = ExoPlayer.Builder(context).build()
-            val listener = object : Player.Listener {
-                override fun onPlaybackStateChanged(state: Int) { if(state == Player.STATE_ENDED) ended.value() }
-                override fun onPlayerError(error: PlaybackException) { failed.value() }
-            }
-            player.addListener(listener)
-            player.setMediaItem(dialogueMediaItem(clip.audio, clip.startMs, clip.endMs))
-            player.playWhenReady = true
-            player.prepare()
-            onDispose { player.removeListener(listener); player.release() }
-        }
+    if(clip != null) key(clip.key) {
+        ClippedPlayback(clip.audio, CardClip(clip.startMs, clip.endMs), onEnd = onEnd, onError = onError)
     }
 }

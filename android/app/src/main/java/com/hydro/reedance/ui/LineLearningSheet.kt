@@ -15,7 +15,7 @@ import com.hydro.reedance.domain.LessonAccess
 import com.hydro.reedance.domain.lineLearning
 import kotlinx.coroutines.launch
 
-@Composable internal fun LineLearningSheet(model: AppModel, lesson: JsonObject, line: JsonObject, access: LessonAccess, dismiss: () -> Unit) {
+@Composable internal fun LineLearningSheet(model: AppModel, lesson: JsonObject, line: JsonObject, access: LessonAccess, onUnlock: () -> Unit, dismiss: () -> Unit) {
     val learning = remember(lesson, line, access) { lineLearning(lesson, line, access) }
     val labels = listOf(tr("گرامر", "Grammar"), tr("نکات", "Notes"), tr("لغات", "Words"))
     val first = when {
@@ -39,13 +39,15 @@ import kotlinx.coroutines.launch
                 LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(bottom = 24.dp)) {
                     when(page) {
-                        0 -> items(learning.grammar) { note -> LearningNote(note) { SaveAction(model, "grammar", note.s("id")) } }
+                        0 -> items(learning.grammar) { note -> LearningNote(note, audio = { SongCardAudio(model, lesson, note, "grammar", access, onUnlock, page == pager.currentPage) }) { SaveAction(model, "grammar", note.s("id")) } }
                         1 -> items(learning.phrases) { (type, phrase) -> Panel {
                             PhraseLearningContent(phrase)
+                            SongCardAudio(model, lesson, phrase, type, access, onUnlock, page == pager.currentPage)
                             SaveAction(model, type, phrase.s("id"))
                         } }
                         2 -> items(learning.words) { word -> Panel {
                             WordLearningContent(word)
+                            SongCardAudio(model, lesson, word, "vocabulary", access, onUnlock, page == pager.currentPage)
                             if(word.s("lexemeId").isNotBlank()) SaveAction(model, "vocabulary", word.s("lexemeId"))
                         } }
                     }

@@ -387,7 +387,7 @@ class AppModel @JvmOverloads constructor(app: Application, private val starterOn
                 val lesson = try { content.installedLesson(song.s("id")) }
                     catch(cancelled: CancellationException) { throw cancelled }
                     catch(_: Exception) { null } ?: return@forEach
-                lesson.a("vocabulary").forEach { word ->
+                lesson.teachingVocabulary().forEach { word ->
                     val lemma = word.s("lemma").trim()
                     val answer = lemma.filter { it.isLetter() }
                     val lexeme = word.s("lexemeId")

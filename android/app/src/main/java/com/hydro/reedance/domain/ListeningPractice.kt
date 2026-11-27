@@ -24,12 +24,14 @@ internal fun prepareListeningQuestions(source: JsonObject): List<GymQuestion> {
     val authored = source.a("questions")
     val authoredIds = authored.mapTo(hashSetOf()) { it.s("id") }
     val authoredChunks = authored.filter { it.s("type") == "order" }.groupBy { it.s("lineId") }
-    val material = lines + source.a("sentences") + source.a("idioms") + source.a("vocabulary").map { it.obj("example") }
+    val foreign = source.foreignLyricIds()
+    val material = lines.filterNot(source::isForeignLyric) + (source.a("sentences") + source.a("idioms")).filterNot { it.s("lineId") in foreign } + source.teachingVocabulary().map { it.obj("example") }
     fun optionPool(field: String, language: String) = material.flatMap { words(it.s(field)) }
         .distinctBy { wordKey(it, language) }.filter { wordKey(it, language).isNotBlank() }
     val pool = optionPool("text", locale)
     val persianPool = optionPool("translationFa", "fa")
     return lines.mapIndexedNotNull { index, line ->
+        if(source.isForeignLyric(line)) return@mapIndexedNotNull null
         val lineId = line.s("id")
         val start = line.n("startMs", -1)
         val boundary = lines.getOrNull(index + 1)?.n("startMs", duration) ?: duration

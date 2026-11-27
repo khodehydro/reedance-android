@@ -134,3 +134,11 @@ Schema کامل در [`contracts/v1/lesson.schema.json`](../../contracts/v1/less
 ### Optional lyric-line language
 
 `lyrics[].language` is an optional lowercase two- or three-letter ISO language code for the whole line (for example, `en` on an English line in an `es` song). Omit it to inherit `targetLanguage`. Authoring input can supply the same field on untimed lines; exporters should preserve it when assigning timestamps. This does not change the song's catalog language, timings, or translation fields. Existing packages do not need editing, and older strict readers may reject packages that use the new field.
+
+### Card audio and grammar links (Android 0.1.1)
+
+Android **0.1.1 (`versionCode` 2)** supports optional `grammar[].lineIds` in `lesson.json`. The array contains 1–50 distinct lyric IDs; every ID must exist and refer to a line in the song's target language. An omitted field remains valid. The draft schema reuses `grammarItem`, and the contract and packaged Android lesson schemas are identical (including existing Android Turkish compatibility). The lesson/container/manifest versions and encryption are unchanged. **Publish this Android version before Studio starts retaining `lineIds` in exported lessons**: Studio 1.0.11 strips it on export, and older Android readers reject the extra field.
+
+A word links to lines containing its `lexemeId`; an expression, sentence, or question links through its optional `lineId`; grammar uses `lineIds`. Android ignores missing references, foreign lines, and lines without a valid explicit start/end pair. Linked consecutive lyric indices produce one clipped span (earliest start to latest end); nonconsecutive indices play separately. The first clip has a play button, and multiple clips have up to eight numbered choices. Preview never plays locked lyric lines. Playback uses its own foreground-only player and pauses the main session without seeking it.
+
+A line with an alternate `lyrics[].language` still displays its language badge, translation, and lyric playback. Its token links do not contribute to Review, the word game, Gym, line-learning cards, or card playback. A word also linked from a target-language line remains teachable from that line.

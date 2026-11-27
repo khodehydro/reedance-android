@@ -23,6 +23,9 @@ import androidx.compose.ui.unit.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.gson.JsonObject
 import com.hydro.reedance.data.*
+import com.hydro.reedance.domain.isForeignLyric
+import com.hydro.reedance.domain.foreignLyricIds
+import com.hydro.reedance.domain.teachingVocabulary
 import com.hydro.reedance.domain.LessonAccess
 import com.hydro.reedance.domain.PremiumEntitlement
 import com.hydro.reedance.domain.SongEntryState
@@ -92,7 +95,7 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                 item.size > layout.viewportEndOffset - layout.viewportStartOffset)) return@LaunchedEffect
         if(reducedMotion) scroll.scrollToItem(index) else scroll.animateScrollToItem(index)
     }
-    val wordsById = remember(lesson, access) { lesson?.a("vocabulary").orEmpty().take(access.limit("vocabulary")).associateBy { it.s("lexemeId") } }
+    val wordsById = remember(lesson, access) { lesson?.teachingVocabulary().orEmpty().take(access.limit("vocabulary")).associateBy { it.s("lexemeId") } }
     Column(Modifier.fillMaxSize()) {
         HeaderSurface {
             Column {
@@ -149,12 +152,14 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                         val visibleLines = lines.take(access.limit("lyrics"))
                         val renderLine: @Composable (JsonObject) -> Unit = { line ->
                             val lineId = line.s("id")
+                            val foreign = data.isForeignLyric(line)
                             val active by remember(activeLineId, lineId) { derivedStateOf { activeLineId.value == lineId } }
                             LyricLine(line, mode, active, songLanguage = lesson?.s("targetLanguage").orEmpty(), single = singleLyric, playing = playing && active && activePlayback?.songId == songId,
                                 onPlay = {
                                     if(playing && active && activePlayback?.songId == songId) model.pause()
                                     else model.playFromLine(songId, line.n("startMs"))
-                                }, onLine = if(!singleLyric && lineId in visibleLyricIndices) ({ selectedLineId = lineId }) else null, onToken = { token ->
+                                }, onLine = if(!singleLyric && !foreign && lineId in visibleLyricIndices) ({ selectedLineId = lineId }) else null,
+                                onToken = if(foreign) null else { token ->
                                 if(access.preview && token.s("lexemeId") !in wordsById) subscriptionInfo = true
                                 else selectedWord = wordsById[token.s("lexemeId")] ?: JsonObject().apply {
                                     addProperty("lemma", token.s("surface")); addProperty("translationFa", token.s("translationFa")); addProperty("translationEn", token.s("translationEn"))
@@ -182,32 +187,36 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
                         if(lines.size > access.limit("lyrics")) item(key = "lyrics-preview") { PremiumPreview() }
                     }
                     1 -> { itemsIndexed(data.a("grammar"), key = { _, it -> "grammar-${it.s("id")}" }, contentType = { _, _ -> "note" }) { index, note ->
-                            val content: @Composable () -> Unit = { LearningNote(note) { SaveAction(model, "grammar", note.s("id")) } }
+                            val content: @Composable () -> Unit = { LearningNote(note, audio = { SongCardAudio(model, data, note, "grammar", access, { subscriptionInfo = true }, index < access.limit("grammar")) }) { SaveAction(model, "grammar", note.s("id")) } }
                             if(index < access.limit("grammar")) content() else LockedLessonItem(onUnlock = { subscriptionInfo = true }) { content() }
                         }
                         if(data.a("grammar").size > access.limit("grammar")) item(key = "grammar-preview") { PremiumPreview() }
                     }
                     2 -> {
                         if(!access.preview) items(data.a("vocabularyTables"), contentType = { "table" }) { Panel { LearningTable(it) } }
-                        itemsIndexed(data.a("vocabulary"), key = { _, it -> "word-${it.s("lexemeId")}" }, contentType = { _, _ -> "word" }) { index, word ->
+                        itemsIndexed(data.teachingVocabulary(), key = { _, it -> "word-${it.s("lexemeId")}" }, contentType = { _, _ -> "word" }) { index, word ->
                             val content: @Composable () -> Unit = { Panel {
                                 WordLearningContent(word)
+                                SongCardAudio(model, data, word, "vocabulary", access, { subscriptionInfo = true }, index < access.limit("vocabulary"))
                                 SaveAction(model, "vocabulary", word.s("lexemeId"))
                             } }
                             if(index < access.limit("vocabulary")) content() else LockedLessonItem(onUnlock = { subscriptionInfo = true }) { content() }
                         }
-                        if(data.a("vocabulary").size > access.limit("vocabulary") || (access.preview && data.a("vocabularyTables").isNotEmpty())) item(key = "words-preview") { PremiumPreview() }
+                        if(data.teachingVocabulary().size > access.limit("vocabulary") || (access.preview && data.a("vocabularyTables").isNotEmpty())) item(key = "words-preview") { PremiumPreview() }
                     }
                     3 -> listOf("idioms", "sentences").forEach { type ->
+                        val foreignIds = data.foreignLyricIds()
+                        val cards = data.a(type).filterNot { it.s("lineId") in foreignIds }
                         item(key = "$type-heading") { Text(if(type == "idioms") tr("اصطلاحات", "Expressions") else tr("جمله‌های کاربردی", "Useful sentences"), style = MaterialTheme.typography.titleLarge) }
-                        itemsIndexed(data.a(type), key = { _, it -> "$type-${it.s("id")}" }, contentType = { _, _ -> "phrase" }) { index, item ->
+                        itemsIndexed(cards, key = { _, it -> "$type-${it.s("id")}" }, contentType = { _, _ -> "phrase" }) { index, item ->
                             val content: @Composable () -> Unit = { Panel {
                                 PhraseLearningContent(item)
+                                SongCardAudio(model, data, item, type, access, { subscriptionInfo = true }, index < access.limit(type))
                                 SaveAction(model, type, item.s("id"))
                             } }
                             if(index < access.limit(type)) content() else LockedLessonItem(onUnlock = { subscriptionInfo = true }) { content() }
                         }
-                        if(data.a(type).size > access.limit(type)) item(key = "$type-preview") { PremiumPreview() }
+                        if(cards.size > access.limit(type)) item(key = "$type-preview") { PremiumPreview() }
                     }
                 }
                 item(key = "telegram-channel") { SongTelegramCard() }
@@ -223,12 +232,13 @@ fun clock(ms: Long): String = "%d:%02d".format(ms / 60000, ms / 1000 % 60)
     )
     if(LocalPageActive.current && lesson != null) {
         lines.take(access.limit("lyrics")).firstOrNull { it.s("id") == selectedLineId }?.let { line ->
-            key(songId, selectedLineId) { LineLearningSheet(model, lesson, line, access) { selectedLineId = null } }
+            key(songId, selectedLineId) { LineLearningSheet(model, lesson, line, access, onUnlock = { subscriptionInfo = true }) { selectedLineId = null } }
         }
     }
     selectedWord?.let { word -> ReedanceBottomSheet(onDismissRequest = { selectedWord = null }) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             WordLearningContent(word)
+            lesson?.let { SongCardAudio(model, it, word, "vocabulary", access, { subscriptionInfo = true }) }
             if(word.s("lexemeId").isNotEmpty()) SaveAction(model, "vocabulary", word.s("lexemeId"))
             Spacer(Modifier.height(24.dp))
         }

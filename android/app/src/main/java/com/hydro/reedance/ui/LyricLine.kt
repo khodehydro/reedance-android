@@ -18,7 +18,7 @@ import java.util.Locale
 
 /** A play action at the start of the original line; translation sits below the text, not the button. */
 @OptIn(ExperimentalLayoutApi::class)
-@Composable internal fun LyricLine(line: JsonObject, mode: Int, active: Boolean, onPlay: () -> Unit, onToken: (JsonObject) -> Unit, playing: Boolean = false, single: Boolean = false, onLine: (() -> Unit)? = null, songLanguage: String = "") {
+@Composable internal fun LyricLine(line: JsonObject, mode: Int, active: Boolean, onPlay: () -> Unit, onToken: ((JsonObject) -> Unit)?, playing: Boolean = false, single: Boolean = false, onLine: (() -> Unit)? = null, songLanguage: String = "") {
     val fa = LearningLanguage.persian
     val interfaceDirection = LayoutDirection.Rtl
     val lineAction = if(onLine == null) Modifier else Modifier.clip(GroupedCardShape)
@@ -47,7 +47,8 @@ import java.util.Locale
                     }
                     FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = if(single) Arrangement.spacedBy(2.dp, Alignment.CenterHorizontally) else Arrangement.spacedBy(2.dp)) {
                         line.a("tokens").forEach { token ->
-                            Column(Modifier.clickable(onClickLabel = tr("معنی واژه", "Word meaning")) { onToken(token) }.padding(horizontal = 3.dp, vertical = 8.dp), horizontalAlignment = if(single) Alignment.CenterHorizontally else Alignment.Start) {
+                            val action = if(onToken == null) Modifier else Modifier.clickable(onClickLabel = tr("معنی واژه", "Word meaning")) { onToken(token) }
+                            Column(action.padding(horizontal = 3.dp, vertical = 8.dp), horizontalAlignment = if(single) Alignment.CenterHorizontally else Alignment.Start) {
                                 Text(token.s("surface"), style = MaterialTheme.typography.titleMedium)
                                 if(mode == 2) Text(token.tr("translation", fa), style = MaterialTheme.typography.labelSmall.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Rtl), color = MaterialTheme.colorScheme.primary)
                             }

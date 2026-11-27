@@ -94,6 +94,10 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
     onGrade: suspend (GymQuestion, List<String>, Grade) -> Unit,
     finish: @Composable () -> Unit
 ) {
+    val catalog by model.catalog.collectAsStateWithLifecycle()
+    val subscribed by PremiumEntitlement.active.collectAsStateWithLifecycle()
+    var subscriptionInfo by remember { mutableStateOf(false) }
+    if(subscriptionInfo) ClipSubscriptionInfo(model) { subscriptionInfo = false }
     val questionCount = entries.size
     var index by remember { mutableIntStateOf(0) }
     var answer by remember(index) { mutableStateOf<List<String>>(emptyList()) }
@@ -200,9 +204,12 @@ private data class QuizSessionData(val questions: List<GymQuestion>, val skipped
                         }
                         PersianText(q.tr("prompt", fa), style = MaterialTheme.typography.headlineSmall)
                     }
+                    val paid = catalog.any { it.s("id") == entry.key.songId && it.s("access") == "paid" } || entry.source.s("access") == "paid"
+                    val access = LessonAccess(paid, subscribed)
                     if (clip != null && index == questionIndex && checked == null && !busy) {
-                        key(entry.key) { ListeningAudio(model, entry) }
+                        key(entry.key) { ListeningAudio(model, entry, access) { subscriptionInfo = true } }
                     }
+                    if(clip == null && index == questionIndex) SongCardAudio(model, entry.source, q, "questions", access, { subscriptionInfo = true })
                     if(q.s("context").isNotEmpty()) Foreign(q.s("context"))
                     entry.orderMeaningFa?.let { meaning ->
                         Text(tr("معنی فارسی جمله", "Persian sentence meaning"), style = MaterialTheme.typography.labelMedium)

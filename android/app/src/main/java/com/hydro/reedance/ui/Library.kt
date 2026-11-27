@@ -27,6 +27,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hydro.reedance.data.*
+import com.hydro.reedance.domain.LessonAccess
+import com.hydro.reedance.domain.PremiumEntitlement
+import com.hydro.reedance.domain.teachingVocabulary
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -41,12 +44,30 @@ import kotlinx.coroutines.flow.collectLatest
         if(pageActive) while(true) { delay(1000); now = System.currentTimeMillis() }
     }
     val due = reviews.filter { it.dueAt <= now }
-    val card = due.firstOrNull()
-    val reviewLesson by produceState<com.google.gson.JsonObject?>(null, card?.songId) {
+    val installed by model.installedIds.collectAsStateWithLifecycle()
+    val catalog by model.catalog.collectAsStateWithLifecycle()
+    val subscribed by PremiumEntitlement.active.collectAsStateWithLifecycle()
+    val candidates = remember(due, installed) { due.filter { it.songId in installed } }
+    val ready by produceState<Triple<ReviewCard, com.google.gson.JsonObject, com.google.gson.JsonObject>?>(null, candidates) {
         value = null
-        value = card?.let { try { model.lessonForReview(it.songId) } catch(cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch(_: Exception) { null } }
+        val lessons = mutableMapOf<String, com.google.gson.JsonObject?>()
+        for(candidate in candidates) {
+            if(!lessons.containsKey(candidate.songId)) {
+                lessons[candidate.songId] = try { model.lessonForReview(candidate.songId) }
+                catch(cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch(_: Exception) { null }
+            }
+            val source = lessons[candidate.songId] ?: continue
+            val word = source.teachingVocabulary().find { it.s("lexemeId") == candidate.lexemeId } ?: continue
+            value = Triple(candidate, source, word)
+            break
+        }
     }
-    val word = reviewLesson?.takeIf { it.s("songId") == card?.songId }?.a("vocabulary")?.find { it.s("lexemeId") == card?.lexemeId }
+    val selection = ready?.takeIf { it.first in candidates }
+    val card = selection?.first
+    val reviewLesson = selection?.second
+    val word = selection?.third
+    var subscriptionInfo by remember { mutableStateOf(false) }
+    if(subscriptionInfo) ClipSubscriptionInfo(model) { subscriptionInfo = false }
     var reveal by remember(card?.songId, card?.lexemeId) { mutableStateOf(false) }
     var busy by remember(card) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -64,6 +85,10 @@ import kotlinx.coroutines.flow.collectLatest
                     Text(tr("کارت واژه · خانهٔ ${card.stage}", "WORD CARD · STAGE ${card.stage}"), style = MaterialTheme.typography.labelMedium)
                     Foreign(word.s("lemma"), large = true)
                     WrittenPronunciation(word)
+                    if(reviewLesson != null) {
+                        val paid = catalog.any { it.s("id") == card.songId && it.s("access") == "paid" } || reviewLesson.s("access") == "paid"
+                        SongCardAudio(model, reviewLesson, word, "vocabulary", LessonAccess(paid, subscribed), { subscriptionInfo = true })
+                    }
                     RevealButton(reveal, { reveal = !reveal }, meaning = true)
                     if(reveal) {
                         PersianText(word.tr("translation", fa), style = MaterialTheme.typography.titleLarge)
@@ -81,7 +106,7 @@ import kotlinx.coroutines.flow.collectLatest
                 }
             }
         } else Panel {
-            Text(if(reviews.isEmpty()) tr("در تب لغت‌های آهنگ، واژه‌ای را نشان کن تا به جعبه‌ات بیاید.", "Save a word in the song lesson to start your collection.") else if(card != null) tr("برای نمایش کارت‌ها، بستهٔ آهنگ را دوباره نصب کن. پیشرفتت حفظ شده است.", "Reinstall the song to view these cards. Your progress is preserved.") else tr("عالی بود! واژه‌ها در موعد بعدی برمی‌گردند.", "All caught up! Your words will return when they are due."))
+            Text(if(reviews.isEmpty()) tr("در تب لغت‌های آهنگ، واژه‌ای را نشان کن تا به جعبه‌ات بیاید.", "Save a word in the song lesson to start your collection.") else if(due.any { it.songId !in installed }) tr("برای نمایش کارت‌ها، بستهٔ آهنگ را دوباره نصب کن. پیشرفتت حفظ شده است.", "Reinstall the song to view these cards. Your progress is preserved.") else tr("عالی بود! واژه‌ها در موعد بعدی برمی‌گردند.", "All caught up! Your words will return when they are due."))
         }
         Text(tr("پاسخ درست: خانهٔ بعد با فاصلهٔ ۲، ۴، ۸ و ۱۶ روز. فراموشی: خانهٔ اول، یک دقیقهٔ دیگر.", "Remembered: next stage in 2, 4, 8 or 16 days. Forgotten: stage one, due in one minute."), style = MaterialTheme.typography.bodySmall)
     }
@@ -209,7 +234,7 @@ import kotlinx.coroutines.flow.collectLatest
                     items(entries, key = { "${it.songId}:${it.itemType}:${it.itemId}" }, contentType = { it.itemType }) { mark ->
                         LibraryBookmarkCard(model, mark, catalogById[mark.songId], song,
                             preloaded = prepared?.initialWindow?.containsKey(mark) == true,
-                            preloadedContent = prepared?.initialWindow?.get(mark))
+                            preloadedContent = prepared?.initialWindow?.get(mark), audioEnabled = page == selectedPage)
                     }
                 }
             }

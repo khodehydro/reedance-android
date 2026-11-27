@@ -10,6 +10,9 @@ import androidx.compose.ui.unit.dp
 import com.google.gson.JsonObject
 import com.hydro.reedance.data.*
 import com.hydro.reedance.domain.Grade
+import com.hydro.reedance.domain.isForeignLyric
+import com.hydro.reedance.domain.foreignLyricIds
+import com.hydro.reedance.domain.teachingVocabulary
 import com.hydro.reedance.domain.normalizeAnswer
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -53,8 +56,10 @@ internal fun typingSentenceMeaning(question: JsonObject, lesson: JsonObject, fa:
     val context = question.s("context")
     val candidates = question.strings("accepted").map { context.replace(Regex("_{2,}"), it) } + context
     val normalized = candidates.map { normalizeAnswer(it) }.toSet()
-    val examples = lesson.a("vocabulary").map { it.obj("example") }
-    val lines = lesson.a("lyrics") + lesson.a("sentences") + lesson.a("idioms") + examples
+    val examples = lesson.teachingVocabulary().map { it.obj("example") }
+    val foreign = lesson.foreignLyricIds()
+    val lines = lesson.a("lyrics").filterNot(lesson::isForeignLyric) +
+        (lesson.a("sentences") + lesson.a("idioms")).filterNot { it.s("lineId") in foreign } + examples
     return lines.firstOrNull { normalizeAnswer(it.s("text")) in normalized && it.tr("translation", fa).isNotBlank() }
         ?.tr("translation", fa).orEmpty()
 }

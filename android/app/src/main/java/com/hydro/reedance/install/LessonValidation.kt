@@ -76,6 +76,13 @@ class LessonValidation(private val root: JsonObject) {
         val words = lesson.a("vocabulary").map { it.s("lexemeId") }
         require(words.toSet().size == words.size && words.all { it.startsWith("$lang:") })
         val lineIds = lesson.a("lyrics").map { it.s("id") }.toSet()
+        val foreignIds = lesson.a("lyrics").filter {
+            com.hydro.reedance.domain.alternateLyricLanguage(lang, it.s("language")) != null
+        }.map { it.s("id") }.toSet()
+        lesson.a("grammar").filter { it.has("lineIds") }.forEach { card ->
+            val refs = card.strings("lineIds")
+            require(refs.size in 1..50 && refs.distinct().size == refs.size && refs.all { it in lineIds && it !in foreignIds })
+        }
         val duration = lesson.obj("media").obj("audio").n("durationMs")
         var previous = -1L
         lesson.a("lyrics").forEach { line ->

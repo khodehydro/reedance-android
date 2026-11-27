@@ -138,12 +138,14 @@ internal fun com.hydro.reedance.install.InstalledReeTalk.toReader(): DialogueDem
     val selectedLanguage = LearningLanguage.meaningKey
     val learning = d.obj("learning")
     val words = learning.a("words").map { entry -> JsonObject().apply {
+        entry.get("evidenceTurnIds")?.let { add("evidenceTurnIds", it.deepCopy()) }
         addProperty("lemma", entry.s("text"))
         entry.copyPronunciation(this)
         entry.translationOf(this, "meaning", "translation")
         add("example", entry.exampleCard())
     } }
     val phrases = learning.a("phrases").map { entry -> JsonObject().apply {
+        entry.get("evidenceTurnIds")?.let { add("evidenceTurnIds", it.deepCopy()) }
         addProperty("text", entry.s("text"))
         entry.copyPronunciation(this)
         entry.translationOf(this, "meaning", "translation")
@@ -151,6 +153,7 @@ internal fun com.hydro.reedance.install.InstalledReeTalk.toReader(): DialogueDem
         add("example", entry.exampleCard())
     } }
     val grammar = learning.a("grammar").map { entry -> JsonObject().apply {
+        entry.get("evidenceTurnIds")?.let { add("evidenceTurnIds", it.deepCopy()) }
         localized("tag", "گرامر گفت‌وگو", "Dialogue grammar")
         entry.translationOf(this, "title")
         entry.translationOf(this, "explanation", "body")

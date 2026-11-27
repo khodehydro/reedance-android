@@ -53,6 +53,25 @@ class PackInstallValidationTest {
         } finally { root.deleteRecursively() }
     }
 
+    @Test fun grammarLineLinksAreOptionalAndStrict() {
+        val schema = JsonParser.parseString(File("src/main/assets/lesson.schema.json").readText()).asJsonObject
+        val validator = LessonValidation(schema)
+        val old = V.strictJson(bytes("lesson.json"), 4194304)
+        validator.validate(old); validator.semantics(old)
+        val id = old.a("lyrics").first().s("id")
+        fun linked(vararg ids: String) = old.deepCopy().apply {
+            a("grammar").first().add("lineIds", com.google.gson.JsonArray().apply { ids.forEach { add(it) } })
+        }
+        val valid = linked(id)
+        validator.validate(valid); validator.semantics(valid)
+        reject { validator.validate(linked()) }
+        reject { validator.validate(linked(id, id)) }
+        reject { validator.semantics(linked("missing-line")) }
+        val foreign = linked(id).apply { a("lyrics").first().addProperty("language", "ko") }
+        validator.validate(foreign)
+        reject { validator.semantics(foreign) }
+    }
+
     @Test fun lessonSchemaAcceptsStudioStoryMetadataAndRejectsUnknownStoryPaths() {
         val schema = JsonParser.parseString(File("src/main/assets/lesson.schema.json").readText()).asJsonObject
         val validator = LessonValidation(schema)

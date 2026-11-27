@@ -226,7 +226,7 @@ internal val LocalDeckInteractive = staticCompositionLocalOf { true }
     }
 }
 
-@Composable fun LearningNote(note: JsonObject, fitTablesWhenPossible: Boolean = false, save: (@Composable () -> Unit)? = null) {
+@Composable fun LearningNote(note: JsonObject, fitTablesWhenPossible: Boolean = false, audio: (@Composable () -> Unit)? = null, save: (@Composable () -> Unit)? = null) {
     val fa = LearningLanguage.persian
     var answer by remember(note) { mutableStateOf(false) }
     val tables = remember(note) { note.a("tables") }
@@ -259,6 +259,7 @@ internal val LocalDeckInteractive = staticCompositionLocalOf { true }
             RevealButton(answer, { answer = !answer })
             AnimatedVisibility(answer, enter = if(LocalReducedMotion.current) EnterTransition.None else fadeIn(tween(260)) + expandVertically()) { PersianText(note.obj("check").tr("answer", fa)) }
         }
+        audio?.invoke()
         save?.invoke()
     }
 
