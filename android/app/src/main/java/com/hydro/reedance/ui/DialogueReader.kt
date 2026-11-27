@@ -118,7 +118,7 @@ import kotlinx.coroutines.launch
         player = engine
         onDispose { engine.release(); player = null }
     }
-    DisposableEffect(player, loadAudio, loadTurn, queueEnabled, replay) {
+    DisposableEffect(player, loadAudio, loadTurn, queueEnabled, singleTurn, replay) {
         val engine = player
         if(engine == null || loadAudio == null) {
             engine?.stop()
