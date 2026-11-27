@@ -1692,10 +1692,9 @@
       "titleEn": "Hello and Introductions",
       "level": "A1",
       "downloadUrl": "https://dl.reedance.ir/reetalk/en/01/0101.rdpack",
-      "downloadBytes": 1073482,
-      "downloadSha256": "5dc97c4a17b7703f0cd9233dc6743c9fdd1aaf169f27721bf732ba8f7f8e1120",
-      "contentVersionCode": 1,
-      "pinnedDownloadUrl": "https://github.com/khodehydro/Drop/raw/refs/heads/main/1.rdpack",
+      "downloadBytes": 1072442,
+      "downloadSha256": "ba678b595521b9cdcf9157b340a53aa4e7d27af1bfbd38aebaf5631539438e76",
+      "contentVersionCode": 2,
       "titleFa": "سلام و آشنایی",
       "coverUrl": "https://dl.reedance.ir/reetalk/en/01/0101.png",
       "learningStats": {
@@ -1704,7 +1703,9 @@
         "grammar": 5,
         "phrases": 8,
         "questions": 3
-      }
+      },
+      "studioQa": true,
+      "minimumTurnsPerSpeaker": 4
     },
     "en-t01-s02": {
       "titleEn": "Where Are You From?",
@@ -1722,7 +1723,8 @@
         "grammar": 8,
         "phrases": 8,
         "questions": 5
-      }
+      },
+      "minimumTurnsPerSpeaker": 4
     },
     "en-t01-s03": {
       "titleEn": "Class Introductions",
@@ -1740,7 +1742,8 @@
         "grammar": 7,
         "phrases": 9,
         "questions": 4
-      }
+      },
+      "minimumTurnsPerSpeaker": 4
     },
     "en-t01-s04": {
       "titleEn": "Phone Number and Email",
@@ -1758,7 +1761,8 @@
         "grammar": 10,
         "phrases": 11,
         "questions": 5
-      }
+      },
+      "minimumTurnsPerSpeaker": 4
     },
     "en-t01-s05": {
       "titleFa": "همسایه جدید",
@@ -1910,6 +1914,6 @@
       "coverUrl": "https://dl.reedance.ir/reetalk/en/01/01.png"
     }
   },
-  "packageManifestSourceRevision": "ee0869ab2ed0237cd5cc30f9937144499c42b144",
+  "packageManifestSourceRevision": "4ab67cc5cb2ded932768ace7ea6948620c5d1b45",
   "scenarioStatsSourceRevision": "ee0869ab2ed0237cd5cc30f9937144499c42b144"
 }

@@ -53,16 +53,16 @@ internal suspend fun loadReeTalkTopics(context: Context, language: String): List
                 val entry = metadata.obj(id)
                 val stats = entry.obj("learningStats")
                 val titleFa = entry.s("titleFa").ifBlank { scenario.s("titleFa") }
-                // A URL alone is not a verified pack. Keep the old pinned pilot available until
-                // the CDN object has its own verified size, hash and content version.
+                // A URL alone is not a verified pack. Require its pinned size, hash and version.
                 ReeTalkScenario(id, titleFa, entry.s("titleEn").ifBlank { titleFa },
-                    entry.s("level"), entry.s("coverUrl"), entry.s("pinnedDownloadUrl").ifBlank { entry.s("downloadUrl") }.takeIf { it.isNotBlank() }?.let { url ->
+                    entry.s("level"), entry.s("coverUrl"), entry.s("downloadUrl").takeIf { it.isNotBlank() }?.let { url ->
                         val version = entry.n("contentVersionCode")
                         val bytes = entry.n("downloadBytes")
                         val sha = entry.s("downloadSha256")
                         if(version in 1..Int.MAX_VALUE.toLong() && bytes > 0 && sha.matches(Regex("[a-f0-9]{64}")))
                             ReeTalkPackSpec(id, topic.s("id"), language, url, bytes, sha, version.toInt(),
-                                studioQa = entry.s("studioQa") == "true") else null
+                                studioQa = entry.s("studioQa") == "true",
+                                minimumTurnsPerSpeaker = if(entry.n("minimumTurnsPerSpeaker") == 4L) 4 else 5) else null
                     }, entry.s("access") == "paid", entry.s("downloadUrl").isNotBlank(), language,
                     ReeTalkLearningStats(stats.n("words", -1), stats.n("grammar", -1), stats.n("phrases", -1),
                         stats.n("turns", -1), stats.n("questions", -1)))

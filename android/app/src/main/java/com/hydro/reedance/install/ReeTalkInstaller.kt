@@ -15,7 +15,8 @@ import kotlin.math.abs
 
 /** Direct-link profile: authority is the size/hash pinned in the APK, not a publisher manifest. */
 internal data class ReeTalkPackSpec(val id: String, val categoryId: String, val language: String,
-    val url: String, val bytes: Long, val sha256: String, val version: Int, val studioQa: Boolean = false)
+    val url: String, val bytes: Long, val sha256: String, val version: Int, val studioQa: Boolean = false,
+    val minimumTurnsPerSpeaker: Int = 5)
 internal data class InstalledReeTalk(val dialogue: JsonObject, val audio: File, val cover: File)
 
 internal class ReeTalkInstaller(context: Context) {
@@ -52,7 +53,7 @@ internal class ReeTalkInstaller(context: Context) {
             val payload = JsonObject().apply { add("package", JsonObject().apply { addProperty("encryptionKeyId", "enc-main") }) }
             val zip = File(stage, "authenticated.zip")
             progress("decrypt", 0, 0)
-            val qaKey = if(BuildConfig.DEBUG && (isPilot(spec) || spec.studioQa)) transport.studioDebugConfig()?.let {
+            val qaKey = if(BuildConfig.DEBUG && spec.studioQa) transport.studioDebugConfig()?.let {
                 PackVerifier.base64(it.s("packKey")).also { key -> require(key.size == 32) }
             } else null
             transport.decrypt(pack, zip, payload, qaKey)
@@ -78,7 +79,7 @@ internal class ReeTalkInstaller(context: Context) {
         val json = File(dir, "dialogue.json")
         require(json.isFile && json.length() in 1..(4L * 1024 * 1024))
         val d = PackVerifier.strictJson(json.readBytes(), 4 * 1024 * 1024)
-        validateReeTalk(d, spec, minimumTurnsPerSpeaker = if(isPilot(spec)) 4 else 5)
+        validateReeTalk(d, spec, minimumTurnsPerSpeaker = spec.minimumTurnsPerSpeaker)
         val media = d.obj("media")
         val audio = File(dir, media.obj("audio").s("path"))
         val cover = File(dir, media.obj("cover").s("path"))
@@ -119,8 +120,6 @@ internal class ReeTalkInstaller(context: Context) {
 
     companion object {
         private val lock = Mutex()
-        private fun isPilot(spec: ReeTalkPackSpec) = spec.id == "en-t01-s01" &&
-            spec.sha256 == "5dc97c4a17b7703f0cd9233dc6743c9fdd1aaf169f27721bf732ba8f7f8e1120"
     }
 }
 
