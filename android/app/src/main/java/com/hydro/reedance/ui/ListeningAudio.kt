@@ -1,11 +1,14 @@
 package com.hydro.reedance.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -34,7 +37,7 @@ internal object ClipPlaybackOwner {
     val visible = !access.preview || entry.source.a("lyrics").take(access.limit("lyrics")).any { it.n("startMs", -1) == clip.startMs }
     val clips = if(visible) listOf(CardClip(clip.startMs, clip.endMs)) else emptyList()
     SongClipButton(model, entry.source, SongCardClips(clips, !visible), onUnlock,
-        label = tr("پخش تکهٔ آهنگ", "Play song clip"))
+        label = tr("پخش تکهٔ آهنگ", "Play song clip"), gymStyle = true)
 }
 
 @Composable internal fun SongCardAudio(model: AppModel, source: JsonObject, card: JsonObject, section: String,
@@ -52,7 +55,7 @@ internal object ClipPlaybackOwner {
 }
 
 @Composable private fun SongClipButton(model: AppModel, source: JsonObject, clips: SongCardClips,
-    onUnlock: (() -> Unit)? = null, label: String = tr("شنیدن در آهنگ", "Hear it in the song")) {
+    onUnlock: (() -> Unit)? = null, label: String = tr("شنیدن در آهنگ", "Hear it in the song"), gymStyle: Boolean = false) {
     if(clips.playable.isEmpty() && !(clips.locked && onUnlock != null)) return
     val installed by model.installedIds.collectAsState()
     val songId = source.s("songId")
@@ -63,12 +66,12 @@ internal object ClipPlaybackOwner {
     }
     val audio = file?.takeIf { it.first === source && songId in installed }?.second ?: return
     key(source, audio, clips) {
-        ForegroundClipButtons(audio, clips.playable, label, onUnlock = onUnlock.takeIf { clips.locked }, beforePlay = model::pause)
+        ForegroundClipButtons(audio, clips.playable, label, onUnlock = onUnlock.takeIf { clips.locked }, beforePlay = model::pause, gymStyle = gymStyle)
     }
 }
 
 @Composable private fun ForegroundClipButtons(audio: File, clips: List<CardClip>, label: String,
-    onUnlock: (() -> Unit)?, beforePlay: () -> Unit) {
+    onUnlock: (() -> Unit)?, beforePlay: () -> Unit, gymStyle: Boolean) {
     val active = LocalPageActive.current && LocalDeckInteractive.current
     var selected by remember(active) { mutableIntStateOf(-1) }
     var failed by remember(active) { mutableStateOf(false) }
@@ -77,7 +80,7 @@ internal object ClipPlaybackOwner {
         ClippedPlayback(audio, clip, music = true, beforePlay = beforePlay,
             onEnd = { selected = -1 }, onError = { failed = true; selected = -1 })
     }
-    ClipButtons(clips.size, selected, label, active) { index ->
+    ClipButtons(clips.size, selected, label, active, gymStyle) { index ->
         if(clips.isEmpty()) onUnlock?.invoke()
         else { failed = false; selected = if(selected == index) -1 else index }
     }
@@ -131,16 +134,22 @@ internal object ClipPlaybackOwner {
     }
 }
 
-@Composable internal fun ClipButtons(count: Int, selected: Int, label: String, enabled: Boolean = true, select: (Int) -> Unit) {
-    PressOutlinedButton({ select(if(selected >= 0) selected else 0) }, modifier = Modifier.heightIn(min = 48.dp), enabled = enabled, shape = InsetControlShape) {
-        AppIcon(if(selected >= 0) UiIcons.PauseFilled else UiIcons.PlayFilled, null, Modifier.size(18.dp))
+@Composable internal fun ClipButtons(count: Int, selected: Int, label: String, enabled: Boolean = true,
+    gymStyle: Boolean = false, select: (Int) -> Unit) {
+    PressOutlinedButton({ select(if(selected >= 0) selected else 0) }, modifier = Modifier.heightIn(min = 48.dp),
+        enabled = enabled, shape = if(gymStyle) CircleShape else InsetControlShape,
+        border = if(gymStyle) BorderStroke(1.dp, Color.White) else ButtonDefaults.outlinedButtonBorder(enabled),
+        colors = if(gymStyle) ButtonDefaults.outlinedButtonColors(containerColor = Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.onSurface) else ButtonDefaults.outlinedButtonColors()) {
+        AppIcon(if(selected >= 0) UiIcons.PauseFilled else UiIcons.PlayFilled, null, Modifier.size(if(gymStyle) 20.dp else 18.dp))
         Spacer(Modifier.width(8.dp))
         Text(if(selected >= 0) tr("توقف صدا", "Stop audio") else label)
     }
     if(count > 1) Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         for(index in 0 until minOf(count, 8)) {
+            val number = (index + 1).toString()
             FilterChip(selected = index == selected, enabled = enabled, onClick = { select(index) },
-                label = { Text(tr("${index + 1}".map { "۰۱۲۳۴۵۶۷۸۹"[it - '0'] }.joinToString(""), "${index + 1}")) })
+                label = { Text(tr(number.map { "۰۱۲۳۴۵۶۷۸۹"[it - '0'] }.joinToString(""), number)) })
         }
     }
 }

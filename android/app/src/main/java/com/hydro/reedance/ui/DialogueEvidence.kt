@@ -28,12 +28,16 @@ internal fun dialogueEvidence(turns: List<DialogueTurn>, ids: List<String>, ques
 
 /** Installed ReeTalk turns share one track; invalid/unavailable turns break a group. */
 internal fun dialogueCardClips(turns: List<DialogueTurn>, ids: List<String>, key: String): List<DialogueEvidence> {
-    val audio = turns.firstOrNull { it.id in ids && it.audio != null && it.startMs != null && it.endMs != null }?.audio
-        ?: return emptyList()
+    val linked = ids.toHashSet()
+    val audio = turns.firstOrNull {
+        val start = it.startMs ?: return@firstOrNull false
+        val end = it.endMs ?: return@firstOrNull false
+        it.id in linked && it.audio != null && start >= 0 && end > start
+    }?.audio ?: return emptyList()
     val units = turns.map {
         if(it.audio == audio) ClipUnit(it.id, it.startMs, it.endMs) else ClipUnit(it.id, null, null)
     }
-    return groupCardClips(units, ids).mapIndexed { index, clip ->
+    return groupCardClips(units, linked).mapIndexed { index, clip ->
         DialogueEvidence("$key:$index", audio, clip.startMs, clip.endMs)
     }
 }

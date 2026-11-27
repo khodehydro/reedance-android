@@ -21,8 +21,9 @@ class CardClipsTest {
             {"id":"d","text":"hasta mañana","startMs":600,"endMs":690}],
         "vocabulary":[{"lexemeId":"es:foreign"},{"lexemeId":"es:shared"},{"lexemeId":"es:standalone"}],
         "questions":[
-            {"id":"foreign-q","type":"choice","lineId":"foreign","correctId":"x","options":[{"id":"x"},{"id":"y"}]},
-            {"id":"foreign-word-q","type":"choice","relatedLexemeIds":["es:foreign"],"correctId":"x","options":[{"id":"x"},{"id":"y"}]}]
+            {"id":"foreign-q","type":"choice","lineId":"foreign","promptFa":"معنی؟","correctId":"x","options":[{"id":"x","fa":"بله"},{"id":"y","fa":"خیر"}]},
+            {"id":"foreign-word-q","type":"choice","relatedLexemeIds":["es:foreign"],"promptFa":"معنی؟","correctId":"x","options":[{"id":"x","fa":"بله"},{"id":"y","fa":"خیر"}]},
+            {"id":"native-q","type":"choice","lineId":"a","relatedLexemeIds":["es:shared"],"promptFa":"معنی؟","correctId":"x","options":[{"id":"x","fa":"بله"},{"id":"y","fa":"خیر"}]}]
     }""").asJsonObject
 
     @Test fun eligibleAdjacentLinesFormClipsAndInvalidReferencesBreakGroups() {
@@ -36,6 +37,8 @@ class CardClipsTest {
         val access = LessonAccess(true)
         assertEquals(SongCardClips(listOf(CardClip(100, 190)), false), songCardClips(lesson, listOf("b", "c"), access))
         assertEquals(SongCardClips(emptyList(), true), songCardClips(lesson, listOf("c"), access))
+        val overlapping = lesson.deepCopy().apply { a("lyrics")[1].addProperty("endMs", 310) }
+        assertEquals(SongCardClips(emptyList(), true), songCardClips(overlapping, listOf("b"), access))
         assertEquals(listOf(CardClip(100, 200)), groupCardClips(listOf(ClipUnit("x", 100, 200), ClipUnit("y", 201, 300)), listOf("x", "y"), 1))
     }
 
@@ -44,7 +47,8 @@ class CardClipsTest {
         assertEquals(listOf("es:shared", "es:standalone"), words.map { it.s("lexemeId") })
         assertEquals(listOf("a"), songWordLineIds(lesson, words.first()))
         assertTrue(lineLearning(lesson, lesson.a("lyrics")[2], LessonAccess(false)).words.isEmpty())
-        assertTrue(preparePracticeQuestions(lesson).isEmpty())
+        assertTrue(lesson.a("questions").all(::usablePracticeQuestion))
+        assertEquals(listOf("native-q"), preparePracticeQuestions(lesson).map { it.key.questionId })
         val listening = prepareListeningQuestions(lesson)
         assertTrue(listening.isNotEmpty())
         assertTrue(listening.none { it.listening?.startMs == 200L || it.listening?.distractors?.values?.any { value -> value in setOf("good", "morning") } == true })

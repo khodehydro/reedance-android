@@ -30,6 +30,7 @@ import com.hydro.reedance.data.*
 import com.hydro.reedance.domain.LessonAccess
 import com.hydro.reedance.domain.PremiumEntitlement
 import com.hydro.reedance.domain.teachingVocabulary
+import com.hydro.reedance.domain.foreignOnlyLexemes
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -43,10 +44,22 @@ import kotlinx.coroutines.flow.collectLatest
     LaunchedEffect(pageActive) {
         if(pageActive) while(true) { delay(1000); now = System.currentTimeMillis() }
     }
-    val due = reviews.filter { it.dueAt <= now }
     val installed by model.installedIds.collectAsStateWithLifecycle()
     val catalog by model.catalog.collectAsStateWithLifecycle()
     val subscribed by PremiumEntitlement.active.collectAsStateWithLifecycle()
+    val foreignWords by produceState<Map<String, Set<String>>>(emptyMap(), reviews.map { it.songId }.toSet(), installed) {
+        value = buildMap {
+            for(songId in reviews.map { it.songId }.distinct().filter { it in installed }) {
+                val source = try { model.lessonForReview(songId) }
+                catch(cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch(_: Exception) { null }
+                if(source != null) put(songId, source.foreignOnlyLexemes())
+            }
+        }
+    }
+    val teachableReviews = remember(reviews, foreignWords) {
+        reviews.filterNot { it.lexemeId in foreignWords[it.songId].orEmpty() }
+    }
+    val due = teachableReviews.filter { it.dueAt <= now }
     val candidates = remember(due, installed) { due.filter { it.songId in installed } }
     val ready by produceState<Triple<ReviewCard, com.google.gson.JsonObject, com.google.gson.JsonObject>?>(null, candidates) {
         value = null
@@ -76,7 +89,7 @@ import kotlinx.coroutines.flow.collectLatest
         Heading(tr("جعبهٔ لایتنر", "Words that stay"), tr("یادگیری، یک مرور کوتاه در هر روز.", "A little practice. A lasting memory."))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) { (1..5).forEach { stage -> Column {
             Text("$stage", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
-            Text("${reviews.count { it.stage == stage }}", style = MaterialTheme.typography.bodySmall)
+            Text("${teachableReviews.count { it.stage == stage }}", style = MaterialTheme.typography.bodySmall)
         } } }
         Text(tr("${due.size} واژه آمادهٔ مرور", "${due.size} words ready to review"))
         if(card != null && word != null) {

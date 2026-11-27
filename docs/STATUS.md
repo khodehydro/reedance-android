@@ -20,6 +20,8 @@
 
 ## اجرا و بررسی انجام‌شده در این محیط
 
+- بررسی قابلیت تکهٔ کارت: ۱۰ آزمون هدفمند منطق Kotlin روی JVM مستقل، ۸ آزمون `test_inspect_rdpack.py` و تطابق بایت‌به‌بایت schema موفق بود. اجرای Gradle در محیط محلی به دریافت توزیع Gradle نرسید؛ CI نیز در گام راه‌اندازی Android متوقف شد. `test_assets.py` همان ۳۷ شکست و ۵ خطای شاخهٔ پایه را دارد. این نتایج جای بیلد یا تست دستگاه نیستند.
+
 - `scripts/test_assets.py`: **۱۷ تست پاس شد**.
 - parse نحوی تمام فایل‌های Kotlin/Kotlin DSL با tree-sitter: بدون خطای نحوی. این **type-check یا کامپایل Kotlin نیست**.
 - بررسی ZIP معتبر بودن Gradle Wrapper، XMLهای Android و whitespace/diff.
