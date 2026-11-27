@@ -236,7 +236,13 @@ import kotlinx.coroutines.launch
     DialogueGuide { guiding, highlight ->
         Column(Modifier.fillMaxSize()) {
             Box(Modifier.padding(horizontal = 12.dp).then(highlight(DialogueGuideStep.Tabs))) {
-                ExpandedPillTabs(tabs.map { PillOption(it) }, pager.currentPage) { target -> scope.launch { pager.animateScrollToPage(target) } }
+                val reduced = LocalReducedMotion.current
+                SlidingExpandedPillTabs(tabs.map { PillOption(it) }, pager.currentPage) { target ->
+                    scope.launch {
+                        if(!reduced && adjacentTabMove(pager.currentPage, target)) pager.animateScrollToPage(target)
+                        else pager.scrollToPage(target)
+                    }
+                }
             }
             HorizontalPager(pager, Modifier.weight(1f)) { page ->
                 if(page == 0) {

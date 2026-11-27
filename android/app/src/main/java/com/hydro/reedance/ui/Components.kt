@@ -19,6 +19,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
@@ -28,6 +32,8 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.*
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import com.google.gson.*
 import com.hydro.reedance.data.*
 
@@ -67,17 +73,24 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
 @Composable fun ExpandedPillTabs(items: List<PillOption>, selected: Int, onSelect: (Int) -> Unit) =
     PillTabRow(items, selected, true, onSelect)
 
-@Composable private fun PillTabRow(items: List<PillOption>, selected: Int, expanded: Boolean, onSelect: (Int) -> Unit) {
+@Composable internal fun SlidingExpandedPillTabs(items: List<PillOption>, selected: Int, onSelect: (Int) -> Unit) =
+    PillTabRow(items, selected, true, onSelect, sliding = true)
+
+internal fun adjacentTabMove(from: Int, to: Int): Boolean = kotlin.math.abs(from - to) == 1
+
+@Composable private fun PillTabRow(items: List<PillOption>, selected: Int, expanded: Boolean, onSelect: (Int) -> Unit,
+    sliding: Boolean = false) {
     val reduced = LocalReducedMotion.current
     val duration = if(reduced) 0 else 150
+    val indicator = if(sliding) Modifier.slidingTabIndicator(items.size, selected, reduced) else Modifier
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
     Row(Modifier.then(if(expanded) Modifier.fillMaxWidth().clip(GroupedCardShape)
         .background(MaterialTheme.colorScheme.surfaceContainer).padding(4.dp)
-        else Modifier.horizontalScroll(rememberScrollState()).padding(vertical = 4.dp)).selectableGroup(),
+        else Modifier.horizontalScroll(rememberScrollState()).padding(vertical = 4.dp)).then(indicator).selectableGroup(),
         horizontalArrangement = Arrangement.spacedBy(if(expanded) 4.dp else 8.dp)) {
         items.forEachIndexed { index, option ->
             val active = selected == index
-            val background by animateColorAsState(if(expanded) {
+            val background by animateColorAsState(if(sliding) Color.Transparent else if(expanded) {
                 if(active) MaterialTheme.colorScheme.surfaceBright else Color.Transparent
             } else if(active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface, tween(duration), label = "pill-color")
             val foreground by animateColorAsState(if(active) {
@@ -106,6 +119,39 @@ data class PillOption(val label: String, val icon: Int? = null, val description:
     }
     }
 }
+/** Draw a single pill behind the labels; logical slots keep it mirrored in RTL. */
+@Composable private fun Modifier.slidingTabIndicator(count: Int, selected: Int, reduced: Boolean): Modifier {
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val ink = MaterialTheme.colorScheme.surfaceBright
+    val leading = remember(count) { Animatable(selected.toFloat()) }
+    val trailing = remember(count) { Animatable(selected + 1f) }
+    var previous by remember(count) { mutableIntStateOf(selected) }
+    LaunchedEffect(count, selected, reduced) {
+        val move = adjacentTabMove(previous, selected)
+        previous = selected
+        if(reduced || !move) {
+            leading.snapTo(selected.toFloat())
+            trailing.snapTo(selected + 1f)
+        } else {
+            val forward = selected >= (leading.value + trailing.value - 1f) / 2f
+            coroutineScope {
+                launch { leading.animateTo(selected.toFloat(), spring(dampingRatio = .90f, stiffness = if(forward) 290f else 620f)) }
+                launch { trailing.animateTo(selected + 1f, spring(dampingRatio = .90f, stiffness = if(forward) 620f else 290f)) }
+            }
+        }
+    }
+    return drawBehind {
+        if(selected !in 0 until count) return@drawBehind
+        val gap = 4.dp.toPx()
+        val stride = (size.width + gap) / count
+        val start = (leading.value * stride).coerceIn(0f, size.width)
+        val end = (trailing.value * stride - gap).coerceIn(start, size.width)
+        val width = end - start
+        val radius = minOf(width, size.height) / 2f
+        drawRoundRect(ink, Offset(if(rtl) size.width - end else start, 0f), Size(width, size.height), CornerRadius(radius))
+    }
+}
+
 internal val LocalDeckInteractive = staticCompositionLocalOf { true }
 
 /** Reference CSS: enter 390ms (-15,10), exit 220ms (30,0), mirrored in RTL. */
